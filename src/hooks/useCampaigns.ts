@@ -1,0 +1,387 @@
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
+import { calculateReward } from '../lib/rewardCalc';
+import sorsaApi from '../lib/sorsaApi';
+
+export interface Campaign {
+  id: string;
+  brand_profile_id: string;
+  owner_id?: string;
+  title: string;
+  goal: string;
+  campaign_type: string;
+  min_sorsa_score?: number;
+  language?: string;
+  categories: string[];
+  overview: string;
+  budget: number;
+  platform_fee: number;
+  status: string; // 'draft' | 'live' | 'completed'
+  created_at: string;
+  start_date?: string;
+  end_date?: string;
+  brand_profile?: {
+    company_name: string;
+    logo_url: string;
+    twitter_handle?: string;
+  };
+  campaign_stats?: {
+    max_base_pool: number;
+    allocated_base_pool: number;
+  }[];
+}
+
+export function useCampaigns(brandId?: string) {
+  const { user, role } = useAuth();
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchCampaigns = useCallback(async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // 1. Fetch campaigns
+      let campaignsQuery = supabase
+        .from('campaigns')
+        .select(`
+          *,
+          brand_profile:brand_profiles!brand_profile_id (*)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (brandId) {
+        campaignsQuery = campaignsQuery.eq('brand_profile_id', brandId);
+      }
+
+      // 2. Fetch stats from our view
+      const [campaignsRes, statsRes] = await Promise.all([
+        campaignsQuery,
+        supabase.from('campaign_stats').select('*')
+      ]);
+
+      if (campaignsRes.error) throw campaignsRes.error;
+      if (statsRes.error) {
+        console.warn('Could not fetch campaign stats:', statsRes.error);
+      }
+
+      const campaignsData = campaignsRes.data || [];
+      const statsData = statsRes.data || [];
+
+      // 3. Merge stats into campaigns
+      const mergedData = campaignsData.map(campaign => ({
+        ...campaign,
+        campaign_stats: statsData.filter(s => s.campaign_id === campaign.id)
+      }));
+
+      setCampaigns(mergedData);
+    } catch (err: any) {
+      console.error('Error fetching campaigns:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, brandId]);
+
+  useEffect(() => {
+    fetchCampaigns();
+  }, [fetchCampaigns]);
+
+  const createCampaign = async (campaignData: Omit<Campaign, 'id' | 'created_at' | 'brand_profile'>) => {
+    if (!user) throw new Error('Not authenticated');
+
+    const { data, error } = await supabase
+      .from('campaigns')
+      .insert([{ ...campaignData, owner_id: user.id }])
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    await fetchCampaigns();
+    return data;
+  };
+
+  const getCampaign = useCallback(async (id: string) => {
+    try {
+      const [campaignRes, statsRes] = await Promise.all([
+        supabase
+          .from('campaigns')
+          .select(`
+            *,
+            brand_profile:brand_profiles!brand_profile_id (*)
+          `)
+          .eq('id', id)
+          .single(),
+        supabase
+          .from('campaign_stats')
+          .select('*')
+          .eq('campaign_id', id)
+          .maybeSingle()
+      ]);
+
+      if (campaignRes.error) throw campaignRes.error;
+      
+      const campaign = campaignRes.data as Campaign;
+      if (statsRes.data) {
+        campaign.campaign_stats = [statsRes.data];
+      }
+
+      return campaign;
+    } catch (err: any) {
+      console.error('Error getting campaign:', err);
+      return null;
+    }
+  }, []);
+
+  const joinCampaign = useCallback(async (campaignId: string) => {
+    if (!user) throw new Error('Not authenticated');
+
+    const { data, error } = await supabase
+      .from('campaign_participants')
+      .insert([
+        { campaign_id: campaignId, creator_id: user.id, status: 'active' }
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === '23505') {
+        throw new Error('You have already joined this campaign');
+      }
+      throw error;
+    }
+    return data;
+  }, [user]);
+
+  const checkParticipation = useCallback(async (campaignId: string) => {
+    if (!user) return null;
+
+    const { data, error } = await supabase
+      .from('campaign_participants')
+      .select('*')
+      .eq('campaign_id', campaignId)
+      .eq('creator_id', user.id)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error checking participation:', error);
+      return null;
+    }
+    return data;
+  }, [user]);
+
+  const getCreatorActiveCampaigns = useCallback(async () => {
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from('campaign_participants')
+      .select(`
+        *,
+        campaign:campaigns (
+          *,
+          brand_profile:brand_profiles!brand_profile_id (*)
+        )
+      `)
+      .eq('creator_id', user.id)
+      .in('status', ['active', 'submitted', 'revision', 'approved']);
+
+    if (error) {
+      console.error('Error fetching active campaigns:', error);
+      return [];
+    }
+    return data;
+  }, [user]);
+
+  const getParticipationDetail = useCallback(async (participationId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('campaign_participants')
+        .select(`
+          *,
+          campaign:campaigns (
+            *,
+            brand_profile:brand_profiles!brand_profile_id (*)
+          )
+        `)
+        .eq('id', participationId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (err: any) {
+      console.error('Error fetching participation detail:', err);
+      return null;
+    }
+  }, []);
+
+  const submitLink = useCallback(async (participationId: string, campaignId: string, tweetUrl: string) => {
+    if (!user) throw new Error('Not authenticated');
+
+    const { data, error } = await supabase
+      .from('campaign_submissions')
+      .insert([
+        { 
+          participation_id: participationId, 
+          campaign_id: campaignId,
+          creator_id: user.id,
+          tweet_url: tweetUrl,
+          status: 'submitted'
+        }
+      ])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }, [user]);
+
+  const getParticipationSubmissions = useCallback(async (participationId: string) => {
+    const { data, error } = await supabase
+      .from('campaign_submissions')
+      .select('*')
+      .eq('participation_id', participationId)
+      .order('submitted_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  }, []);
+
+  const updateSubmissionStatus = useCallback(async (submissionId: string, status: 'approved' | 'revision' | 'rejected', feedback?: string) => {
+    const { data, error } = await supabase
+      .from('campaign_submissions')
+      .update({ status, feedback })
+      .eq('id', submissionId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }, []);
+
+  const finalizeCampaign = useCallback(async (campaignId: string) => {
+    try {
+      // 1. Fetch all approved submissions
+      const { data: submissions, error: sError } = await supabase
+        .from('campaign_submissions')
+        .select(`
+          *,
+          creator_profile:creator_profiles!creator_id (*)
+        `)
+        .eq('campaign_id', campaignId)
+        .eq('status', 'approved');
+
+      if (sError) throw sError;
+      
+      // If no approved submissions, just mark campaign completed
+      if (!submissions || submissions.length === 0) {
+        await supabase.from('campaigns').update({ status: 'completed' }).eq('id', campaignId);
+        return;
+      }
+
+      // 2. Process each submission
+      for (const sub of submissions) {
+        try {
+          // Fetch metrics from Sorsa
+          const tweetData = await sorsaApi.fetchTweetInfo(sub.tweet_url);
+          const impressions = tweetData.view_count || 0;
+          const engagement = (tweetData.favorite_count || 0) + (tweetData.retweet_count || 0) + (tweetData.reply_count || 0);
+
+          // Calculate reward
+          const reward = calculateReward({
+            sorsaScore: sub.creator_profile?.sorsa_score || 0,
+            followerCount: sub.creator_profile?.follower_count || 0,
+            totalImpressions: impressions,
+            engagementScore: engagement
+          });
+
+          // Award Points
+          await supabase.from('points_log').insert([{
+            user_id: sub.creator_id,
+            amount: 10, // 10 points per approved tweet
+            event_type: 'tweet_rewarded',
+            description: `Rewarded for tweet in campaign: ${campaignId}`
+          }]);
+
+          await supabase.rpc('increment_creator_stats', {
+            creator_id_param: sub.creator_id,
+            points_to_add: 10
+          });
+
+        } catch (err) {
+          console.error(`Error processing submission ${sub.id}:`, err);
+        }
+      }
+
+      // 3. Mark campaign as completed
+      await supabase
+        .from('campaigns')
+        .update({ status: 'completed' })
+        .eq('id', campaignId);
+
+    } catch (err: any) {
+      console.error('Error finalizing campaign:', err);
+      throw err;
+    }
+  }, []);
+
+  const getCampaignParticipants = useCallback(async (campaignId: string) => {
+    const { data, error } = await supabase
+      .from('campaign_participants')
+      .select(`
+        *,
+        creator_profile:creator_profiles!creator_id (*)
+      `)
+      .eq('campaign_id', campaignId);
+
+    if (error) throw error;
+    return data;
+  }, []);
+
+  const getAllSubmissions = useCallback(async (statusFilter?: string) => {
+    let query = supabase
+      .from('campaign_submissions')
+      .select(`
+        *,
+        campaign:campaigns (*),
+        creator_profile:creator_profiles!creator_id (*)
+      `);
+
+    if (statusFilter) {
+      query = query.eq('status', statusFilter);
+    }
+
+    const { data, error } = await query.order('submitted_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching submissions:', error);
+      throw error;
+    }
+    return data;
+  }, []);
+
+  return {
+    campaigns,
+    createCampaign,
+    getCampaign,
+    joinCampaign,
+    checkParticipation,
+    getCreatorActiveCampaigns,
+    getParticipationDetail,
+    submitLink,
+    getParticipationSubmissions,
+    updateSubmissionStatus,
+    finalizeCampaign,
+    getCampaignParticipants,
+    getAllSubmissions,
+    loading,
+    error,
+    refreshCampaigns: fetchCampaigns
+  };
+}
