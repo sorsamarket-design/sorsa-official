@@ -129,7 +129,10 @@ export default function BrandCampaigns() {
                       return (
                         <tr 
                           key={campaign.id} 
-                          onClick={() => navigate(campaign.status === 'draft' ? '/brand/campaigns/new' : `/brand/campaigns/${campaign.id}`)}
+                          onClick={() => navigate(
+                            campaign.status === 'draft' ? '/brand/campaigns/new' : `/brand/campaigns/${campaign.id}`,
+                            campaign.status === 'draft' ? { state: { draftCampaign: campaign } } : undefined
+                          )}
                           className="hover:bg-white/5 transition-colors group cursor-pointer"
                         >
                           <td className="p-6 text-white font-medium group-hover:text-cyan transition-colors">{campaign.title}</td>

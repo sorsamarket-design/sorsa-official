@@ -1,5 +1,5 @@
 /**
- * Custom Reward Engine for Sorsa.market
+ * Custom Reward Engine for SorsaMarket
  * 
  * Logic:
  * 1. Base = Sorsa Score * 0.1

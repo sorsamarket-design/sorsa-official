@@ -3,6 +3,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { User, Megaphone, PlayCircle, Trophy, Mail, Wallet, Settings, Gift, X, History } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCreatorProfile } from '../hooks/useCreatorProfile';
+import { getInitialsAvatarUrl, normalizeAvatarUrl } from '../lib/avatars';
 
 export default function CreatorSidebar() {
   const { user } = useAuth();
@@ -33,12 +34,16 @@ export default function CreatorSidebar() {
     { icon: Mail, label: 'Contact', path: '/creator/contact' },
     { icon: Settings, label: 'Settings', path: '/creator/settings' },
   ];
+  const avatar =
+    normalizeAvatarUrl(profile?.avatar_url) ||
+    normalizeAvatarUrl(user?.user_metadata?.avatar_url) ||
+    getInitialsAvatarUrl(profile?.x_handle || user?.user_metadata?.full_name || 'Creator');
 
   return (
     <>
       {/* Mobile Overlay */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
           onClick={() => setIsOpen(false)}
         />
@@ -46,14 +51,14 @@ export default function CreatorSidebar() {
 
       <aside className={`w-64 h-screen bg-[#0A0A1E] border-r border-white/10 fixed left-0 top-0 flex flex-col z-50 transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
         <div className="p-6 flex items-center justify-between">
-          <div 
+          <div
             className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => navigate('/')}
           >
-            <img src="/sosomarket.png" alt="Logo" className="w-8 h-8 object-contain" />
+            <img src="/SorsaMarketlogo.PNG" alt="Logo" className="w-8 h-8 object-contain" />
             <span className="text-xl font-bold text-white tracking-tight">SorsaMarket</span>
           </div>
-          <button 
+          <button
             className="md:hidden text-muted hover:text-white"
             onClick={() => setIsOpen(false)}
           >
@@ -82,9 +87,9 @@ export default function CreatorSidebar() {
 
         <div className="p-4 border-t border-white/10">
           <div className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3">
-            <img 
-              src={user?.user_metadata?.avatar_url || "https://picsum.photos/seed/creator/100/100"} 
-              alt="Creator" 
+            <img
+              src={avatar}
+              alt="Creator"
               className="w-10 h-10 rounded-full border border-white/20 object-cover"
               referrerPolicy="no-referrer"
             />

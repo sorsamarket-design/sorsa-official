@@ -5,6 +5,7 @@ import { Trophy, Medal, Star, Target, DollarSign, ArrowUpRight, Loader2 } from '
 import CreatorSidebar from '../components/CreatorSidebar';
 import CreatorTopBar from '../components/CreatorTopBar';
 import { useLeaderboard } from '../hooks/useLeaderboard';
+import CreatorAvatar from '../components/CreatorAvatar';
 
 const appleEase = [0.16, 1, 0.3, 1];
 
@@ -129,7 +130,7 @@ export default function Leaderboard() {
                     <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-gray-300/10 to-transparent pointer-events-none"></div>
                     <Medal className={`w-10 h-10 mb-4 ${getMedalColor(1)}`} />
                     <a href={`https://x.com/${top3[1].handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="relative group mb-3">
-                      <img src={top3[1].avatar} alt={top3[1].handle} className="w-20 h-20 rounded-full border-2 border-gray-300/50 object-cover" referrerPolicy="no-referrer" />
+                      <CreatorAvatar src={top3[1].avatar} name={top3[1].handle} alt={top3[1].handle} className="w-20 h-20 rounded-full border-2 border-gray-300/50 object-cover" />
                       <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                         <ArrowUpRight className="w-5 h-5 text-white" />
                       </div>
@@ -146,7 +147,7 @@ export default function Leaderboard() {
                     <div className="absolute top-0 inset-x-0 h-48 bg-gradient-to-b from-yellow-400/20 to-transparent pointer-events-none"></div>
                     <Medal className={`w-14 h-14 mb-4 ${getMedalColor(0)}`} />
                     <a href={`https://x.com/${top3[0].handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="relative group mb-4">
-                      <img src={top3[0].avatar} alt={top3[0].handle} className="w-24 h-24 rounded-full border-4 border-yellow-400/50 object-cover" referrerPolicy="no-referrer" />
+                      <CreatorAvatar src={top3[0].avatar} name={top3[0].handle} alt={top3[0].handle} className="w-24 h-24 rounded-full border-4 border-yellow-400/50 object-cover" />
                       <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                         <ArrowUpRight className="w-6 h-6 text-white" />
                       </div>
@@ -163,7 +164,7 @@ export default function Leaderboard() {
                     <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-amber-600/10 to-transparent pointer-events-none"></div>
                     <Medal className={`w-8 h-8 mb-4 ${getMedalColor(2)}`} />
                     <a href={`https://x.com/${top3[2].handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="relative group mb-3">
-                      <img src={top3[2].avatar} alt={top3[2].handle} className="w-16 h-16 rounded-full border-2 border-amber-600/50 object-cover" referrerPolicy="no-referrer" />
+                      <CreatorAvatar src={top3[2].avatar} name={top3[2].handle} alt={top3[2].handle} className="w-16 h-16 rounded-full border-2 border-amber-600/50 object-cover" />
                       <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                         <ArrowUpRight className="w-4 h-4 text-white" />
                       </div>
@@ -184,19 +185,26 @@ export default function Leaderboard() {
                   className="glass-panel rounded-[2rem] border border-white/10 overflow-hidden"
                 >
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse whitespace-nowrap">
+                    <table className="w-full min-w-[820px] table-fixed text-left border-collapse whitespace-nowrap">
+                      <colgroup>
+                        <col className="w-1/5" />
+                        <col className="w-1/5" />
+                        <col className="w-1/5" />
+                        <col className="w-1/5" />
+                        <col className="w-1/5" />
+                      </colgroup>
                       <thead>
                         <tr className="border-b border-white/10 bg-white/5">
-                          <th className="py-4 px-6 text-xs font-semibold text-muted uppercase tracking-wider w-20 text-center">Rank</th>
+                          <th className="py-4 px-6 text-xs font-semibold text-muted uppercase tracking-wider text-left">Rank</th>
                           <th className="py-4 px-6 text-xs font-semibold text-muted uppercase tracking-wider">Creator</th>
-                          <th className="py-4 px-6 text-xs font-semibold text-muted uppercase tracking-wider text-right">
-                            <div className="flex items-center justify-end gap-1.5"><Star className="w-3.5 h-3.5" /> Sorsa Score</div>
+                          <th className="py-4 px-6 text-xs font-semibold text-muted uppercase tracking-wider text-center">
+                            <div className="flex items-center justify-center gap-1.5"><Star className="w-3.5 h-3.5" /> Sorsa Score</div>
                           </th>
-                          <th className="py-4 px-6 text-xs font-semibold text-muted uppercase tracking-wider text-right">
-                            <div className="flex items-center justify-end gap-1.5"><Target className="w-3.5 h-3.5" /> Activity Points</div>
+                          <th className="py-4 px-6 text-xs font-semibold text-muted uppercase tracking-wider text-center">
+                            <div className="flex items-center justify-center gap-1.5"><Target className="w-3.5 h-3.5" /> Activity Points</div>
                           </th>
-                          <th className="py-4 px-6 text-xs font-semibold text-muted uppercase tracking-wider text-right">
-                            <div className="flex items-center justify-end gap-1.5"><Trophy className="w-3.5 h-3.5" /> Campaigns</div>
+                          <th className="py-4 px-6 text-xs font-semibold text-muted uppercase tracking-wider text-center">
+                            <div className="flex items-center justify-center gap-1.5"><Trophy className="w-3.5 h-3.5" /> Campaigns</div>
                           </th>
                         </tr>
                       </thead>
@@ -208,29 +216,26 @@ export default function Leaderboard() {
                           return (
                             <tr 
                               key={creator.id} 
-                              className={`transition-colors hover:bg-white/5 ${isCurrentUser ? 'bg-cyan/10 relative' : ''}`}
+                              className={`transition-colors hover:bg-white/5 ${isCurrentUser ? 'bg-cyan/10 border-l-2 border-cyan' : 'border-l-2 border-transparent'}`}
                             >
-                              {isCurrentUser && (
-                                <td className="absolute left-0 top-0 bottom-0 w-1 bg-cyan"></td>
-                              )}
-                              <td className="py-4 px-6 text-center">
-                                <span className={`text-sm font-bold ${isCurrentUser ? 'text-cyan' : 'text-muted'}`}>#{rank}</span>
+                              <td className="py-4 px-6 text-left align-middle">
+                                <span className={`inline-flex text-sm font-bold tabular-nums ${isCurrentUser ? 'text-cyan' : 'text-muted'}`}>#{rank}</span>
                               </td>
-                              <td className="py-4 px-6">
-                                <a href={`https://x.com/${creator.handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 group w-max">
-                                  <img src={creator.avatar} alt={creator.handle} className="w-10 h-10 rounded-full object-cover" referrerPolicy="no-referrer" />
-                                  <span className={`font-medium transition-colors ${isCurrentUser ? 'text-cyan' : 'text-white group-hover:text-cyan'}`}>
+                              <td className="py-4 px-6 align-middle">
+                                <a href={`https://x.com/${creator.handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="grid grid-cols-[40px_minmax(0,1fr)] items-center gap-3 group w-max max-w-full">
+                                  <CreatorAvatar src={creator.avatar} name={creator.handle} alt={creator.handle} className="w-10 h-10 rounded-full object-cover shrink-0" />
+                                  <span className={`font-medium transition-colors truncate ${isCurrentUser ? 'text-cyan' : 'text-white group-hover:text-cyan'}`}>
                                     {creator.handle}
                                   </span>
                                 </a>
                               </td>
-                              <td className={`py-4 px-6 text-right font-semibold ${activeSort === 'sorsaScore' ? 'text-cyan' : 'text-white'}`}>
+                              <td className={`py-4 px-6 text-center align-middle font-semibold tabular-nums ${activeSort === 'sorsaScore' ? 'text-cyan' : 'text-white'}`}>
                                 {creator.sorsaScore}
                               </td>
-                              <td className={`py-4 px-6 text-right font-semibold ${activeSort === 'points' ? 'text-cyan' : 'text-white'}`}>
+                              <td className={`py-4 px-6 text-center align-middle font-semibold tabular-nums ${activeSort === 'points' ? 'text-cyan' : 'text-white'}`}>
                                 {creator.points.toLocaleString()}
                               </td>
-                              <td className={`py-4 px-6 text-right font-semibold ${activeSort === 'campaignsCompleted' ? 'text-cyan' : 'text-white'}`}>
+                              <td className={`py-4 px-6 text-center align-middle font-semibold tabular-nums ${activeSort === 'campaignsCompleted' ? 'text-cyan' : 'text-white'}`}>
                                 {creator.campaignsCompleted}
                               </td>
                             </tr>

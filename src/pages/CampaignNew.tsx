@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowLeft, Users, Star, Plus, X } from 'lucide-react';
 import BrandSidebar from '../components/BrandSidebar';
@@ -11,20 +11,24 @@ const defaultCategories = ['DeFi', 'AI', 'NFT', 'ZK', 'DePIN'];
 
 export default function CampaignNew() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const draftCampaign = location.state?.draftCampaign;
   const { profiles, loading } = useBrandProfiles();
   
-  const [campaignType, setCampaignType] = useState<'general' | 'kol'>('general');
-  const [minSorsaScore, setMinSorsaScore] = useState(500);
-  const [language, setLanguage] = useState('');
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [campaignType, setCampaignType] = useState<'general' | 'kol'>(draftCampaign?.campaign_type === 'kol' ? 'kol' : 'general');
+  const [minSorsaScore, setMinSorsaScore] = useState(Number(draftCampaign?.min_sorsa_score || 500));
+  const [language, setLanguage] = useState(draftCampaign?.language || '');
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(Array.isArray(draftCampaign?.categories) ? draftCampaign.categories : []);
   const [customCategory, setCustomCategory] = useState('');
-  const [customCategories, setCustomCategories] = useState<string[]>([]);
+  const [customCategories, setCustomCategories] = useState<string[]>(
+    Array.isArray(draftCampaign?.categories) ? draftCampaign.categories.filter((cat: string) => !defaultCategories.includes(cat)) : []
+  );
 
   const [formData, setFormData] = useState({
-    brand_profile_id: '',
-    title: '',
-    goal: '',
-    overview: ''
+    brand_profile_id: draftCampaign?.brand_profile_id || '',
+    title: draftCampaign?.title || '',
+    goal: draftCampaign?.goal || '',
+    overview: draftCampaign?.overview || ''
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -65,12 +69,18 @@ export default function CampaignNew() {
     
     navigate('/brand/campaigns/new/budget', { 
       state: { 
+        draftCampaignId: draftCampaign?.id || null,
         campaignData: {
           ...formData,
           campaign_type: campaignType,
           min_sorsa_score: campaignType === 'kol' ? minSorsaScore : null,
           language: campaignType === 'kol' ? language : '',
-          categories: selectedCategories
+          categories: selectedCategories,
+          budget: draftCampaign?.budget || undefined,
+          net_budget: draftCampaign?.net_budget || undefined,
+          platform_fee: draftCampaign?.platform_fee || undefined,
+          start_date: draftCampaign?.start_date || '',
+          end_date: draftCampaign?.end_date || ''
         }
       } 
     });
@@ -109,7 +119,7 @@ export default function CampaignNew() {
                 transition={{ duration: 0.8, ease: appleEase, delay: 0.1 }}
                 className="text-3xl font-semibold tracking-tight text-white"
               >
-                Create New Campaign
+                {draftCampaign ? 'Edit Draft Campaign' : 'Create New Campaign'}
               </motion.h1>
             </div>
           </div>

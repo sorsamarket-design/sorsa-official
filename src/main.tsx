@@ -2,7 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiProvider, createConfig, http } from 'wagmi';
-import { base } from 'wagmi/chains';
+import { base, baseSepolia } from 'wagmi/chains';
 import { getDefaultConfig, RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit';
 import '@rainbow-me/rainbowkit/styles.css';
 
@@ -12,11 +12,12 @@ import { supabase } from './lib/supabase';
 import './index.css';
 
 const config = getDefaultConfig({
-  appName: 'Sorsa Market',
+  appName: 'SorsaMarket',
   projectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || '3fbb6b34438139a04a5840e4f3261a35',
  // Placeholder, user should update in .env if needed
-  chains: [base],
+  chains: [baseSepolia, base],
   transports: {
+    [baseSepolia.id]: http(import.meta.env.VITE_ESCROW_RPC_URL),
     [base.id]: http(),
   },
 });

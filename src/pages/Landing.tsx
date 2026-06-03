@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, useScroll, useTransform } from 'motion/react';
-import { 
-  CheckCircle2, 
-  BarChart3, 
-  ShieldCheck, 
-  Wallet, 
-  Megaphone, 
-  Search, 
-  Star, 
+import { useDisconnect } from 'wagmi';
+import {
+  CheckCircle2,
+  BarChart3,
+  ShieldCheck,
+  Wallet,
+  Megaphone,
+  Search,
+  Star,
   Instagram,
   Linkedin,
   Menu,
@@ -17,6 +18,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { XLogo } from '../components/XLogo';
+import { useAuth } from '../context/AuthContext';
 
 const appleEase = [0.16, 1, 0.3, 1];
 
@@ -34,7 +36,7 @@ const Navbar = () => {
   }, []);
 
   return (
-    <motion.nav 
+    <motion.nav
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.8, ease: appleEase }}
@@ -42,10 +44,10 @@ const Navbar = () => {
     >
       <div className={`transition-all duration-500 w-full max-w-7xl mx-auto flex items-center justify-between ${isScrolled ? 'bg-black/70 backdrop-blur-2xl border border-white/10 rounded-full py-3 px-6' : 'bg-transparent'}`}>
         <div className="text-xl font-semibold text-white tracking-tight flex items-center gap-3">
-          <img src="/sosomarket.png" alt="Logo" className="w-8 h-8 object-contain" />
+          <img src="/SorsaMarketlogo.PNG" alt="Logo" className="w-8 h-8 object-contain" />
           <div>Sorsa<span className="text-cyan">.market</span></div>
         </div>
-        
+
         <div className="hidden md:flex items-center space-x-8">
           <a href="#how-it-works" className="text-sm font-medium text-muted hover:text-white transition-colors">How It Works</a>
           <a href="#for-brands" className="text-sm font-medium text-muted hover:text-white transition-colors">For Brands</a>
@@ -54,8 +56,8 @@ const Navbar = () => {
         </div>
 
         <div className="hidden md:block">
-          <button onClick={() => navigate('/login')} className="px-5 py-2 rounded-full bg-white text-black font-medium text-sm hover:scale-105 transition-transform duration-300 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]">
-            Join Waitlist
+          <button onClick={() => navigate('/campaigns')} className="px-5 py-2 rounded-full bg-white text-black font-medium text-sm hover:scale-105 transition-transform duration-300 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]">
+            Sign in
           </button>
         </div>
 
@@ -71,8 +73,8 @@ const Navbar = () => {
           <a href="#for-brands" className="text-white font-medium" onClick={() => setMobileMenuOpen(false)}>For Brands</a>
           <a href="#for-creators" className="text-white font-medium" onClick={() => setMobileMenuOpen(false)}>For Creators</a>
           <a href="#faq" className="text-white font-medium" onClick={() => setMobileMenuOpen(false)}>FAQ</a>
-          <button onClick={() => { setMobileMenuOpen(false); navigate('/login'); }} className="px-6 py-3 text-center rounded-full bg-white text-black font-medium text-sm mt-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]">
-            Join Waitlist
+          <button onClick={() => { setMobileMenuOpen(false); navigate('/campaigns'); }} className="px-6 py-3 text-center rounded-full bg-white text-black font-medium text-sm mt-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]">
+            Sign in
           </button>
         </div>
       )}
@@ -87,6 +89,22 @@ const Hero = () => {
   const opacity = useTransform(scrollY, [0, 500], [1, 0]);
   const scale = useTransform(scrollY, [0, 500], [1, 0.95]);
   const navigate = useNavigate();
+  const { session, role, signOut } = useAuth();
+  const { disconnect } = useDisconnect();
+
+  const handleRoleEntry = async (targetRole: 'brand' | 'creator') => {
+    if (role === targetRole) {
+      navigate(targetRole === 'brand' ? '/brand/campaigns' : '/creator/campaigns');
+      return;
+    }
+
+    if (session) {
+      disconnect();
+      await signOut();
+    }
+
+    navigate(targetRole === 'brand' ? '/auth/brand' : '/auth/creator');
+  };
 
   return (
     <section className="relative min-h-screen flex items-center pt-32 pb-20 overflow-hidden">
@@ -95,11 +113,11 @@ const Hero = () => {
       <motion.div style={{ y: y2, opacity: useTransform(scrollY, [0, 500], [0.5, 0]), willChange: "transform, opacity" }} className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[300px] md:w-[600px] h-[150px] md:h-[300px] bg-purple/20 blur-[80px] md:blur-[120px] rounded-full pointer-events-none"></motion.div>
 
       <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center z-10 w-full">
-        <motion.div 
+        <motion.div
           style={{ y: y1, opacity, scale, willChange: "transform, opacity" }}
           className="flex flex-col items-start"
         >
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8, ease: appleEase }}
@@ -111,7 +129,7 @@ const Hero = () => {
             </span>
             Platform Beta 1.0
           </motion.div>
-          <motion.h1 
+          <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, ease: appleEase, delay: 0.1 }}
@@ -119,7 +137,7 @@ const Hero = () => {
           >
             Where Brands <br/> Meet Creators.
           </motion.h1>
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, ease: appleEase, delay: 0.2 }}
@@ -127,48 +145,48 @@ const Hero = () => {
           >
             Post campaigns. Match creators. Pay on results. The decentralized marketplace for performance.
           </motion.p>
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, ease: appleEase, delay: 0.3 }}
             className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto"
           >
-            <button onClick={() => navigate('/auth/brand')} className="px-8 py-4 rounded-full bg-white text-black font-medium text-center hover:scale-105 transition-transform duration-300 flex items-center justify-center gap-2">
+            <button onClick={() => handleRoleEntry('brand')} className="px-8 py-4 rounded-full bg-white text-black font-medium text-center hover:scale-105 transition-transform duration-300 flex items-center justify-center gap-2">
               I'm a Brand <ArrowRight className="w-4 h-4" />
             </button>
-            <button onClick={() => navigate('/auth/creator')} className="px-8 py-4 rounded-full glass-panel text-white font-medium text-center hover:bg-white/10 transition-colors duration-300">
+            <button onClick={() => handleRoleEntry('creator')} className="px-8 py-4 rounded-full glass-panel text-white font-medium text-center hover:bg-white/10 transition-colors duration-300">
               I'm a Creator
             </button>
           </motion.div>
         </motion.div>
 
-        <motion.div 
+        <motion.div
           style={{ y: y2, opacity, scale, willChange: "transform, opacity" }}
           className="relative h-[400px] sm:h-[500px] lg:h-[700px] w-full flex items-center justify-center"
         >
           {/* Apple-style clean visual container */}
           <div className="relative w-full max-w-lg aspect-square flex items-center justify-center">
             {/* The Circle */}
-            <motion.div 
+            <motion.div
               className="absolute inset-0 border border-white/10 rounded-full will-change-transform"
               animate={{ rotate: 360 }}
               transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
             />
             <div className="absolute inset-8 border border-white/5 rounded-full" />
-            
+
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="w-32 h-32 md:w-48 md:h-48 bg-gradient-to-br from-cyan/30 to-purple/30 rounded-full blur-2xl opacity-60 animate-pulse"></div>
-              <motion.div 
+              <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ duration: 1.5, ease: appleEase, delay: 0.4 }}
                 className="w-24 h-24 md:w-40 md:h-40 glass-panel rounded-full z-10 flex items-center justify-center shadow-2xl"
               >
                 {/* The massively oversized image as requested previously */}
-                <motion.img 
-                  src="/sosomarket.png" 
-                  alt="SorsaMarket Logo" 
-                  className="w-[80vw] h-[80vw] sm:w-[400px] sm:h-[400px] md:w-[600px] md:h-[600px] lg:w-[800px] lg:h-[800px] max-w-[300px] sm:max-w-none object-contain z-20 relative drop-shadow-2xl will-change-transform" 
+                <motion.img
+                  src="/SorsaMarketlogo.PNG"
+                  alt="SorsaMarket Logo"
+                  className="w-[80vw] h-[80vw] sm:w-[400px] sm:h-[400px] md:w-[600px] md:h-[600px] lg:w-[800px] lg:h-[800px] max-w-[300px] sm:max-w-none object-contain z-20 relative drop-shadow-2xl will-change-transform"
                   initial={{ y: 20 }}
                   animate={{ y: [-10, 10, -10] }}
                   transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
@@ -204,7 +222,7 @@ const HowItWorks = () => {
   return (
     <section id="how-it-works" className="py-32 relative">
       <div className="max-w-7xl mx-auto px-6">
-        <motion.div 
+        <motion.div
           className="text-center mb-20"
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -217,7 +235,7 @@ const HowItWorks = () => {
 
         <div className="grid md:grid-cols-3 gap-8">
           {steps.map((step, idx) => (
-            <motion.div 
+            <motion.div
               key={idx}
               className="relative rounded-3xl p-[1px] overflow-hidden group"
               initial={{ opacity: 0, y: 40 }}
@@ -228,7 +246,7 @@ const HowItWorks = () => {
               <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               <div className="glass-panel rounded-3xl p-10 flex flex-col items-start relative overflow-hidden h-full w-full bg-black/40 backdrop-blur-3xl">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-cyan/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-bl-full"></div>
-                
+
                 <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center mb-8 border border-white/10">
                   {step.icon}
                 </div>
@@ -250,7 +268,7 @@ const FeatureSection = ({ id, title, subtitle, features, reverse }: any) => {
   return (
     <section id={id} className="py-32 relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-6">
-        <motion.div 
+        <motion.div
           className="mb-20 md:w-2/3"
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -296,10 +314,10 @@ const StatsBar = () => {
         <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent absolute top-0"></div>
         <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent absolute bottom-0"></div>
       </div>
-      
+
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-center divide-y md:divide-y-0 md:divide-x divide-white/10">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -309,7 +327,7 @@ const StatsBar = () => {
             <div className="text-6xl md:text-7xl font-semibold tracking-tighter text-white mb-4">10k+</div>
             <div className="text-sm font-medium text-muted uppercase tracking-widest">Creators</div>
           </motion.div>
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -319,7 +337,7 @@ const StatsBar = () => {
             <div className="text-6xl md:text-7xl font-semibold tracking-tighter text-white mb-4">500+</div>
             <div className="text-sm font-medium text-muted uppercase tracking-widest">Brands</div>
           </motion.div>
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -361,12 +379,12 @@ const Waitlist = () => {
           <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-white/5 opacity-50 group-hover:opacity-100 transition-opacity duration-500"></div>
           <div className="glass-panel rounded-[3rem] p-8 md:p-20 relative overflow-hidden h-full w-full bg-black/40 backdrop-blur-3xl">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-1/2 bg-cyan/10 blur-[100px] rounded-full pointer-events-none"></div>
-            
+
             <h2 className="text-4xl sm:text-5xl md:text-7xl font-semibold tracking-tight mb-6 text-white">Get early access.</h2>
             <p className="text-lg md:text-xl text-muted mb-12 max-w-xl mx-auto">Join the waitlist to be notified when we launch. Limited spots available for the beta program.</p>
-            
+
             {submitted ? (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="bg-white/10 border border-white/20 text-white p-6 rounded-2xl flex items-center justify-center gap-3 max-w-md mx-auto backdrop-blur-md"
@@ -376,19 +394,19 @@ const Waitlist = () => {
               </motion.div>
             ) : (
               <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4 max-w-lg mx-auto relative z-20 w-full">
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   required
-                  placeholder="Enter your email address" 
+                  placeholder="Enter your email address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="flex-1 w-full bg-white/5 border border-white/10 rounded-full px-6 md:px-8 py-4 md:py-5 text-white focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all placeholder:text-muted"
                 />
-                <button 
+                <button
                   type="submit"
                   className="bg-white text-black px-8 md:px-10 py-4 md:py-5 rounded-full font-semibold hover:scale-105 transition-transform duration-300 whitespace-nowrap shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)] w-full sm:w-auto"
                 >
-                  Join Waitlist
+                  Sign in
                 </button>
               </form>
             )}
@@ -406,7 +424,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
           <div className="col-span-1 md:col-span-1">
             <div className="text-2xl font-semibold text-white tracking-tight mb-6 flex items-center gap-2">
-              <img src="/sosomarket.png" alt="Logo" className="w-6 h-6 object-contain" />
+              <img src="/SorsaMarketlogo.PNG" alt="Logo" className="w-6 h-6 object-contain" />
               SorsaMarket
             </div>
             <p className="text-sm text-muted mb-8 max-w-xs leading-relaxed">
@@ -418,7 +436,7 @@ const Footer = () => {
               <a href="#" className="text-muted hover:text-white transition-colors"><Linkedin className="w-5 h-5" /></a>
             </div>
           </div>
-          
+
           <div>
             <h4 className="font-semibold text-white mb-6">Platform</h4>
             <ul className="space-y-4 text-sm text-muted">
@@ -428,7 +446,7 @@ const Footer = () => {
               <li><a href="#" className="hover:text-white transition-colors">Pricing</a></li>
             </ul>
           </div>
-          
+
           <div>
             <h4 className="font-semibold text-white mb-6">Company</h4>
             <ul className="space-y-4 text-sm text-muted">
@@ -438,7 +456,7 @@ const Footer = () => {
               <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
             </ul>
           </div>
-          
+
           <div>
             <h4 className="font-semibold text-white mb-6">Legal</h4>
             <ul className="space-y-4 text-sm text-muted">
@@ -448,7 +466,7 @@ const Footer = () => {
             </ul>
           </div>
         </div>
-        
+
         <div className="pt-8 border-t border-white/10 text-sm text-muted flex flex-col md:flex-row justify-between items-center">
           <p>&copy; {new Date().getFullYear()} SorsaMarket. All rights reserved.</p>
           <div className="mt-4 md:mt-0 flex items-center gap-2">
@@ -488,7 +506,7 @@ const FAQ = () => {
   return (
     <section id="faq" className="py-32 relative overflow-hidden">
       <div className="max-w-4xl mx-auto px-6">
-        <motion.div 
+        <motion.div
           className="text-center mb-20"
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -501,7 +519,7 @@ const FAQ = () => {
 
         <div className="space-y-6">
           {faqs.map((faq, idx) => (
-            <motion.div 
+            <motion.div
               key={idx}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -539,17 +557,17 @@ export default function Landing() {
       <Navbar />
       <Hero />
       <HowItWorks />
-      <FeatureSection 
-        id="for-brands" 
-        title="For Brands." 
+      <FeatureSection
+        id="for-brands"
+        title="For Brands."
         subtitle="Scale your reach with authentic voices."
-        features={brandFeatures} 
+        features={brandFeatures}
       />
-      <FeatureSection 
-        id="for-creators" 
-        title="For Creators." 
+      <FeatureSection
+        id="for-creators"
+        title="For Creators."
         subtitle="Monetize your audience on your terms."
-        features={creatorFeatures} 
+        features={creatorFeatures}
       />
       <StatsBar />
       <FAQ />

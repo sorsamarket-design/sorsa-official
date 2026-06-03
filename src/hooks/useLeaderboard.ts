@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { getInitialsAvatarUrl, resolveCreatorAvatarUrl } from '../lib/avatars';
 
 export interface LeaderboardCreator {
   id: string;
@@ -20,20 +21,40 @@ export function useLeaderboard() {
   const fetchLeaderboard = useCallback(async () => {
     try {
       setLoading(true);
-      const { data, error: fetchError } = await supabase
+      const { data: creatorProfiles, error: creatorError } = await supabase
         .from('creator_profiles')
-        .select('id, x_handle, avatar_url, sorsa_score, activity_points, campaigns_completed');
+        .select('id, x_handle, full_name, avatar_url, sorsa_score, activity_points, campaigns_completed');
 
-      if (fetchError) throw fetchError;
+      if (creatorError) throw creatorError;
 
-      const mappedData: LeaderboardCreator[] = (data || []).map(p => ({
-        id: p.id,
-        handle: p.x_handle || 'Unknown',
-        avatar: p.avatar_url || 'https://picsum.photos/seed/default/100/100',
-        sorsaScore: p.sorsa_score || 0,
-        points: p.activity_points || 0,
-        campaignsCompleted: p.campaigns_completed || 0
-      }));
+      const creatorIds = (creatorProfiles || []).map((profile) => profile.id);
+      const { data: authProfiles, error: profileError } = creatorIds.length
+        ? await supabase
+            .from('profiles')
+            .select('id, full_name, avatar_url')
+            .in('id', creatorIds)
+        : { data: [], error: null };
+
+      if (profileError) throw profileError;
+
+      const authProfileById = new Map((authProfiles || []).map((profile) => [profile.id, profile]));
+
+      const mappedData: LeaderboardCreator[] = (creatorProfiles || []).map((profile) => {
+        const authProfile = authProfileById.get(profile.id) as any;
+        const handle = profile.x_handle || authProfile?.full_name || 'Unknown';
+        const avatar =
+          resolveCreatorAvatarUrl(profile.avatar_url, authProfile?.avatar_url) ||
+          getInitialsAvatarUrl(profile.full_name || authProfile?.full_name || handle);
+
+        return {
+          id: profile.id,
+          handle,
+          avatar,
+          sorsaScore: profile.sorsa_score || 0,
+          points: profile.activity_points || 0,
+          campaignsCompleted: profile.campaigns_completed || 0,
+        };
+      });
 
       setLeaderboard(mappedData);
     } catch (err: any) {
@@ -53,6 +74,6 @@ export function useLeaderboard() {
     loading,
     error,
     refreshLeaderboard: fetchLeaderboard,
-    currentUserId: user?.id
+    currentUserId: user?.id,
   };
 }

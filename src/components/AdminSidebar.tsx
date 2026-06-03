@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Megaphone, Users, ShieldCheck, Settings, X } from 'lucide-react';
+import { LayoutDashboard, Megaphone, ShieldCheck, X } from 'lucide-react';
 
 export default function AdminSidebar() {
   const location = useLocation();
@@ -20,9 +20,7 @@ export default function AdminSidebar() {
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin/dashboard' },
     { icon: Megaphone, label: 'Campaigns', path: '/admin/campaigns' },
-    { icon: Users, label: 'Creators', path: '/admin/creators' },
     { icon: ShieldCheck, label: 'Approvals', path: '/admin/approvals' },
-    { icon: Settings, label: 'Settings', path: '/admin/settings' },
   ];
 
   return (

@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Filter, Clock, DollarSign, Users, Target, Zap, ArrowUpRight, Loader2 } from 'lucide-react';
 import CreatorSidebar from '../components/CreatorSidebar';
 import CreatorTopBar from '../components/CreatorTopBar';
-import { mockPastBrowseCampaigns } from '../data/mock';
 import { useCampaigns } from '../hooks/useCampaigns';
 
 const appleEase = [0.16, 1, 0.3, 1];
@@ -16,7 +15,7 @@ const SORTS = ['Newest', 'Highest Budget', 'Ending Soon'];
 export default function CreatorBrowse() {
   const navigate = useNavigate();
   const { campaigns, loading } = useCampaigns();
-  
+
   const [activeCategory, setActiveCategory] = useState('All');
   const [activeTier, setActiveTier] = useState('All');
   const [activeSort, setActiveSort] = useState('Newest');
@@ -25,35 +24,34 @@ export default function CreatorBrowse() {
 
   // Map Supabase campaigns to the UI schema
   const liveCampaignsMapped = useMemo(() => {
-    return campaigns.map(c => ({
+    return campaigns
+      .filter(c => c.status === 'live' && c.brand_profile?.company_name && c.end_date)
+      .map(c => ({
       id: c.id,
       title: c.title,
-      brandName: c.brand_profile?.company_name || 'Unknown Brand',
-      brandLogo: c.brand_profile?.logo_url || 'https://picsum.photos/seed/default/100/100',
-      xHandle: 'unknown',
-      categories: c.categories || [],
+      brandName: c.brand_profile!.company_name,
+      brandLogo: c.brand_profile?.logo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.brand_profile?.company_name || 'Brand')}`,
+            categories: c.categories || [],
       tier: c.campaign_type === 'kol' ? 'KOL' : 'General',
-      status: 'Open',
-      budget: c.budget,
-      stats: c.campaign_stats?.[0] || { max_base_pool: c.budget * 0.5, allocated_base_pool: 0 },
-      baseReward: Math.floor(c.budget * 0.1), // Mocked logic for now
-      performanceBonus: Math.floor(c.budget * 0.2), // Mocked logic for now
-      deadline: c.end_date || new Date(new Date(c.created_at).getTime() + 30*24*60*60*1000).toISOString(),
-      slots: 'Open',
-      createdAt: c.created_at,
-      previewText: c.overview?.substring(0, 150) + '...',
+            budget: c.budget,
+      stats: c.campaign_stats?.[0] || null,
+      baseReward: Math.floor(c.budget * 0.425),
+      performanceBonus: Math.floor(c.budget * 0.425),
+      deadline: c.end_date!,
+            createdAt: c.created_at,
+      previewText: c.overview ? c.overview.substring(0, 150) + '...' : '',
       brief: {
         objectives: c.overview,
         spotlightRequests: [],
         requirements: c.min_sorsa_score ? [`${c.min_sorsa_score}+ Sorsa score`] : [],
         startDate: c.start_date || c.created_at,
-        endDate: c.end_date || c.created_at
+        endDate: c.end_date!
       }
     }));
   }, [campaigns]);
 
   const filteredCampaigns = useMemo(() => {
-    const sourceData = activeTab === 'live' ? liveCampaignsMapped : mockPastBrowseCampaigns;
+    const sourceData = activeTab === 'live' ? liveCampaignsMapped : [];
     let result = [...sourceData];
 
     if (activeCategory !== 'All') {
@@ -86,14 +84,14 @@ export default function CreatorBrowse() {
     <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] font-sans selection:bg-cyan/30 flex">
       <CreatorSidebar />
       <CreatorTopBar />
-      
+
       <main className="flex-1 md:ml-64 mt-20 p-4 md:p-8">
         <div className="max-w-7xl mx-auto space-y-8">
-          
+
           {/* Header & Toggle */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <motion.h1 
+              <motion.h1
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: appleEase }}
@@ -101,7 +99,7 @@ export default function CreatorBrowse() {
               >
                 Browse Campaigns
               </motion.h1>
-              <motion.p 
+              <motion.p
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: appleEase, delay: 0.1 }}
@@ -114,7 +112,7 @@ export default function CreatorBrowse() {
             </div>
 
             {/* Toggle */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, ease: appleEase, delay: 0.2 }}
@@ -157,7 +155,7 @@ export default function CreatorBrowse() {
           </div>
 
           {/* Filters Bar */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: appleEase, delay: 0.2 }}
@@ -173,8 +171,8 @@ export default function CreatorBrowse() {
                   key={cat}
                   onClick={() => setActiveCategory(cat)}
                   className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
-                    activeCategory === cat 
-                      ? 'bg-cyan text-black shadow-[0_0_15px_rgba(0,212,255,0.3)]' 
+                    activeCategory === cat
+                      ? 'bg-cyan text-black shadow-[0_0_15px_rgba(0,212,255,0.3)]'
                       : 'bg-white/5 text-muted hover:text-white hover:bg-white/10 border border-white/10'
                   }`}
                 >
@@ -206,10 +204,10 @@ export default function CreatorBrowse() {
               <div className="flex items-center gap-3 w-48">
                 <span className="text-sm font-medium text-muted whitespace-nowrap">Max Budget</span>
                 <div className="flex-1 flex flex-col gap-1">
-                  <input 
-                    type="range" 
-                    min="1000" 
-                    max="50000" 
+                  <input
+                    type="range"
+                    min="1000"
+                    max="50000"
                     step="1000"
                     value={budgetRange}
                     onChange={(e) => setBudgetRange(Number(e.target.value))}
@@ -222,7 +220,7 @@ export default function CreatorBrowse() {
               {/* Sort */}
               <div className="flex items-center gap-3">
                 <span className="text-sm font-medium text-muted">Sort</span>
-                <select 
+                <select
                   value={activeSort}
                   onChange={(e) => setActiveSort(e.target.value)}
                   className="bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 text-sm text-white focus:outline-none focus:border-cyan/50 appearance-none pr-8 relative"
@@ -237,7 +235,7 @@ export default function CreatorBrowse() {
           </motion.div>
 
           {/* Grid */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, ease: appleEase, delay: 0.3 }}
@@ -262,12 +260,12 @@ export default function CreatorBrowse() {
                       className="group glass-panel rounded-2xl p-6 border border-white/10 hover:border-cyan/50 hover:shadow-[0_0_30px_rgba(0,212,255,0.15)] transition-all duration-300 cursor-pointer flex flex-col h-full relative overflow-hidden"
                     >
                       <div className="absolute top-0 right-0 w-32 h-32 bg-cyan/5 blur-[50px] rounded-full pointer-events-none group-hover:bg-cyan/10 transition-colors"></div>
-                      
+
                       <div className="flex items-start justify-between mb-4 relative z-10">
                         <div className="flex items-center gap-3">
-                          <img 
-                            src={campaign.brandLogo} 
-                            alt={campaign.brandName} 
+                          <img
+                            src={campaign.brandLogo}
+                            alt={campaign.brandName}
                             className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 object-cover"
                             referrerPolicy="no-referrer"
                           />
@@ -281,16 +279,13 @@ export default function CreatorBrowse() {
                           if (activeTab === 'live' && (campaign as any).stats) {
                             const stats = (campaign as any).stats;
                             isFull = stats.allocated_base_pool >= stats.max_base_pool;
-                          } else if (campaign.slots !== 'Open') {
-                            const [filled, total] = campaign.slots.split('/').map(Number);
-                            isFull = filled >= total;
                           }
                           return (
                             <div className={`px-2.5 py-1 rounded-md text-xs font-semibold ${
-                              activeTab === 'past' 
+                              activeTab === 'past'
                                 ? 'bg-gray-500/10 text-gray-400 border border-gray-500/20'
-                                : isFull 
-                                  ? 'bg-red-500/10 text-red-400 border border-red-500/20' 
+                                : isFull
+                                  ? 'bg-red-500/10 text-red-400 border border-red-500/20'
                                   : 'bg-green-500/10 text-green-400 border border-green-500/20'
                             }`}>
                               {activeTab === 'past' ? 'Completed' : (isFull ? 'Full' : 'Available')}
@@ -325,11 +320,6 @@ export default function CreatorBrowse() {
                             progress = 50 + (allocatedRatio * 50);
                             // Cap at 100% just in case
                             progress = Math.min(progress, 100);
-                          } else if (campaign.slots !== 'Open') {
-                            const [filled, total] = campaign.slots.split('/').map(Number);
-                            if (total > 0) {
-                              progress = (filled / total) * 100;
-                            }
                           }
                           return (
                             <div className="space-y-1.5">
@@ -338,8 +328,8 @@ export default function CreatorBrowse() {
                                 <span className="text-cyan">{Math.round(progress)}%</span>
                               </div>
                               <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-                                <div 
-                                  className="h-full bg-gradient-to-r from-cyan to-blue-500 rounded-full transition-all duration-500" 
+                                <div
+                                  className="h-full bg-gradient-to-r from-cyan to-blue-500 rounded-full transition-all duration-500"
                                   style={{ width: `${progress}%` }}
                                 ></div>
                               </div>
@@ -371,7 +361,7 @@ export default function CreatorBrowse() {
                 <p className="text-muted max-w-md">
                   We couldn't find any campaigns matching your current filters. Try adjusting your category, tier, or budget range.
                 </p>
-                <button 
+                <button
                   onClick={() => {
                     setActiveCategory('All');
                     setActiveTier('All');

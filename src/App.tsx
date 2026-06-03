@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import BrandLogin from './pages/BrandLogin';
@@ -33,6 +33,25 @@ import NotFound from './pages/NotFound';
 import ProtectedRoute from './components/ProtectedRoute';
 import AuthCallback from './pages/AuthCallback';
 import BrandAuthCallback from './pages/BrandAuthCallback';
+import { useAuth } from './context/AuthContext';
+
+function CampaignsRedirect() {
+  const { session, role, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0B0A0F]">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cyan"></div>
+      </div>
+    );
+  }
+
+  if (!session) return <Navigate to="/login" replace />;
+  if (role === 'brand') return <Navigate to="/brand/campaigns" replace />;
+  if (role === 'creator') return <Navigate to="/creator/campaigns" replace />;
+
+  return <div className="min-h-screen flex items-center justify-center bg-[#0B0A0F] text-red-400">Error</div>;
+}
 
 export default function App() {
 
@@ -46,6 +65,7 @@ export default function App() {
         <Route path="/auth/creator" element={<CreatorLogin />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/auth/callback/brand" element={<BrandAuthCallback />} />
+        <Route path="/campaigns" element={<CampaignsRedirect />} />
         
         {/* Brand Routes */}
         <Route path="/brand/dashboard" element={<ProtectedRoute requiredRole="brand"><BrandDashboard /></ProtectedRoute>} />

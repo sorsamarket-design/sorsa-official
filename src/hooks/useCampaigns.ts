@@ -21,6 +21,7 @@ export interface Campaign {
   created_at: string;
   start_date?: string;
   end_date?: string;
+  release_at?: string | null;
   brand_profile?: {
     company_name: string;
     logo_url: string;
@@ -30,6 +31,21 @@ export interface Campaign {
     max_base_pool: number;
     allocated_base_pool: number;
   }[];
+  escrow_campaign_id?: string | null;
+  escrow_contract_address?: string | null;
+  escrow_tx_hash?: string | null;
+  metadata_hash?: string | null;
+  brand_wallet?: string | null;
+}
+
+function isEscrowConfirmedCampaign(campaign: Partial<Campaign> | null | undefined) {
+  return Boolean(
+    campaign?.escrow_campaign_id &&
+    campaign?.escrow_contract_address &&
+    campaign?.escrow_tx_hash &&
+    campaign?.metadata_hash &&
+    campaign?.brand_wallet
+  );
 }
 
 export function useCampaigns(brandId?: string) {
@@ -59,6 +75,9 @@ export function useCampaigns(brandId?: string) {
       if (brandId) {
         campaignsQuery = campaignsQuery.eq('brand_profile_id', brandId);
       }
+      if (role === 'brand') {
+        campaignsQuery = campaignsQuery.eq('owner_id', user.id);
+      }
 
       // 2. Fetch stats from our view
       const [campaignsRes, statsRes] = await Promise.all([
@@ -71,7 +90,12 @@ export function useCampaigns(brandId?: string) {
         console.warn('Could not fetch campaign stats:', statsRes.error);
       }
 
-      const campaignsData = campaignsRes.data || [];
+      const campaignsData = (campaignsRes.data || []).filter((campaign) => {
+        if (role === 'brand') {
+          return campaign.status === 'draft' || isEscrowConfirmedCampaign(campaign);
+        }
+        return campaign.status === 'live' && isEscrowConfirmedCampaign(campaign);
+      });
       const statsData = statsRes.data || [];
 
       // 3. Merge stats into campaigns
@@ -129,6 +153,7 @@ export function useCampaigns(brandId?: string) {
       if (campaignRes.error) throw campaignRes.error;
       
       const campaign = campaignRes.data as Campaign;
+      if (!isEscrowConfirmedCampaign(campaign)) return null;
       if (statsRes.data) {
         campaign.campaign_stats = [statsRes.data];
       }
@@ -196,7 +221,7 @@ export function useCampaigns(brandId?: string) {
       console.error('Error fetching active campaigns:', error);
       return [];
     }
-    return data;
+    return (data || []).filter((item: any) => item.campaign?.status === 'live' && isEscrowConfirmedCampaign(item.campaign));
   }, [user]);
 
   const getParticipationDetail = useCallback(async (participationId: string) => {
@@ -214,6 +239,7 @@ export function useCampaigns(brandId?: string) {
         .single();
 
       if (error) throw error;
+      if (!data?.campaign || data.campaign.status !== 'live' || !isEscrowConfirmedCampaign(data.campaign)) return null;
       return data;
     } catch (err: any) {
       console.error('Error fetching participation detail:', err);

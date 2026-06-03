@@ -1,78 +1,72 @@
-const API_BASE = import.meta.env.VITE_SORSA_API_BASE || 'https://api.sorsa.io/v3';
-const API_KEY = import.meta.env.VITE_SORSA_API_KEY;
+import { requireSupabase } from './supabase';
+
+const launchEndpoint = import.meta.env.VITE_ESCROW_LAUNCH_ENDPOINT;
+
+function getBackendBase() {
+  if (!launchEndpoint) {
+    throw new Error('Unable to verify');
+  }
+
+  return launchEndpoint.replace(/\/campaigns\/launch\/?$/, '');
+}
+
+async function getAuthHeaders() {
+  const supabase = requireSupabase();
+  const { data, error } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+
+  if (error || !token) {
+    throw new Error('Unable to verify');
+  }
+
+  return {
+    Authorization: `Bearer ${token}`
+  };
+}
+
+async function proxySorsa(path: string, options: RequestInit = {}) {
+  const authHeaders = await getAuthHeaders();
+  const response = await fetch(`${getBackendBase()}${path}`, {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      ...authHeaders
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error('Unable to verify');
+  }
+
+  return response.json();
+}
 
 /**
- * Utility to fetch data from Sorsa (TweetScout) API v3
+ * Utility to fetch Sorsa data through the trusted backend.
  */
 const sorsaApi = {
   /**
    * Fetches full profile info including followers_count
    */
   async fetchInfo(username: string) {
-    if (!API_KEY) throw new Error('Sorsa API Key is missing in .env');
-    
-    // Ensure handle doesn't have @
     const handle = username.replace('@', '');
-    
-    const response = await fetch(`${API_BASE}/info?username=${handle}`, {
-      method: 'GET',
-      headers: {
-        'ApiKey': API_KEY
-      }
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to fetch Sorsa info');
-    }
-
-    return response.json();
+    return proxySorsa(`/sorsa/info?username=${encodeURIComponent(handle)}`);
   },
 
   /**
    * Fetches the country/region from the About section
    */
   async fetchAbout(username: string) {
-    if (!API_KEY) throw new Error('Sorsa API Key is missing in .env');
-    
     const handle = username.replace('@', '');
-    
-    const response = await fetch(`${API_BASE}/about?username=${handle}`, {
-      method: 'GET',
-      headers: {
-        'ApiKey': API_KEY
-      }
-    });
-
-    if (!response.ok) {
-      // If the about endpoint fails (e.g. 404), return null instead of throwing so it doesn't break the main flow
-      return { country: null };
-    }
-
-    return response.json();
+    return proxySorsa(`/sorsa/about?username=${encodeURIComponent(handle)}`);
   },
 
   /**
    * Fetches the numeric Sorsa Score
    */
   async fetchScore(username: string) {
-    if (!API_KEY) throw new Error('Sorsa API Key is missing in .env');
-    
     const handle = username.replace('@', '');
-    
-    const response = await fetch(`${API_BASE}/score?username=${handle}`, {
-      method: 'GET',
-      headers: {
-        'ApiKey': API_KEY
-      }
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to fetch Sorsa score');
-    }
-
-    const data = await response.json();
+    const data = await proxySorsa(`/sorsa/score?username=${encodeURIComponent(handle)}`);
     return Math.round(data.score || 0);
   },
 
@@ -80,51 +74,31 @@ const sorsaApi = {
    * Fetches tweet data including view_count (impressions)
    */
   async fetchTweetInfo(tweetLinkOrId: string) {
-    if (!API_KEY) throw new Error('Sorsa API Key is missing in .env');
-    
-    const response = await fetch(`${API_BASE}/tweet-info`, {
+    return proxySorsa('/sorsa/tweet-info', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'ApiKey': API_KEY
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         tweet_link: tweetLinkOrId
       })
     });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to fetch tweet info');
-    }
-
-    return response.json();
   },
 
   /**
    * Checks if user_2 (follower) follows user_1 (target)
    */
   async checkFollow(followerHandle: string, targetHandle: string) {
-    if (!API_KEY) throw new Error('Sorsa API Key is missing in .env');
-    
-    const response = await fetch(`${API_BASE}/check-follow`, {
+    const data = await proxySorsa('/sorsa/check-follow', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'ApiKey': API_KEY
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         username_1: targetHandle.replace('@', ''), // The one being followed (Brand)
         username_2: followerHandle.replace('@', '') // The one following (Creator)
       })
     });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to verify follow status');
-    }
-
-    const data = await response.json();
     return data.follow === true;
   }
 };

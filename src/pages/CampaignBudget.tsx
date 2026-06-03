@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowLeft, Plus, X, AlertCircle, Loader2 } from 'lucide-react';
-import { useAccount } from 'wagmi';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { useAccount, usePublicClient, useWalletClient } from 'wagmi';
+import BrandConnectWalletButton from '../components/BrandConnectWalletButton';
 import BrandSidebar from '../components/BrandSidebar';
 import TopBar from '../components/TopBar';
 import { useCampaigns } from '../hooks/useCampaigns';
+import { useAuth } from '../context/AuthContext';
+import { assertEscrowLaunchBackendReady, authorizeEscrowLaunch, launchCampaignThroughEscrow, saveCampaignDraftThroughBackend } from '../lib/escrowLaunch';
 
 const appleEase = [0.16, 1, 0.3, 1];
 
@@ -14,26 +16,33 @@ export default function CampaignBudget() {
   const navigate = useNavigate();
   const location = useLocation();
   const campaignData = location.state?.campaignData;
+  const initialDraftCampaignId = location.state?.draftCampaignId || null;
   const campaignType = campaignData?.campaign_type || 'general';
-  
-  const { createCampaign } = useCampaigns();
-  const { isConnected } = useAccount();
+
+  const { refreshCampaigns } = useCampaigns();
+  const { session } = useAuth();
+  const { address, isConnected } = useAccount();
+  const publicClient = usePublicClient();
+  const { data: walletClient } = useWalletClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [txState, setTxState] = useState<'idle' | 'pending' | 'success'>('idle');
   const [error, setError] = useState('');
+  const [draftCampaignId, setDraftCampaignId] = useState<string | null>(initialDraftCampaignId);
 
-  const [budget, setBudget] = useState<string>(campaignType === 'kol' ? '1500' : '250');
+  const [budget, setBudget] = useState<string>(
+    campaignData?.budget ? String(campaignData.budget) : campaignType === 'kol' ? '1500' : '250'
+  );
   const [audience, setAudience] = useState<'everyone' | 'small'>('everyone');
   const [spotlightRequests, setSpotlightRequests] = useState<string[]>(['']);
   const [agreed, setAgreed] = useState(false);
-  
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+
+  const [startDate, setStartDate] = useState(campaignData?.start_date ? String(campaignData.start_date).slice(0, 10) : '');
+  const [endDate, setEndDate] = useState(campaignData?.end_date ? String(campaignData.end_date).slice(0, 10) : '');
 
   const numBudget = parseFloat(budget) || 0;
   const platformFee = numBudget * 0.15;
   const netBudget = numBudget - platformFee;
-  
+
   const minBudget = campaignType === 'kol' ? 1500 : 250;
   const isBudgetValid = numBudget >= minBudget;
 
@@ -73,13 +82,12 @@ export default function CampaignBudget() {
     setError('');
 
     try {
-      // Mock Smart Contract Transaction Flow
+      if (!address || !walletClient || !publicClient) {
+        throw new Error('Connect the brand wallet before launching the campaign.');
+      }
+
       setTxState('pending');
-      
-      // Simulate wallet signature & blockchain confirmation time (1.5 seconds)
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      setTxState('success');
+      await assertEscrowLaunchBackendReady();
 
       // Combine spotlight requests into overview to not lose data if schema doesn't support it directly
       const validRequests = spotlightRequests.filter(r => r.trim() !== '');
@@ -94,7 +102,6 @@ export default function CampaignBudget() {
         budget: numBudget,
         net_budget: netBudget,
         platform_fee: platformFee,
-        status: 'live',
         start_date: startDate,
         end_date: endDate
       };
@@ -109,17 +116,38 @@ export default function CampaignBudget() {
         delete payload.brand_id;
       }
 
-      // DEBUG: Log what we're sending
-      console.log('🔥 Campaign payload:', JSON.stringify(payload, null, 2));
+      let currentDraftId = draftCampaignId;
+      const draft = await saveCampaignDraftThroughBackend(
+        payload,
+        session?.access_token,
+        currentDraftId
+      );
+      currentDraftId = draft.campaignId;
+      setDraftCampaignId(draft.campaignId);
 
-      await createCampaign(payload);
-      
-      navigate('/brand/campaigns');
+      const authorization = await authorizeEscrowLaunch({
+        campaign: payload,
+        brandWallet: address,
+        walletClient,
+        publicClient
+      });
+
+      const confirmedLaunch = await launchCampaignThroughEscrow(
+        {
+          campaign: payload,
+          brandWallet: address,
+          draftCampaignId: currentDraftId,
+          authorization
+        },
+        session?.access_token
+      );
+
+      setTxState('success');
+      await refreshCampaigns();
+      navigate(`/brand/campaigns/${confirmedLaunch.campaignId}`);
     } catch (err: any) {
-      console.error('🔥 Full error object:', err);
-      const debugMsg = `ERROR: ${err.message}\n\nCODE: ${err.code || 'N/A'}\nHINT: ${err.hint || 'N/A'}\nDETAILS: ${err.details || 'N/A'}\n\nPayload keys: ${Object.keys(campaignData).join(', ')}`;
-      alert(debugMsg);
-      setError(err.message || 'An error occurred while creating the campaign.');
+      console.error('Escrow launch failed:', err);
+      setError(err.message || 'Escrow confirmation failed. No campaign was created.');
       setTxState('idle');
     } finally {
       setIsSubmitting(false);
@@ -130,12 +158,12 @@ export default function CampaignBudget() {
     <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] font-sans selection:bg-cyan/30 flex">
       <BrandSidebar />
       <TopBar />
-      
+
       <main className="flex-1 md:ml-64 mt-20 p-4 md:p-8">
         <div className="max-w-3xl mx-auto">
-          
+
           <div className="flex items-center gap-4 mb-8">
-            <motion.button 
+            <motion.button
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, ease: appleEase }}
@@ -145,7 +173,7 @@ export default function CampaignBudget() {
               <ArrowLeft className="w-5 h-5" />
             </motion.button>
             <div className="flex-1">
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: appleEase }}
@@ -153,7 +181,7 @@ export default function CampaignBudget() {
               >
                 Step 2 of 2 — Budget & Launch
               </motion.div>
-              <motion.h1 
+              <motion.h1
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: appleEase, delay: 0.1 }}
@@ -171,9 +199,9 @@ export default function CampaignBudget() {
             className="glass-panel rounded-[2rem] p-8 relative overflow-hidden border border-white/10"
           >
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-1/2 bg-cyan/5 blur-[100px] rounded-full pointer-events-none"></div>
-            
+
             <form className="relative z-10 space-y-8" onSubmit={handleSubmit}>
-              
+
               {error && (
                 <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
                   {error}
@@ -188,8 +216,8 @@ export default function CampaignBudget() {
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                       <span className="text-white/50 font-medium">USDC</span>
                     </div>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       min={minBudget}
                       value={budget}
                       onChange={(e) => setBudget(e.target.value)}
@@ -258,8 +286,8 @@ export default function CampaignBudget() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-white">Start Date</label>
-                  <input 
-                    type="date" 
+                  <input
+                    type="date"
                     required
                     value={startDate}
                     onChange={e => setStartDate(e.target.value)}
@@ -268,8 +296,8 @@ export default function CampaignBudget() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-white">End Date</label>
-                  <input 
-                    type="date" 
+                  <input
+                    type="date"
                     required
                     value={endDate}
                     onChange={e => setEndDate(e.target.value)}
@@ -282,7 +310,7 @@ export default function CampaignBudget() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-medium text-white">Spotlight Requests</label>
-                  <button 
+                  <button
                     type="button"
                     onClick={handleAddRequest}
                     className="text-xs font-medium text-cyan hover:underline flex items-center gap-1"
@@ -293,14 +321,14 @@ export default function CampaignBudget() {
                 <div className="space-y-3">
                   {spotlightRequests.map((req, index) => (
                     <div key={index} className="flex items-center gap-2">
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         value={req}
                         onChange={(e) => handleRequestChange(index, e.target.value)}
                         placeholder="e.g. Mention @SorsaMarket"
                         className="flex-1 px-4 py-3 rounded-xl bg-black/50 border border-white/10 text-white placeholder:text-white/20 focus:outline-none focus:border-cyan focus:ring-1 focus:ring-cyan transition-all text-sm"
                       />
-                      <button 
+                      <button
                         type="button"
                         onClick={() => handleRemoveRequest(index)}
                         className="p-3 rounded-xl bg-white/5 border border-white/10 text-muted hover:text-white hover:bg-white/10 transition-colors"
@@ -316,7 +344,7 @@ export default function CampaignBudget() {
               <div className="pt-6 border-t border-white/10 space-y-6">
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-6 text-sm text-muted space-y-4 max-h-64 overflow-y-auto">
                   <h3 className="text-white font-semibold text-base mb-2">Smart Contract & Escrow Guidelines</h3>
-                  
+
                   <h4 className="text-white font-medium mt-4">1. Automated Fee Deduction</h4>
                   <p>Upon launching a campaign, our smart contract automatically deducts the 15% platform fee from your total budget. The remaining net budget is immediately locked in a secure escrow smart contract.</p>
 
@@ -327,13 +355,13 @@ export default function CampaignBudget() {
                   <p>After a campaign becomes active on the blockchain, its configuration and budget are considered final. Projects cannot edit, pause, or terminate an ongoing campaign. Allocated campaign budgets are treated as committed and are not eligible for refunds.</p>
 
                   <h4 className="text-white font-medium mt-4">4. Wallet Interaction</h4>
-                  <p>You must connect a Web3 wallet to authorize the funding transaction. Sorsa Market never has direct access to your wallet's private keys. The transaction will prompt your wallet extension to approve the USDC transfer to the escrow contract.</p>
+                  <p>You must connect a Web3 wallet to authorize the funding transaction. SorsaMarket never has direct access to your wallet's private keys. The transaction will prompt your wallet extension to approve the USDC transfer to the escrow contract.</p>
                 </div>
 
                 <label className="flex items-start gap-3 cursor-pointer group">
                   <div className="relative flex items-center justify-center mt-0.5">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       required
                       checked={agreed}
                       onChange={(e) => setAgreed(e.target.checked)}
@@ -352,18 +380,18 @@ export default function CampaignBudget() {
                   {!isConnected ? (
                     <div className="flex flex-col items-end gap-2">
                       <p className="text-sm text-cyan mb-2 font-medium">Connect wallet to authorize payment</p>
-                      <ConnectButton />
+                      <BrandConnectWalletButton />
                     </div>
                   ) : (
                     <>
-                      <button 
+                      <button
                         type="submit"
                         disabled={!isBudgetValid || !agreed || isSubmitting}
                         className="px-10 py-4 rounded-full bg-cyan text-black font-semibold hover:scale-[1.02] transition-all duration-300 shadow-[0_0_20px_rgba(0,212,255,0.3)] hover:shadow-[0_0_30px_rgba(0,212,255,0.5)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none flex items-center gap-2"
                       >
                         {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                        {txState === 'idle' ? 'Fund & Launch Campaign' : 
-                         txState === 'pending' ? 'Confirming Transaction...' : 
+                        {txState === 'idle' ? 'Fund & Launch Campaign' :
+                         txState === 'pending' ? 'Confirming Escrow...' :
                          'Success! Redirecting...'}
                       </button>
                       <p className="text-xs text-muted">

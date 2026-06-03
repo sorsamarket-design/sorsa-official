@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, Target, Zap, Clock, Users, CheckCircle2, ChevronRight, ExternalLink, X, Loader2, AlertCircle, Send } from 'lucide-react';
+import { ArrowLeft, Target, Zap, Clock, Users, DollarSign, CheckCircle2, ChevronRight, ExternalLink, X, Loader2, AlertCircle, Send } from 'lucide-react';
 import CreatorSidebar from '../components/CreatorSidebar';
 import CreatorTopBar from '../components/CreatorTopBar';
-import { mockCreatorProfile } from '../data/mock';
 import { useCampaigns, Campaign } from '../hooks/useCampaigns';
 import { useAuth } from '../context/AuthContext';
 import { useCreatorProfile } from '../hooks/useCreatorProfile';
 import sorsaApi from '../lib/sorsaApi';
+import { formatCampaignTimeline } from '../lib/campaignTime';
 
 const appleEase = [0.16, 1, 0.3, 1];
 
@@ -18,7 +18,7 @@ export default function CreatorCampaignDetail() {
   const { getCampaign, joinCampaign, checkParticipation } = useCampaigns();
   const { user } = useAuth();
   const { profile: creatorProfile } = useCreatorProfile();
-  
+
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [hasJoined, setHasJoined] = useState(false);
   const [participationId, setParticipationId] = useState<string | null>(null);
@@ -27,6 +27,7 @@ export default function CreatorCampaignDetail() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [verificationError, setVerificationError] = useState<string | null>(null);
+  const [, setClockTick] = useState(0);
 
   useEffect(() => {
     async function loadData() {
@@ -37,13 +38,13 @@ export default function CreatorCampaignDetail() {
           getCampaign(id),
           checkParticipation(id)
         ]);
-        
+
         if (campaignData) {
           setCampaign(campaignData);
         } else {
           setError('Campaign not found');
         }
-        
+
         if (participationData) {
           setHasJoined(true);
           setParticipationId(participationData.id);
@@ -57,6 +58,11 @@ export default function CreatorCampaignDetail() {
     loadData();
   }, [id, getCampaign, checkParticipation]);
 
+  useEffect(() => {
+    const interval = window.setInterval(() => setClockTick((tick) => tick + 1), 60_000);
+    return () => window.clearInterval(interval);
+  }, []);
+
   const handleVerifyAndJoin = async () => {
     if (!id || !campaign || !creatorProfile?.x_handle) {
       if (!creatorProfile?.x_handle) {
@@ -67,7 +73,7 @@ export default function CreatorCampaignDetail() {
 
     setIsVerifying(true);
     setVerificationError(null);
-    
+
     try {
       const brandHandle = campaign.brand_profile?.twitter_handle;
       if (!brandHandle) {
@@ -75,14 +81,14 @@ export default function CreatorCampaignDetail() {
         console.warn('Brand has no twitter handle set, skipping follow check.');
       } else {
         const isFollowing = await sorsaApi.checkFollow(creatorProfile.x_handle, cleanBrandHandle);
-        
+
         if (!isFollowing) {
           setVerificationError(`You haven't followed @${cleanBrandHandle} yet. Please follow them and try again.`);
           setIsVerifying(false);
           return;
         }
       }
-      
+
       // Proceed to join
       const newParticipation = await joinCampaign(id);
       if (newParticipation) {
@@ -90,8 +96,8 @@ export default function CreatorCampaignDetail() {
         setParticipationId(newParticipation.id);
       }
       setIsJoinModalOpen(false);
-    } catch (err: any) {
-      setVerificationError(err.message || 'Failed to verify follow status. Please try again.');
+    } catch {
+      setVerificationError('Unable to verify');
     } finally {
       setIsVerifying(false);
     }
@@ -114,23 +120,13 @@ export default function CreatorCampaignDetail() {
       </div>
     );
   }
-  
-  // Use actual mock user score for now (will replace with real profile data in next step)
-  const userSorsaScore = creatorProfile?.sorsa_score || mockCreatorProfile.sorsaScore;
-  
+  const userSorsaScore = creatorProfile?.sorsa_score ?? 0;
+
   // Determine required score
   const requiredScore = campaign.min_sorsa_score || 0;
   const meetsScoreRequirement = userSorsaScore >= requiredScore;
 
-  const calculateDaysRemaining = (endDate?: string) => {
-    if (!endDate) return 30;
-    const end = new Date(endDate).getTime();
-    const now = new Date().getTime();
-    const diff = end - now;
-    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-  };
-
-  const daysRemaining = calculateDaysRemaining(campaign.end_date);
+  const timeline = formatCampaignTimeline(campaign.end_date, campaign.release_at);
 
   const getCleanHandle = (handle: string | undefined) => {
     if (!handle) return '';
@@ -142,16 +138,22 @@ export default function CreatorCampaignDetail() {
   };
 
   const cleanBrandHandle = getCleanHandle(campaign.brand_profile?.twitter_handle);
+  const stats = campaign.campaign_stats?.[0];
+  const allocatedRatio = stats?.max_base_pool ? stats.allocated_base_pool / stats.max_base_pool : 0;
+  const budgetProgress = Math.min(100, stats ? 50 + allocatedRatio * 50 : 0);
+  const poolAmount = Number(campaign.budget || 0).toLocaleString(undefined, {
+    maximumFractionDigits: 2
+  });
 
   return (
     <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] font-sans selection:bg-cyan/30 flex">
       <CreatorSidebar />
       <CreatorTopBar />
-      
+
       <main className="flex-1 md:ml-64 mt-20 p-4 md:p-8">
         <div className="max-w-4xl mx-auto space-y-8">
-          
-          <button 
+
+          <button
             onClick={() => navigate('/creator/campaigns')}
             className="inline-flex items-center gap-2 text-muted hover:text-white transition-colors"
           >
@@ -159,19 +161,19 @@ export default function CreatorCampaignDetail() {
           </button>
 
           {/* Header */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: appleEase }}
             className="glass-panel rounded-[2rem] p-8 border border-white/10 relative overflow-hidden"
           >
             <div className="absolute top-0 right-0 w-96 h-96 bg-cyan/5 blur-[120px] rounded-full pointer-events-none"></div>
-            
+
             <div className="relative z-10 flex flex-col md:flex-row gap-6 items-start justify-between">
               <div className="flex items-start gap-6">
-                <img 
-                  src={campaign.brand_profile?.logo_url || 'https://picsum.photos/seed/default/100/100'} 
-                  alt={campaign.brand_profile?.company_name} 
+                <img
+                  src={campaign.brand_profile?.logo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(campaign.brand_profile?.company_name || 'Brand')}`}
+                  alt={campaign.brand_profile?.company_name}
                   className="w-20 h-20 rounded-2xl bg-white/5 border border-white/10 object-cover"
                   referrerPolicy="no-referrer"
                 />
@@ -185,7 +187,7 @@ export default function CreatorCampaignDetail() {
                     </span>
                   </div>
                   <p className="text-lg text-muted mb-4">{campaign.brand_profile?.company_name}</p>
-                  
+
                   <div className="flex flex-wrap items-center gap-3">
                     <span className={`px-3 py-1 rounded-lg text-sm font-semibold ${
                       campaign.campaign_type === 'kol' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : 'bg-white/10 text-white border border-white/20'
@@ -201,21 +203,42 @@ export default function CreatorCampaignDetail() {
                 </div>
               </div>
 
-              <div className="flex flex-col items-end gap-2">
+              <div className="w-full md:w-64 flex flex-col gap-4">
                 <div className="text-sm text-muted font-medium flex items-center gap-2">
-                  <Clock className="w-4 h-4" /> {daysRemaining} Days Left
+                  <Clock className="w-4 h-4" /> {timeline.label}
+                </div>
+                <div className="space-y-3 rounded-2xl bg-white/5 border border-white/10 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 text-sm font-medium text-muted">
+                      <DollarSign className="w-4 h-4 text-cyan" />
+                      Pool
+                    </div>
+                    <div className="text-lg font-semibold text-white">${poolAmount}</div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-xs font-medium">
+                      <span className="text-muted">Budget Taken</span>
+                      <span className="text-cyan">{Math.round(budgetProgress)}%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-cyan to-blue-500 rounded-full transition-all duration-500"
+                        style={{ width: `${budgetProgress}%` }}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            
+
             {/* Left Column: Details */}
             <div className="md:col-span-2 space-y-8">
-              
+
               {/* Brief */}
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: appleEase, delay: 0.1 }}
@@ -228,7 +251,7 @@ export default function CreatorCampaignDetail() {
               </motion.div>
 
               {/* Campaign Goals */}
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: appleEase, delay: 0.2 }}
@@ -246,7 +269,7 @@ export default function CreatorCampaignDetail() {
               </motion.div>
 
               {/* Requirements & X Follow */}
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: appleEase, delay: 0.3 }}
@@ -279,9 +302,9 @@ export default function CreatorCampaignDetail() {
 
             {/* Right Column: Action */}
             <div className="space-y-8">
-              
+
               {/* Action Card */}
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: appleEase, delay: 0.5 }}
@@ -295,8 +318,8 @@ export default function CreatorCampaignDetail() {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted">End Date</span>
                     <span className="text-white font-medium">
-                      {campaign.end_date 
-                        ? new Date(campaign.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) 
+                      {campaign.end_date
+                        ? new Date(campaign.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                         : 'No set end date'}
                     </span>
                   </div>
@@ -305,7 +328,7 @@ export default function CreatorCampaignDetail() {
                 {(() => {
                   const stats = campaign.campaign_stats?.[0];
                   const isFull = stats ? stats.allocated_base_pool >= stats.max_base_pool : false;
-                  
+
                   if (hasJoined) {
                     return (
                       <div className="space-y-4">
@@ -313,7 +336,7 @@ export default function CreatorCampaignDetail() {
                           <CheckCircle2 className="w-5 h-5" /> Joined Successfully
                         </div>
                         {participationId && (
-                          <button 
+                          <button
                             onClick={() => navigate(`/creator/active/${participationId}`)}
                             className="w-full py-4 rounded-xl bg-cyan text-black font-bold text-lg hover:scale-[1.02] transition-all duration-300 shadow-[0_0_20px_rgba(0,212,255,0.3)] flex items-center justify-center gap-2"
                           >
@@ -334,12 +357,12 @@ export default function CreatorCampaignDetail() {
 
                   return (
                     <div className="space-y-3">
-                      <button 
+                      <button
                         onClick={() => meetsScoreRequirement && setIsJoinModalOpen(true)}
                         disabled={!meetsScoreRequirement}
                         className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all duration-300 ${
-                          meetsScoreRequirement 
-                            ? 'bg-cyan text-black hover:scale-[1.02] shadow-[0_0_20px_rgba(0,212,255,0.3)] hover:shadow-[0_0_30px_rgba(0,212,255,0.5)]' 
+                          meetsScoreRequirement
+                            ? 'bg-cyan text-black hover:scale-[1.02] shadow-[0_0_20px_rgba(0,212,255,0.3)] hover:shadow-[0_0_30px_rgba(0,212,255,0.5)]'
                             : 'bg-white/5 text-muted border border-white/10 cursor-not-allowed'
                         }`}
                       >
@@ -380,14 +403,14 @@ export default function CreatorCampaignDetail() {
               <div className="p-6">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-xl font-semibold text-white tracking-tight">Join Campaign</h3>
-                  <button 
+                  <button
                     onClick={() => setIsJoinModalOpen(false)}
                     className="text-muted hover:text-white transition-colors"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
-                
+
                 <div className="space-y-6">
                   <p className="text-muted text-sm leading-relaxed">
                     To join the <span className="text-white font-medium">{campaign.title}</span> campaign, you need to follow the brand on X. We will verify this using the Sorsa API.
@@ -395,9 +418,9 @@ export default function CreatorCampaignDetail() {
 
                   <div className="bg-white/5 rounded-xl border border-white/10 p-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <img 
-                        src={campaign.brand_profile?.logo_url || 'https://picsum.photos/seed/default/100/100'} 
-                        alt={campaign.brand_profile?.company_name} 
+                      <img
+                        src={campaign.brand_profile?.logo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(campaign.brand_profile?.company_name || 'Brand')}`}
+                        alt={campaign.brand_profile?.company_name}
                         className="w-10 h-10 rounded-full object-cover border border-white/10"
                         referrerPolicy="no-referrer"
                       />
@@ -406,7 +429,7 @@ export default function CreatorCampaignDetail() {
                         <p className="text-sm text-cyan">@{cleanBrandHandle}</p>
                       </div>
                     </div>
-                    <button 
+                    <button
                       onClick={() => window.open(`https://x.com/${cleanBrandHandle}`, '_blank')}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 text-sm font-medium transition-colors border border-blue-500/20"
                     >
@@ -415,7 +438,7 @@ export default function CreatorCampaignDetail() {
                   </div>
 
                   {verificationError && (
-                    <motion.div 
+                    <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-medium flex items-center gap-2"

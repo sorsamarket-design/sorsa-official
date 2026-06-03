@@ -32,7 +32,7 @@ export default function BrandSidebar() {
     <>
       {/* Mobile Overlay */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
           onClick={() => setIsOpen(false)}
         />
@@ -40,33 +40,33 @@ export default function BrandSidebar() {
 
       <aside className={`w-64 h-screen fixed left-0 top-0 bg-[#0A0A1E] border-r border-white/10 flex flex-col z-50 transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
         <div className="p-6 flex items-center justify-between">
-          <div 
-            className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity" 
+          <div
+            className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => navigate('/')}
           >
-            <img src="/sosomarket.png" alt="Logo" className="w-8 h-8 object-contain" />
+            <img src="/SorsaMarketlogo.PNG" alt="Logo" className="w-8 h-8 object-contain" />
             <span className="text-xl font-semibold text-white tracking-tight">SorsaMarket</span>
           </div>
-          <button 
+          <button
             className="md:hidden text-muted hover:text-white"
             onClick={() => setIsOpen(false)}
           >
             <X className="w-6 h-6" />
           </button>
         </div>
-        
+
         <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
           {navLinks.map((link) => {
             const Icon = link.icon;
             const isActive = location.pathname === link.path || location.pathname.startsWith(link.path + '/');
-            
+
             return (
               <button
                 key={link.name}
                 onClick={() => navigate(link.path)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-                  isActive 
-                    ? 'bg-cyan/10 text-cyan border border-cyan/20 shadow-[inset_0_1px_1px_rgba(0,212,255,0.2)]' 
+                  isActive
+                    ? 'bg-cyan/10 text-cyan border border-cyan/20 shadow-[inset_0_1px_1px_rgba(0,212,255,0.2)]'
                     : 'text-muted hover:bg-white/5 hover:text-white border border-transparent'
                 }`}
               >
@@ -79,9 +79,9 @@ export default function BrandSidebar() {
 
         <div className="p-4 border-t border-white/10">
           <div className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3">
-            <img 
-              src={user?.user_metadata?.avatar_url || "https://picsum.photos/seed/brand/100/100"} 
-              alt="Brand User" 
+            <img
+              src={user?.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.user_metadata?.full_name || user?.email || 'Brand User')}`}
+              alt="Brand User"
               className="w-10 h-10 rounded-full border border-white/20 object-cover"
               referrerPolicy="no-referrer"
             />

@@ -1,32 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Wallet, MapPin, Edit2, Star, Target, DollarSign, Calendar, Check, X, Zap } from 'lucide-react';
+import { Wallet, MapPin, Edit2, Star, Target, DollarSign, Check, X } from 'lucide-react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import BindWalletButton from '../components/BindWalletButton';
 import CreatorSidebar from '../components/CreatorSidebar';
 import CreatorTopBar from '../components/CreatorTopBar';
-import { mockCreatorProfile } from '../data/mock';
 
 const appleEase = [0.16, 1, 0.3, 1];
 
 import { useCreatorProfile } from '../hooks/useCreatorProfile';
 import { useAuth } from '../context/AuthContext';
+import { getInitialsAvatarUrl, normalizeAvatarUrl } from '../lib/avatars';
+import { supabase } from '../lib/supabase';
 
 export default function CreatorProfile() {
   const { user } = useAuth();
-  const { profile, loading, setProfile } = useCreatorProfile();
+  const { profile, loading, setProfile, refreshProfile } = useCreatorProfile();
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({
-    bio: '',
-    tags: ''
+    bio: ''
   });
 
   // Update edit form when profile loads
   useEffect(() => {
     if (profile) {
       setEditForm({
-        bio: profile.bio || '',
-        tags: (profile.tags || []).join(', ')
+        bio: profile.bio || ''
       });
     }
   }, [profile]);
@@ -40,19 +41,38 @@ export default function CreatorProfile() {
     );
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (!user || !profile || isSaving) return;
+
+    const bio = editForm.bio.trim();
+
+    setIsSaving(true);
+    setSaveMessage(null);
+
+    const { error: bioError } = await supabase
+      .from('creator_profiles')
+      .update({ bio })
+      .eq('id', user.id);
+
+    if (bioError) {
+      setIsSaving(false);
+      setSaveMessage(bioError.message || 'Unable to save profile changes.');
+      return;
+    }
+
+    setIsSaving(false);
+
     setProfile({
       ...profile,
-      bio: editForm.bio,
-      tags: editForm.tags.split(',').map(t => t.trim()).filter(t => t)
+      bio
     });
+    await refreshProfile();
     setIsEditing(false);
   };
 
   const handleCancel = () => {
     setEditForm({
-      bio: profile.bio || '',
-      tags: (profile.tags || []).join(', ')
+      bio: profile.bio || ''
     });
     setIsEditing(false);
   };
@@ -61,24 +81,24 @@ export default function CreatorProfile() {
     <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] font-sans selection:bg-cyan/30 flex">
       <CreatorSidebar />
       <CreatorTopBar />
-      
+
       <main className="flex-1 md:ml-64 mt-20 p-4 md:p-8">
         <div className="max-w-4xl mx-auto space-y-8">
-          
+
           {/* Header Section */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: appleEase }}
             className="glass-panel rounded-[2rem] p-8 border border-white/10 relative overflow-hidden"
           >
             <div className="absolute top-0 right-0 w-96 h-96 bg-cyan/5 blur-[120px] rounded-full pointer-events-none"></div>
-            
+
             <div className="relative z-10 flex flex-col md:flex-row gap-8 items-start">
               <div className="shrink-0 relative group">
-                <img 
-                  src={user?.user_metadata?.avatar_url || profile?.avatar_url || `https://picsum.photos/seed/${profile?.x_handle || 'creator'}/150/150`} 
-                  alt={profile?.full_name || profile?.x_handle || 'Creator'} 
+                <img
+                  src={normalizeAvatarUrl(profile?.avatar_url) || normalizeAvatarUrl(user?.user_metadata?.avatar_url) || getInitialsAvatarUrl(profile?.x_handle || 'Creator')}
+                  alt={profile?.full_name || profile?.x_handle || 'Creator'}
                   className="w-32 h-32 rounded-[2rem] object-cover border-2 border-white/10"
                   referrerPolicy="no-referrer"
                 />
@@ -91,16 +111,18 @@ export default function CreatorProfile() {
                       {profile?.full_name || profile?.x_handle || 'Creator Account'}
                     </h1>
                     <p className="text-cyan font-medium mt-1">@{profile?.x_handle || 'username'}</p>
-                    
-                    <div className="flex items-center gap-2 text-muted mt-2">
-                      <MapPin className="w-4 h-4" />
-                      <span className="text-sm">{profile?.country || 'Location not set'}</span>
-                    </div>
+
+                    {profile?.country && (
+                      <div className="flex items-center gap-2 text-muted mt-2">
+                        <MapPin className="w-4 h-4" />
+                        <span className="text-sm">{profile.country}</span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-3">
                     {!isEditing ? (
-                      <button 
+                      <button
                         onClick={() => setIsEditing(true)}
                         className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm font-medium hover:bg-white/10 transition-colors flex items-center gap-2"
                       >
@@ -108,22 +130,29 @@ export default function CreatorProfile() {
                       </button>
                     ) : (
                       <>
-                        <button 
+                        <button
                           onClick={handleCancel}
                           className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm font-medium hover:bg-white/10 transition-colors flex items-center gap-2"
                         >
                           <X className="w-4 h-4" /> Cancel
                         </button>
-                        <button 
+                        <button
                           onClick={handleSave}
-                          className="px-4 py-2 rounded-xl bg-cyan text-black text-sm font-semibold hover:scale-105 transition-transform flex items-center gap-2 shadow-[0_0_15px_rgba(0,212,255,0.3)]"
+                          disabled={isSaving}
+                          className="px-4 py-2 rounded-xl bg-cyan text-black text-sm font-semibold hover:scale-105 transition-transform flex items-center gap-2 shadow-[0_0_15px_rgba(0,212,255,0.3)] disabled:opacity-60 disabled:hover:scale-100"
                         >
-                          <Check className="w-4 h-4" /> Save
+                          <Check className="w-4 h-4" /> {isSaving ? 'Saving...' : 'Save'}
                         </button>
                       </>
                     )}
                   </div>
                 </div>
+
+                {saveMessage && (
+                  <div className="mt-4 text-sm font-medium text-red-400">
+                    {saveMessage}
+                  </div>
+                )}
 
                 <div className="mt-6">
                   {!isEditing ? (
@@ -131,7 +160,7 @@ export default function CreatorProfile() {
                   ) : (
                     <div>
                       <label className="block text-xs text-muted mb-1 uppercase tracking-wider">Bio</label>
-                      <textarea 
+                      <textarea
                         value={editForm.bio}
                         onChange={e => setEditForm({...editForm, bio: e.target.value})}
                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan/50 transition-colors resize-none h-24"
@@ -140,27 +169,6 @@ export default function CreatorProfile() {
                   )}
                 </div>
 
-                <div className="mt-6">
-                  {!isEditing ? (
-                    <div className="flex flex-wrap gap-2">
-                      {(profile?.tags || []).map(tag => (
-                        <span key={tag} className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-medium text-white">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <div>
-                      <label className="block text-xs text-muted mb-1 uppercase tracking-wider">Tags (comma separated)</label>
-                      <input 
-                        type="text" 
-                        value={editForm.tags}
-                        onChange={e => setEditForm({...editForm, tags: e.target.value})}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-cyan/50 transition-colors"
-                      />
-                    </div>
-                  )}
-                </div>
               </div>
             </div>
           </motion.div>
@@ -169,7 +177,7 @@ export default function CreatorProfile() {
             {/* Left Column: Score & Wallet */}
             <div className="space-y-8">
               {/* Sorsa Score */}
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: appleEase, delay: 0.1 }}
@@ -179,15 +187,15 @@ export default function CreatorProfile() {
                 <div className="relative inline-flex items-center justify-center">
                   <svg className="w-40 h-40 transform -rotate-90">
                     <circle cx="80" cy="80" r="72" stroke="currentColor" strokeWidth="12" fill="transparent" className="text-white/5" />
-                    <circle 
-                      cx="80" cy="80" r="72" 
-                      stroke="currentColor" 
-                      strokeWidth="12" 
-                      fill="transparent" 
-                      strokeDasharray="452.39" 
-                      strokeDashoffset={452.39 - (452.39 * (profile?.sorsa_score || 0)) / 1000} 
-                      className="text-cyan drop-shadow-[0_0_15px_rgba(0,212,255,0.4)]" 
-                      strokeLinecap="round" 
+                    <circle
+                      cx="80" cy="80" r="72"
+                      stroke="currentColor"
+                      strokeWidth="12"
+                      fill="transparent"
+                      strokeDasharray="452.39"
+                      strokeDashoffset={452.39 - (452.39 * (profile?.sorsa_score || 0)) / 1000}
+                      className="text-cyan drop-shadow-[0_0_15px_rgba(0,212,255,0.4)]"
+                      strokeLinecap="round"
                     />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -210,7 +218,7 @@ export default function CreatorProfile() {
                 </div>
               </motion.div>
 
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: appleEase, delay: 0.2 }}
@@ -225,7 +233,7 @@ export default function CreatorProfile() {
                     <p className="text-xs text-muted">Base Network</p>
                   </div>
                 </div>
-                
+
                 <div className="flex justify-center">
                   <BindWalletButton />
                 </div>
@@ -234,9 +242,9 @@ export default function CreatorProfile() {
 
             {/* Right Column: Stats, Campaigns, Reviews */}
             <div className="md:col-span-2 space-y-8">
-              
+
               {/* Stats Row */}
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: appleEase, delay: 0.3 }}
@@ -265,36 +273,15 @@ export default function CreatorProfile() {
               </motion.div>
 
               {/* Past Campaigns */}
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: appleEase, delay: 0.4 }}
                 className="glass-panel rounded-[2rem] p-6 border border-white/10"
               >
-                <div className="space-y-4">
-                  {(profile?.pastCampaigns || []).map(campaign => (
-                    <div key={campaign.id} className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <img src={campaign.brandLogo} alt={campaign.brand} className="w-10 h-10 rounded-full bg-white/10" referrerPolicy="no-referrer" />
-                        <div>
-                          <h4 className="font-medium text-white text-sm">{campaign.name}</h4>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs text-muted">{campaign.brand}</span>
-                            <span className="w-1 h-1 rounded-full bg-white/20"></span>
-                            <span className="text-xs text-muted">{campaign.date}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm font-semibold text-cyan mb-1">+${campaign.earned}</div>
-                        <div className="flex items-center gap-0.5 justify-end">
-                          {[1, 2, 3, 4, 5].map(star => (
-                            <Star key={star} className={`w-3 h-3 ${star <= campaign.rating ? 'text-yellow-400 fill-yellow-400' : 'text-white/20'}`} />
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                <h3 className="text-lg font-semibold text-white mb-4">Past Campaigns</h3>
+                <div className="p-6 rounded-xl bg-white/5 border border-white/10 text-center text-muted text-sm">
+                  Completed campaign history will appear here.
                 </div>
               </motion.div>
 

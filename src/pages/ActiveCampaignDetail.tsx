@@ -14,7 +14,7 @@ export default function ActiveCampaignDetail() {
   const navigate = useNavigate();
   const { getParticipationDetail, submitLink, getParticipationSubmissions } = useCampaigns();
   const { profile: creatorProfile } = useCreatorProfile();
-  
+
   const [participation, setParticipation] = useState<any>(null);
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -32,7 +32,7 @@ export default function ActiveCampaignDetail() {
         getParticipationDetail(id),
         getParticipationSubmissions(id)
       ]);
-      
+
       if (partData) setParticipation(partData);
       if (subsData) setSubmissions(subsData);
     } catch (err) {
@@ -49,7 +49,7 @@ export default function ActiveCampaignDetail() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
+
     if (!id || !creatorProfile || !participation) return;
 
     if (submissions.length >= 10) {
@@ -121,12 +121,12 @@ export default function ActiveCampaignDetail() {
   return (
     <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] font-sans selection:bg-cyan-500/30 flex">
       <CreatorSidebar />
-      
+
       <main className="flex-1 md:ml-64 p-4 md:p-8">
         <div className="max-w-4xl mx-auto space-y-8">
           {/* Header */}
           <div className="flex items-center justify-between">
-            <button 
+            <button
               onClick={() => navigate('/creator/active')}
               className="group flex items-center gap-2 text-muted hover:text-white transition-colors"
             >
@@ -142,7 +142,7 @@ export default function ActiveCampaignDetail() {
           </div>
 
           {/* Campaign Card */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-xl relative overflow-hidden group"
@@ -152,8 +152,8 @@ export default function ActiveCampaignDetail() {
             </div>
 
             <div className="relative flex flex-col md:flex-row gap-8 items-start">
-              <img 
-                src={campaign?.brand_profile?.logo_url || 'https://picsum.photos/seed/default/100/100'} 
+              <img
+                src={campaign?.brand_profile?.logo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(campaign?.brand_profile?.company_name || 'Brand')}`}
                 alt={campaign?.title}
                 className="w-20 h-20 rounded-2xl border border-white/10 shadow-2xl"
               />
@@ -182,7 +182,7 @@ export default function ActiveCampaignDetail() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-6">
               {/* Submission Form */}
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 className="bg-white/5 border border-white/10 rounded-3xl p-8"
@@ -202,7 +202,7 @@ export default function ActiveCampaignDetail() {
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                           <LinkIcon className="w-5 h-5 text-muted group-focus-within:text-cyan transition-colors" />
                         </div>
-                        <input 
+                        <input
                           type="url"
                           required
                           placeholder="https://x.com/your-handle/status/..."
@@ -212,7 +212,7 @@ export default function ActiveCampaignDetail() {
                         />
                       </div>
                       {error && (
-                        <motion.div 
+                        <motion.div
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
                           onClick={() => debugError && setShowBugModal(true)}
@@ -224,7 +224,7 @@ export default function ActiveCampaignDetail() {
                       )}
                     </div>
 
-                    <button 
+                    <button
                       type="submit"
                       disabled={isSubmitting || !url}
                       className="w-full py-4 rounded-2xl bg-cyan text-black font-bold text-lg hover:bg-cyan/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-[0_0_20px_rgba(34,211,238,0.2)] flex items-center justify-center gap-2"
@@ -259,7 +259,7 @@ export default function ActiveCampaignDetail() {
                   submissions.map((sub, idx) => {
                     const config = getStatusConfig(sub.status);
                     return (
-                      <motion.div 
+                      <motion.div
                         key={sub.id}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -273,9 +273,9 @@ export default function ActiveCampaignDetail() {
                               {config.label}
                             </div>
                           </div>
-                          <a 
-                            href={sub.tweet_url} 
-                            target="_blank" 
+                          <a
+                            href={sub.tweet_url}
+                            target="_blank"
                             rel="noopener noreferrer"
                             className="text-sm text-cyan hover:underline truncate block"
                           >
@@ -284,14 +284,14 @@ export default function ActiveCampaignDetail() {
                         </div>
                         <div className="flex items-center gap-2">
                           {sub.feedback && (
-                            <button 
+                            <button
                               title={sub.feedback}
                               className="p-2 rounded-lg bg-white/5 text-yellow-400 hover:bg-yellow-400/10 transition-colors"
                             >
                               <AlertCircle className="w-4 h-4" />
                             </button>
                           )}
-                          <a 
+                          <a
                             href={sub.tweet_url}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -309,7 +309,7 @@ export default function ActiveCampaignDetail() {
 
             {/* Sidebar Stats */}
             <div className="space-y-6">
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 className="bg-white/5 border border-white/10 rounded-3xl p-6"
@@ -354,13 +354,13 @@ export default function ActiveCampaignDetail() {
       {/* Bug/Error Modal */}
       <AnimatePresence>
         {(debugError) && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
           >
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
@@ -370,7 +370,7 @@ export default function ActiveCampaignDetail() {
                 <AlertCircle className="w-6 h-6" />
                 <h3 className="text-xl font-bold">Submission Error Detected</h3>
               </div>
-              
+
               <div className="bg-black/40 rounded-xl p-4 mb-6 font-mono text-sm text-red-300/90 break-all overflow-y-auto max-h-48 border border-white/5">
                 {typeof debugError === 'object' ? JSON.stringify(debugError, null, 2) : String(debugError)}
               </div>
@@ -380,7 +380,7 @@ export default function ActiveCampaignDetail() {
                   This error usually means the database RLS policies are blocking the update. Please ensure you have created the <code className="text-cyan">campaign_submissions</code> table and its policies.
                 </p>
                 <div className="flex gap-3">
-                  <button 
+                  <button
                     onClick={() => {
                       setError('');
                       setDebugError(null);
@@ -389,7 +389,7 @@ export default function ActiveCampaignDetail() {
                   >
                     Dismiss
                   </button>
-                  <button 
+                  <button
                     onClick={() => window.location.reload()}
                     className="flex-1 py-3 rounded-xl bg-red-500/20 border border-red-500/30 text-red-400 font-medium hover:bg-red-500/30 transition-colors"
                   >

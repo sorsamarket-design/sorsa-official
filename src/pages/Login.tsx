@@ -18,7 +18,7 @@ export default function Login() {
           className="text-center mb-16"
         >
           <div className="inline-flex items-center gap-3 mb-8 cursor-pointer" onClick={() => navigate('/')}>
-            <img src="/sosomarket.png" alt="Logo" className="w-8 h-8 object-contain" />
+            <img src="/SorsaMarketlogo.PNG" alt="Logo" className="w-8 h-8 object-contain" />
             <div className="text-xl font-semibold tracking-tight text-white">Sorsa<span className="text-cyan">.market</span></div>
           </div>
           <h1 className="text-4xl md:text-5xl font-semibold tracking-tight mb-4 text-white">Welcome to Sorsa</h1>
