@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowLeft, Plus, X, AlertCircle, Loader2 } from 'lucide-react';
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi';
+import { isAddressEqual } from 'viem';
 import BrandConnectWalletButton from '../components/BrandConnectWalletButton';
 import BrandSidebar from '../components/BrandSidebar';
 import TopBar from '../components/TopBar';
@@ -24,6 +25,12 @@ export default function CampaignBudget() {
   const { address, isConnected } = useAccount();
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
+  const walletClientAddress = walletClient?.account?.address;
+  const isWalletSynced = Boolean(
+    address &&
+    walletClientAddress &&
+    isAddressEqual(address, walletClientAddress)
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [txState, setTxState] = useState<'idle' | 'pending' | 'success'>('idle');
   const [error, setError] = useState('');
@@ -76,7 +83,7 @@ export default function CampaignBudget() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isBudgetValid || !agreed || !isConnected) return;
+    if (!isBudgetValid || !agreed || !isConnected || !isWalletSynced) return;
 
     setIsSubmitting(true);
     setError('');
@@ -102,8 +109,8 @@ export default function CampaignBudget() {
         budget: numBudget,
         net_budget: netBudget,
         platform_fee: platformFee,
-        start_date: startDate,
-        end_date: endDate
+        start_date: startDate || null,
+        end_date: endDate || null
       };
 
       // Fix: rename brand_id -> brand_profile_id if needed (handles old cached state)
@@ -116,14 +123,12 @@ export default function CampaignBudget() {
         delete payload.brand_id;
       }
 
-      let currentDraftId = draftCampaignId;
-      const draft = await saveCampaignDraftThroughBackend(
+      const savedDraft = await saveCampaignDraftThroughBackend(
         payload,
         session?.access_token,
-        currentDraftId
+        draftCampaignId
       );
-      currentDraftId = draft.campaignId;
-      setDraftCampaignId(draft.campaignId);
+      setDraftCampaignId(savedDraft.campaignId);
 
       const authorization = await authorizeEscrowLaunch({
         campaign: payload,
@@ -136,7 +141,7 @@ export default function CampaignBudget() {
         {
           campaign: payload,
           brandWallet: address,
-          draftCampaignId: currentDraftId,
+          draftCampaignId: savedDraft.campaignId,
           authorization
         },
         session?.access_token
@@ -386,16 +391,19 @@ export default function CampaignBudget() {
                     <>
                       <button
                         type="submit"
-                        disabled={!isBudgetValid || !agreed || isSubmitting}
+                        disabled={!isBudgetValid || !agreed || isSubmitting || !isWalletSynced}
                         className="px-10 py-4 rounded-full bg-cyan text-black font-semibold hover:scale-[1.02] transition-all duration-300 shadow-[0_0_20px_rgba(0,212,255,0.3)] hover:shadow-[0_0_30px_rgba(0,212,255,0.5)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none flex items-center gap-2"
                       >
                         {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                        {txState === 'idle' ? 'Fund & Launch Campaign' :
+                        {!isWalletSynced ? 'Syncing Wallet...' :
+                         txState === 'idle' ? 'Fund & Launch Campaign' :
                          txState === 'pending' ? 'Confirming Escrow...' :
                          'Success! Redirecting...'}
                       </button>
                       <p className="text-xs text-muted">
-                        Payment is made in USDC via smart contract. Campaign goes live immediately upon confirmation.
+                        {!isWalletSynced
+                          ? 'Wallet changed. Waiting for the connected wallet to finish syncing.'
+                          : 'Payment is made in USDC via smart contract. Campaign goes live immediately upon confirmation.'}
                       </p>
                     </>
                   )}

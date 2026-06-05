@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ArrowLeft, Users, Star, Plus, X } from 'lucide-react';
+import { ArrowLeft, Users, Star, Plus, X, Loader2 } from 'lucide-react';
 import BrandSidebar from '../components/BrandSidebar';
 import TopBar from '../components/TopBar';
 import { useBrandProfiles } from '../hooks/useBrandProfiles';
+import { useAuth } from '../context/AuthContext';
+import { saveCampaignDraftThroughBackend } from '../lib/escrowLaunch';
 
 const appleEase = [0.16, 1, 0.3, 1];
 const defaultCategories = ['DeFi', 'AI', 'NFT', 'ZK', 'DePIN'];
@@ -13,7 +15,11 @@ export default function CampaignNew() {
   const navigate = useNavigate();
   const location = useLocation();
   const draftCampaign = location.state?.draftCampaign;
+  const initialBrandProfileId = draftCampaign?.brand_profile_id || location.state?.brandProfileId || '';
   const { profiles, loading } = useBrandProfiles();
+  const { session } = useAuth();
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [draftError, setDraftError] = useState('');
   
   const [campaignType, setCampaignType] = useState<'general' | 'kol'>(draftCampaign?.campaign_type === 'kol' ? 'kol' : 'general');
   const [minSorsaScore, setMinSorsaScore] = useState(Number(draftCampaign?.min_sorsa_score || 500));
@@ -25,7 +31,7 @@ export default function CampaignNew() {
   );
 
   const [formData, setFormData] = useState({
-    brand_profile_id: draftCampaign?.brand_profile_id || '',
+    brand_profile_id: initialBrandProfileId,
     title: draftCampaign?.title || '',
     goal: draftCampaign?.goal || '',
     overview: draftCampaign?.overview || ''
@@ -60,30 +66,46 @@ export default function CampaignNew() {
     setSelectedCategories(selectedCategories.filter(c => c !== cat));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.brand_profile_id) {
       alert("Please select a brand profile first. If you don't have one, create it from the dashboard.");
       return;
     }
-    
-    navigate('/brand/campaigns/new/budget', { 
-      state: { 
-        draftCampaignId: draftCampaign?.id || null,
-        campaignData: {
-          ...formData,
-          campaign_type: campaignType,
-          min_sorsa_score: campaignType === 'kol' ? minSorsaScore : null,
-          language: campaignType === 'kol' ? language : '',
-          categories: selectedCategories,
-          budget: draftCampaign?.budget || undefined,
-          net_budget: draftCampaign?.net_budget || undefined,
-          platform_fee: draftCampaign?.platform_fee || undefined,
-          start_date: draftCampaign?.start_date || '',
-          end_date: draftCampaign?.end_date || ''
+
+    const campaignData = {
+      ...formData,
+      campaign_type: campaignType,
+      min_sorsa_score: campaignType === 'kol' ? minSorsaScore : null,
+      language: campaignType === 'kol' ? language : '',
+      categories: selectedCategories,
+      budget: Number(draftCampaign?.budget || 0),
+      net_budget: Number(draftCampaign?.net_budget || 0),
+      platform_fee: Number(draftCampaign?.platform_fee || 0),
+      start_date: draftCampaign?.start_date || null,
+      end_date: draftCampaign?.end_date || null
+    };
+
+    setIsSavingDraft(true);
+    setDraftError('');
+    try {
+      const savedDraft = await saveCampaignDraftThroughBackend(
+        campaignData,
+        session?.access_token,
+        draftCampaign?.id || null
+      );
+
+      navigate('/brand/campaigns/new/budget', {
+        state: {
+          draftCampaignId: savedDraft.campaignId,
+          campaignData
         }
-      } 
-    });
+      });
+    } catch (err: any) {
+      setDraftError(err.message || 'Campaign draft could not be saved.');
+    } finally {
+      setIsSavingDraft(false);
+    }
   };
 
   return (
@@ -133,6 +155,11 @@ export default function CampaignNew() {
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-1/2 bg-cyan/5 blur-[100px] rounded-full pointer-events-none"></div>
             
             <form className="relative z-10 space-y-8" onSubmit={handleSubmit}>
+              {draftError && (
+                <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                  {draftError}
+                </div>
+              )}
               
               {/* Campaign Type */}
               <div className="space-y-4">
@@ -322,9 +349,11 @@ export default function CampaignNew() {
               <div className="pt-6 border-t border-white/10 flex justify-end">
                 <button 
                   type="submit"
-                  className="px-8 py-4 rounded-full bg-cyan text-black font-semibold hover:scale-[1.02] transition-transform duration-300 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]"
+                  disabled={isSavingDraft}
+                  className="px-8 py-4 rounded-full bg-cyan text-black font-semibold hover:scale-[1.02] transition-transform duration-300 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center gap-2"
                 >
-                  Next: Budget & Launch
+                  {isSavingDraft && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {isSavingDraft ? 'Saving Draft...' : 'Next: Budget & Launch'}
                 </button>
               </div>
 

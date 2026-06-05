@@ -1,6 +1,7 @@
 import {
   hexToSignature,
   isAddress,
+  isAddressEqual,
   keccak256,
   parseUnits,
   stringify,
@@ -130,6 +131,10 @@ export async function authorizeEscrowLaunch({
   }
   if (!isAddress(brandWallet)) {
     throw new Error('Connected wallet is not a valid address.');
+  }
+  const walletClientAddress = walletClient?.account?.address;
+  if (!walletClientAddress || !isAddressEqual(walletClientAddress, brandWallet)) {
+    throw new Error('Connected wallet changed. Reconnect the wallet you want to fund this campaign with, then try again.');
   }
 
   const chainId = await publicClient.getChainId();
