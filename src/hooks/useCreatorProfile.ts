@@ -1,19 +1,36 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
-import sorsaApi from '../lib/sorsaApi';
 
-export function useCreatorProfile() {
-  const { user } = useAuth();
+type CreatorProfileContextValue = {
+  profile: any;
+  loading: boolean;
+  error: string | null;
+  refreshProfile: () => Promise<void>;
+  setProfile: React.Dispatch<React.SetStateAction<any>>;
+};
+
+const CreatorProfileContext = createContext<CreatorProfileContextValue | null>(null);
+
+export function CreatorProfileProvider({ children }: { children: React.ReactNode }) {
+  const { user, role, loading: authLoading } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchProfile = useCallback(async () => {
-    if (!user) return;
+    if (authLoading) return;
+
+    if (!user || role !== 'creator') {
+      setProfile(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
     
     try {
       setLoading(true);
+      setError(null);
       const { data, error } = await supabase
         .from('creator_profiles')
         .select('*')
@@ -28,17 +45,27 @@ export function useCreatorProfile() {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [authLoading, role, user]);
 
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
 
-  return {
+  const value = useMemo(() => ({
     profile,
     loading,
     error,
     refreshProfile: fetchProfile,
     setProfile
-  };
+  }), [error, fetchProfile, loading, profile]);
+
+  return React.createElement(CreatorProfileContext.Provider, { value }, children);
+}
+
+export function useCreatorProfile() {
+  const context = useContext(CreatorProfileContext);
+  if (!context) {
+    throw new Error('useCreatorProfile must be used within CreatorProfileProvider');
+  }
+  return context;
 }

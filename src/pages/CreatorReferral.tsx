@@ -1,21 +1,94 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Copy, CheckCircle2, Users, Star, ArrowRight, X } from 'lucide-react';
 import CreatorSidebar from '../components/CreatorSidebar';
 import CreatorTopBar from '../components/CreatorTopBar';
 import { useAuth } from '../context/AuthContext';
 import { useCreatorProfile } from '../hooks/useCreatorProfile';
+import { supabase } from '../lib/supabase';
+import { buildReferralCode, ensureCreatorReferralCode } from '../lib/referrals';
 
 const appleEase = [0.16, 1, 0.3, 1];
+
+function slugifyReferralName(value: string | null | undefined) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/^@/, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
 
 export default function CreatorReferral() {
   const [copied, setCopied] = useState(false);
   const [showPointScale, setShowPointScale] = useState(false);
+  const [search, setSearch] = useState('');
+  const [referralActivity, setReferralActivity] = useState<Array<{ id: string; username: string; score: number; date: string; status: string; points: number }>>([]);
+  const [loadingActivity, setLoadingActivity] = useState(true);
   const { user } = useAuth();
-  const { profile } = useCreatorProfile();
-  const referralCode = (profile?.x_handle || user?.id || 'creator').replace('@', '');
-  const referralLink = `https://sorsa.market/ref/${referralCode}`;
-  const referralActivity: Array<{ id: string; username: string; score: number; date: string; status: string; points: number | string }> = [];
+  const { profile, refreshProfile } = useCreatorProfile();
+  const referralCode = profile?.referral_code || buildReferralCode(profile?.x_handle, user?.id);
+  const referrerName = slugifyReferralName(profile?.x_handle || profile?.full_name || user?.email?.split('@')[0]);
+  const referralLink = `${window.location.origin}/ref/${referralCode}${referrerName ? `/${referrerName}` : ''}`;
+  const filteredActivity = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return referralActivity;
+    return referralActivity.filter((ref) => ref.username.toLowerCase().includes(query));
+  }, [referralActivity, search]);
+  const totalReferralPoints = referralActivity.reduce((sum, ref) => sum + Number(ref.points || 0), 0);
+  const eligibleReferrals = referralActivity.filter((ref) => ref.status === 'Qualified').length;
+
+  useEffect(() => {
+    const loadReferrals = async () => {
+      if (!user || !supabase) return;
+
+      try {
+        setLoadingActivity(true);
+        if (!profile?.referral_code) {
+          await ensureCreatorReferralCode(user.id, profile?.x_handle);
+          await refreshProfile();
+        }
+
+        const { data, error } = await supabase
+          .from('referrals')
+          .select(`
+            id,
+            status,
+            points_awarded,
+            created_at,
+            qualified_at,
+            referred_profile:creator_profiles!referrals_referred_id_fkey (
+              id,
+              x_handle,
+              full_name,
+              sorsa_score
+            )
+          `)
+          .eq('referrer_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        setReferralActivity((data || []).map((ref: any) => {
+          const creator = ref.referred_profile;
+          return {
+            id: ref.id,
+            username: creator?.x_handle || creator?.full_name || 'Creator',
+            score: Number(creator?.sorsa_score || 0),
+            date: new Date(ref.created_at).toLocaleDateString(),
+            status: ref.status === 'qualified' ? 'Qualified' : 'Pending',
+            points: Number(ref.points_awarded || 0),
+          };
+        }));
+      } catch (error) {
+        console.error('Error loading referrals:', error);
+      } finally {
+        setLoadingActivity(false);
+      }
+    };
+
+    loadReferrals();
+  }, [profile?.referral_code, profile?.x_handle, refreshProfile, user]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(referralLink);
@@ -58,12 +131,12 @@ export default function CreatorReferral() {
                 <div className="flex gap-4 pt-4">
                   <div className="glass-panel rounded-2xl p-5 border border-white/10 flex-1 relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-3 opacity-10"><Star className="w-12 h-12" /></div>
-                    <div className="text-3xl font-bold text-cyan mb-1">0</div>
+                    <div className="text-3xl font-bold text-cyan mb-1">{totalReferralPoints.toLocaleString()}</div>
                     <div className="text-sm text-muted font-medium">Total Points from Referral</div>
                   </div>
                   <div className="glass-panel rounded-2xl p-5 border border-white/10 flex-1 relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-3 opacity-10"><Users className="w-12 h-12" /></div>
-                    <div className="text-3xl font-bold text-white mb-1">0</div>
+                    <div className="text-3xl font-bold text-white mb-1">{eligibleReferrals.toLocaleString()}</div>
                     <div className="text-sm text-muted font-medium">Eligible Referrals</div>
                   </div>
                 </div>
@@ -86,7 +159,7 @@ export default function CreatorReferral() {
               </button>
             </div>
             <div className="relative">
-              <input type="text" placeholder="Type a username..." className="w-full bg-white/5 border border-white/10 rounded-2xl pl-6 pr-16 py-4 text-white focus:outline-none focus:border-cyan/50 transition-colors" />
+              <input value={search} onChange={(event) => setSearch(event.target.value)} type="text" placeholder="Type a username..." className="w-full bg-white/5 border border-white/10 rounded-2xl pl-6 pr-16 py-4 text-white focus:outline-none focus:border-cyan/50 transition-colors" />
               <button className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl bg-white text-black flex items-center justify-center hover:scale-105 transition-transform">
                 <ArrowRight className="w-5 h-5" />
               </button>
@@ -108,16 +181,20 @@ export default function CreatorReferral() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
-                    {referralActivity.length === 0 ? (
+                    {loadingActivity ? (
+                      <tr>
+                        <td colSpan={5} className="p-8 text-center text-muted">Loading referral activity...</td>
+                      </tr>
+                    ) : filteredActivity.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="p-8 text-center text-muted">Referral activity will appear here after invited creators join and complete campaigns.</td>
                       </tr>
-                    ) : referralActivity.map((ref) => (
+                    ) : filteredActivity.map((ref) => (
                       <tr key={ref.id} className="hover:bg-white/5 transition-colors">
                         <td className="p-6 text-white font-medium">{ref.username}</td>
                         <td className="p-6 text-white">{ref.score}</td>
                         <td className="p-6 text-muted">{ref.date}</td>
-                        <td className="p-6"><span className={`text-sm font-medium ${ref.status === 'Active' ? 'text-green-400' : 'text-yellow-400'}`}>{ref.status}</span></td>
+                        <td className="p-6"><span className={`text-sm font-medium ${ref.status === 'Qualified' ? 'text-green-400' : 'text-yellow-400'}`}>{ref.status}</span></td>
                         <td className="p-6 text-right text-white font-semibold">{ref.points}</td>
                       </tr>
                     ))}

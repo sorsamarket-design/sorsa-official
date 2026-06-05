@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { normalizeAvatarUrl } from '../lib/avatars';
+import { attachSavedReferralToCreator, buildReferralCode, ensureCreatorReferralCode } from '../lib/referrals';
 
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -35,6 +36,7 @@ export default function AuthCallback() {
         if (existingProfileError) throw existingProfileError;
 
         if (!existingProfile) {
+          const referralCode = buildReferralCode(xHandle, user.id);
           const { error: profileError } = await supabase.from('profiles').upsert({
             id: user.id,
             role: 'creator',
@@ -47,8 +49,11 @@ export default function AuthCallback() {
           const { error: creatorError } = await supabase.from('creator_profiles').insert({
             id: user.id,
             x_handle: xHandle,
+            referral_code: referralCode,
           });
           if (creatorError) throw creatorError;
+
+          await attachSavedReferralToCreator(user.id);
 
           try {
             const { default: sorsaApi } = await import('../lib/sorsaApi');
@@ -70,6 +75,8 @@ export default function AuthCallback() {
           } catch (sorsaErr) {
             console.warn('Initial Sorsa sync failed:', sorsaErr);
           }
+        } else {
+          await ensureCreatorReferralCode(user.id, xHandle);
         }
 
         const { error: updateError } = await supabase.auth.updateUser({ data: { role: 'creator' } });
