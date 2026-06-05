@@ -24,7 +24,7 @@ export default function BrandLogin() {
 
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
-      navigate('/campaigns');
+      navigate('/brand/profiles');
     } catch (err) {
       console.error('Email login error:', err);
       setErrorVisible(true);

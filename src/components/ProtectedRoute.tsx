@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: 'brand' | 'creator';
+  requiredRole?: 'brand' | 'creator' | 'admin';
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole }) => {
@@ -19,14 +19,26 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
     );
   }
 
-  if (!session) return <Navigate to="/login" state={{ from: location }} replace />;
+  if (!session) {
+    const loginPath = requiredRole === 'admin' ? '/auth/admin' : '/login';
+    return <Navigate to={loginPath} state={{ from: location }} replace />;
+  }
 
   if (requiredRole && role === null) {
     return <div className="min-h-screen flex items-center justify-center bg-[#0B0A0F] text-red-400">Error</div>;
   }
 
-  if (requiredRole && role !== requiredRole) {
-    const fallback = role === 'brand' ? '/brand/dashboard' : '/creator/dashboard';
+  const canAccessRequiredRole =
+    !requiredRole ||
+    role === requiredRole ||
+    (requiredRole === 'brand' && role === 'creator');
+
+  if (requiredRole && !canAccessRequiredRole) {
+    if (requiredRole === 'admin') {
+      return <Navigate to="/auth/admin" state={{ from: location }} replace />;
+    }
+
+    const fallback = role === 'brand' ? '/brand/dashboard' : role === 'admin' ? '/admin/dashboard' : '/creator/dashboard';
     if (location.pathname === fallback) {
       return <div className="min-h-screen flex items-center justify-center bg-[#0B0A0F] text-red-400">Error</div>;
     }

@@ -26,18 +26,38 @@ export default function BrandAuthCallback() {
         const fullName = metadata.full_name || metadata.name || user.email?.split('@')[0];
         const avatarUrl = normalizeAvatarUrl(metadata.avatar_url);
 
-        const { error: profileError } = await supabase.from('profiles').upsert({
-          id: user.id,
-          role: 'brand',
-          full_name: fullName,
-          avatar_url: avatarUrl,
-          updated_at: new Date().toISOString(),
-        });
-        if (profileError) throw profileError;
+        const { data: existingProfile, error: existingProfileError } = await supabase
+          .from('profiles')
+          .select('id, role')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (existingProfileError) throw existingProfileError;
 
-        const { error: updateError } = await supabase.auth.updateUser({ data: { role: 'brand' } });
-        if (updateError) throw updateError;
-        setTimeout(() => navigate('/campaigns'), 500);
+        if (existingProfile) {
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .update({
+              full_name: fullName,
+              avatar_url: avatarUrl,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', user.id);
+          if (profileError) throw profileError;
+        } else {
+          const { error: profileError } = await supabase.from('profiles').insert({
+            id: user.id,
+            role: 'brand',
+            full_name: fullName,
+            avatar_url: avatarUrl,
+            updated_at: new Date().toISOString(),
+          });
+          if (profileError) throw profileError;
+
+          const { error: updateError } = await supabase.auth.updateUser({ data: { role: 'brand' } });
+          if (updateError) throw updateError;
+        }
+
+        setTimeout(() => navigate('/brand/profiles'), 500);
       } catch (err) {
         console.error('Brand auth callback error:', err);
         setErrorVisible(true);

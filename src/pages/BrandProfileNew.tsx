@@ -13,7 +13,7 @@ export default function BrandProfileNew() {
   const [searchParams] = useSearchParams();
   const editId = searchParams.get('edit');
   
-  const { createProfile, profiles } = useBrandProfiles();
+  const { createProfile, updateProfile, profiles } = useBrandProfiles();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -69,8 +69,14 @@ export default function BrandProfileNew() {
 
     try {
       if (editId) {
-        // TODO: implement update profile
-        alert("Edit functionality not fully implemented yet");
+        await updateProfile(editId, {
+          company_name: formData.company_name,
+          website: formData.website,
+          twitter_handle: formData.twitter_handle,
+          telegram_handle: formData.telegram_handle,
+          description: formData.description,
+          logo_url: formData.logo_url
+        }, logoFile || undefined);
         navigate('/brand/profiles');
         return;
       }
@@ -79,6 +85,7 @@ export default function BrandProfileNew() {
         company_name: formData.company_name,
         website: formData.website,
         twitter_handle: formData.twitter_handle,
+        telegram_handle: formData.telegram_handle,
         description: formData.description,
         logo_url: formData.logo_url
       }, logoFile || undefined);

@@ -8,6 +8,9 @@ import '@rainbow-me/rainbowkit/styles.css';
 
 import App from './App.tsx';
 import { AuthProvider } from './context/AuthContext';
+import { CreatorProfileProvider } from './hooks/useCreatorProfile';
+import { BrandProfilesProvider } from './hooks/useBrandProfiles';
+import { TelegramPreferencesProvider } from './hooks/useTelegramPreferences';
 import { supabase } from './lib/supabase';
 import './index.css';
 
@@ -30,7 +33,13 @@ createRoot(document.getElementById('root')!).render(
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider theme={darkTheme()}>
           <AuthProvider>
-            <App />
+            <BrandProfilesProvider>
+              <CreatorProfileProvider>
+                <TelegramPreferencesProvider>
+                  <App />
+                </TelegramPreferencesProvider>
+              </CreatorProfileProvider>
+            </BrandProfilesProvider>
           </AuthProvider>
         </RainbowKitProvider>
       </QueryClientProvider>

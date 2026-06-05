@@ -93,6 +93,11 @@ const Hero = () => {
   const { disconnect } = useDisconnect();
 
   const handleRoleEntry = async (targetRole: 'brand' | 'creator') => {
+    if (targetRole === 'brand' && session) {
+      navigate('/brand/profiles');
+      return;
+    }
+
     if (role === targetRole) {
       navigate(targetRole === 'brand' ? '/brand/campaigns' : '/creator/campaigns');
       return;

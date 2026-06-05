@@ -5,13 +5,18 @@ import { Plus, Edit2, Megaphone, ExternalLink, Loader2 } from 'lucide-react';
 import BrandSidebar from '../components/BrandSidebar';
 import TopBar from '../components/TopBar';
 import { XLogo } from '../components/XLogo';
-import { useBrandProfiles } from '../hooks/useBrandProfiles';
+import { MAX_BRAND_PROFILES, useBrandProfiles } from '../hooks/useBrandProfiles';
 
 const appleEase = [0.16, 1, 0.3, 1];
 
 export default function BrandProfiles() {
   const navigate = useNavigate();
   const { profiles, loading } = useBrandProfiles();
+  const profileLimitReached = profiles.length >= MAX_BRAND_PROFILES;
+
+  const startNewCampaign = (brandProfileId?: string) => {
+    navigate('/brand/campaigns/new', brandProfileId ? { state: { brandProfileId } } : undefined);
+  };
 
   return (
     <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] font-sans selection:bg-cyan/30 flex">
@@ -35,11 +40,14 @@ export default function BrandProfiles() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, ease: appleEase, delay: 0.1 }}
-              onClick={() => navigate('/brand/profiles/new')}
-              className="px-6 py-3 rounded-full bg-cyan text-black font-semibold flex items-center gap-2 hover:scale-[1.02] transition-transform duration-300 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]"
+              onClick={() => {
+                if (!profileLimitReached) navigate('/brand/profiles/new');
+              }}
+              disabled={profileLimitReached}
+              className="px-6 py-3 rounded-full bg-cyan text-black font-semibold flex items-center gap-2 hover:scale-[1.02] transition-transform duration-300 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               <Plus className="w-5 h-5" />
-              New Brand Profile
+              {profileLimitReached ? 'Profile Limit Reached' : 'New Brand Profile'}
             </motion.button>
           </div>
 
@@ -113,7 +121,7 @@ export default function BrandProfiles() {
                       Edit
                     </button>
                     <button 
-                      onClick={() => navigate('/brand/campaigns/new')}
+                      onClick={() => startNewCampaign(profile.id)}
                       className="py-2.5 rounded-full bg-white/10 border border-white/20 text-white text-sm font-medium flex items-center justify-center gap-2 hover:bg-white/20 transition-colors"
                     >
                       <Megaphone className="w-4 h-4" />

@@ -17,7 +17,7 @@ export default function BrandSettings() {
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const { selectedProfile, loading, refreshProfiles } = useBrandProfiles();
-  const { signOut } = useAuth();
+  const { role, signOut } = useAuth();
   const { disconnect } = useDisconnect();
   const [formData, setFormData] = useState({
     company_name: '',
@@ -62,6 +62,11 @@ export default function BrandSettings() {
   const logo = formData.logo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.company_name || 'Brand')}`;
 
   const handleLogout = async () => {
+    if (role === 'creator') {
+      navigate('/creator/campaigns');
+      return;
+    }
+
     disconnect();
     await signOut();
     navigate('/login');
@@ -101,7 +106,7 @@ export default function BrandSettings() {
               <div className="pt-8">
                 <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 font-medium">
                   <LogOut className="w-5 h-5" />
-                  <span>Log Out</span>
+                  <span>{role === 'creator' ? 'Exit Brand Workspace' : 'Log Out'}</span>
                 </button>
               </div>
             </div>
