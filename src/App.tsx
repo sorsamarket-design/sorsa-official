@@ -15,6 +15,8 @@ import CampaignDetail from './pages/CampaignDetail';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminCampaigns from './pages/AdminCampaigns';
 import AdminApprovals from './pages/AdminApprovals';
+import AdminTickets from './pages/AdminTickets';
+import AdminLogin from './pages/AdminLogin';
 import CreatorDashboard from './pages/CreatorDashboard';
 import CreatorProfile from './pages/CreatorProfile';
 import CreatorBrowse from './pages/CreatorBrowse';
@@ -28,6 +30,7 @@ import CreatorWallet from './pages/CreatorWallet';
 import Contact from './pages/Contact';
 import CreatorSettings from './pages/CreatorSettings';
 import CreatorReferral from './pages/CreatorReferral';
+import ReferralLanding from './pages/ReferralLanding';
 import PublicProfile from './pages/PublicProfile';
 import NotFound from './pages/NotFound';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -62,10 +65,13 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/auth/brand" element={<BrandLogin />} />
         <Route path="/auth/brand/register" element={<BrandRegister />} />
+        <Route path="/auth/admin" element={<AdminLogin />} />
         <Route path="/auth/creator" element={<CreatorLogin />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/auth/callback/brand" element={<BrandAuthCallback />} />
         <Route path="/campaigns" element={<CampaignsRedirect />} />
+        <Route path="/ref/:code" element={<ReferralLanding />} />
+        <Route path="/ref/:code/:name" element={<ReferralLanding />} />
         
         {/* Brand Routes */}
         <Route path="/brand/dashboard" element={<ProtectedRoute requiredRole="brand"><BrandDashboard /></ProtectedRoute>} />
@@ -79,9 +85,10 @@ export default function App() {
         <Route path="/brand/settings" element={<ProtectedRoute requiredRole="brand"><BrandSettings /></ProtectedRoute>} />
         
         {/* Admin Routes */}
-        <Route path="/admin/dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-        <Route path="/admin/campaigns" element={<ProtectedRoute><AdminCampaigns /></ProtectedRoute>} />
-        <Route path="/admin/approvals" element={<ProtectedRoute><AdminApprovals /></ProtectedRoute>} />
+        <Route path="/admin/dashboard" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
+        <Route path="/admin/campaigns" element={<ProtectedRoute requiredRole="admin"><AdminCampaigns /></ProtectedRoute>} />
+        <Route path="/admin/approvals" element={<ProtectedRoute requiredRole="admin"><AdminApprovals /></ProtectedRoute>} />
+        <Route path="/admin/tickets" element={<ProtectedRoute requiredRole="admin"><AdminTickets /></ProtectedRoute>} />
 
         {/* Creator Routes */}
         <Route path="/creator/dashboard" element={<ProtectedRoute requiredRole="creator"><CreatorDashboard /></ProtectedRoute>} />

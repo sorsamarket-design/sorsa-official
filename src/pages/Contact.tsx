@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Mail, MessageCircle, Bug, ChevronDown, ChevronUp, Send } from 'lucide-react';
 import CreatorSidebar from '../components/CreatorSidebar';
 import CreatorTopBar from '../components/CreatorTopBar';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 
 const appleEase = [0.16, 1, 0.3, 1];
 
@@ -30,19 +32,42 @@ const faqs = [
 ];
 
 export default function Contact() {
+  const { user } = useAuth();
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [issueType, setIssueType] = useState('bug');
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user || !supabase) {
+      setSubmitError('Unable to submit report.');
+      return;
+    }
+
     setIsSubmitting(true);
-    setTimeout(() => {
+    setSubmitError(null);
+    setSubmitSuccess(false);
+
+    try {
+      const { error } = await supabase.from('support_tickets').insert({
+        creator_id: user.id,
+        issue_type: issueType,
+        description: description.trim(),
+        status: 'open'
+      });
+      if (error) throw error;
       setIsSubmitting(false);
       setDescription('');
-      alert('Report submitted successfully. Our team will look into it.');
-    }, 1500);
+      setIssueType('bug');
+      setSubmitSuccess(true);
+    } catch (error) {
+      console.error('Error submitting support ticket:', error);
+      setSubmitError('Unable to submit report.');
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -209,6 +234,9 @@ export default function Contact() {
                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan/50 transition-colors resize-none h-32"
                       />
                     </div>
+
+                    {submitError && <p className="text-sm text-red-400">{submitError}</p>}
+                    {submitSuccess && <p className="text-sm text-green-400">Report submitted.</p>}
 
                     <button 
                       type="submit"

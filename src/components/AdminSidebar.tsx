@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Megaphone, ShieldCheck, X } from 'lucide-react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Inbox, LayoutDashboard, LogOut, Megaphone, ShieldCheck, X } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export default function AdminSidebar() {
+  const { user, signOut } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
@@ -21,7 +24,13 @@ export default function AdminSidebar() {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin/dashboard' },
     { icon: Megaphone, label: 'Campaigns', path: '/admin/campaigns' },
     { icon: ShieldCheck, label: 'Approvals', path: '/admin/approvals' },
+    { icon: Inbox, label: 'Tickets', path: '/admin/tickets' },
   ];
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/auth/admin', { replace: true });
+  };
 
   return (
     <>
@@ -73,11 +82,18 @@ export default function AdminSidebar() {
             <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 font-bold">
               AD
             </div>
-            <div>
+            <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-white">Admin User</p>
-              <p className="text-xs text-muted">Super Admin</p>
+              <p className="text-xs text-muted truncate">{user?.email || 'Super Admin'}</p>
             </div>
           </div>
+          <button
+            onClick={handleLogout}
+            className="mt-3 w-full px-4 py-3 rounded-xl border border-white/10 text-muted hover:text-white hover:bg-white/5 transition-colors inline-flex items-center justify-center gap-2"
+          >
+            <LogOut className="w-4 h-4" />
+            <span className="text-sm font-medium">Log out</span>
+          </button>
         </div>
       </aside>
     </>
