@@ -4,11 +4,13 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, Target, Zap, Clock, Users, DollarSign, CheckCircle2, ChevronRight, ExternalLink, X, Loader2, AlertCircle, Send } from 'lucide-react';
 import CreatorSidebar from '../components/CreatorSidebar';
 import CreatorTopBar from '../components/CreatorTopBar';
+import LinkifiedText from '../components/LinkifiedText';
 import { useCampaigns, Campaign } from '../hooks/useCampaigns';
 import { useAuth } from '../context/AuthContext';
 import { useCreatorProfile } from '../hooks/useCreatorProfile';
 import sorsaApi from '../lib/sorsaApi';
 import { formatCampaignTimeline } from '../lib/campaignTime';
+import { splitCampaignBrief } from '../lib/campaignBrief';
 
 const appleEase = [0.16, 1, 0.3, 1];
 
@@ -28,6 +30,7 @@ export default function CreatorCampaignDetail() {
   const [error, setError] = useState<string | null>(null);
   const [verificationError, setVerificationError] = useState<string | null>(null);
   const [, setClockTick] = useState(0);
+  const campaignBrief = splitCampaignBrief(campaign?.overview);
 
   useEffect(() => {
     async function loadData() {
@@ -127,6 +130,7 @@ export default function CreatorCampaignDetail() {
   const meetsScoreRequirement = userSorsaScore >= requiredScore;
 
   const timeline = formatCampaignTimeline(campaign.end_date, campaign.release_at);
+  const displayStatus = timeline.phase === 'payment' || timeline.phase === 'ready' ? 'ended' : campaign.status;
 
   const getCleanHandle = (handle: string | undefined) => {
     if (!handle) return '';
@@ -181,9 +185,13 @@ export default function CreatorCampaignDetail() {
                   <div className="flex items-center gap-3 mb-2">
                     <h1 className="text-3xl font-semibold text-white tracking-tight">{campaign.title}</h1>
                     <span className={`px-2.5 py-1 rounded-md text-xs font-semibold ${
-                      campaign.status === 'live' ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-white/10 text-white border border-white/20'
+                      displayStatus === 'ended'
+                        ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
+                        : campaign.status === 'live'
+                          ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                          : 'bg-white/10 text-white border border-white/20'
                     }`}>
-                      {campaign.status}
+                      {displayStatus}
                     </span>
                   </div>
                   <p className="text-lg text-muted mb-4">{campaign.brand_profile?.company_name}</p>
@@ -246,7 +254,7 @@ export default function CreatorCampaignDetail() {
               >
                 <h2 className="text-xl font-semibold text-white mb-4">Campaign Brief</h2>
                 <div className="text-muted leading-relaxed text-sm md:text-base whitespace-pre-wrap">
-                  {campaign.overview}
+                  <LinkifiedText text={campaignBrief.overview} />
                 </div>
               </motion.div>
 
@@ -265,6 +273,16 @@ export default function CreatorCampaignDetail() {
                       </div>
                       <p className="text-white text-sm md:text-base leading-relaxed">{campaign.goal}</p>
                     </div>
+                    {campaignBrief.spotlightRequests.map((request, index) => (
+                      <div key={`${request}-${index}`} className="flex items-start gap-3">
+                        <div className="mt-1 w-5 h-5 rounded-full bg-cyan/10 flex items-center justify-center shrink-0">
+                          <Target className="w-3 h-3 text-cyan" />
+                        </div>
+                        <p className="text-white text-sm md:text-base leading-relaxed">
+                          <LinkifiedText text={request} />
+                        </p>
+                      </div>
+                    ))}
                 </div>
               </motion.div>
 

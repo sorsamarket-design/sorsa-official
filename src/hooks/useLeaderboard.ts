@@ -31,7 +31,7 @@ export function useLeaderboard() {
       const { data: authProfiles, error: profileError } = creatorIds.length
         ? await supabase
             .from('profiles')
-            .select('id, full_name, avatar_url')
+            .select('id, role, full_name, avatar_url')
             .in('id', creatorIds)
         : { data: [], error: null };
 
@@ -39,22 +39,27 @@ export function useLeaderboard() {
 
       const authProfileById = new Map((authProfiles || []).map((profile) => [profile.id, profile]));
 
-      const mappedData: LeaderboardCreator[] = (creatorProfiles || []).map((profile) => {
-        const authProfile = authProfileById.get(profile.id) as any;
-        const handle = profile.x_handle || authProfile?.full_name || 'Unknown';
-        const avatar =
-          resolveCreatorAvatarUrl(profile.avatar_url, authProfile?.avatar_url) ||
-          getInitialsAvatarUrl(profile.full_name || authProfile?.full_name || handle);
+      const mappedData: LeaderboardCreator[] = (creatorProfiles || [])
+        .filter((profile) => {
+          const authProfile = authProfileById.get(profile.id) as any;
+          return authProfile?.role === 'creator';
+        })
+        .map((profile) => {
+          const authProfile = authProfileById.get(profile.id) as any;
+          const handle = profile.x_handle || authProfile?.full_name || 'Unknown';
+          const avatar =
+            resolveCreatorAvatarUrl(profile.avatar_url, authProfile?.avatar_url) ||
+            getInitialsAvatarUrl(profile.full_name || authProfile?.full_name || handle);
 
-        return {
-          id: profile.id,
-          handle,
-          avatar,
-          sorsaScore: profile.sorsa_score || 0,
-          points: profile.activity_points || 0,
-          campaignsCompleted: profile.campaigns_completed || 0,
-        };
-      });
+          return {
+            id: profile.id,
+            handle,
+            avatar,
+            sorsaScore: profile.sorsa_score || 0,
+            points: profile.activity_points || 0,
+            campaignsCompleted: profile.campaigns_completed || 0,
+          };
+        });
 
       setLeaderboard(mappedData);
     } catch (err: any) {

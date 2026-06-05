@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { calculateReward } from '../lib/rewardCalc';
@@ -22,6 +23,9 @@ export interface Campaign {
   start_date?: string;
   end_date?: string;
   release_at?: string | null;
+  brand_name?: string | null;
+  brand_logo_url?: string | null;
+  brand_twitter_handle?: string | null;
   brand_profile?: {
     company_name: string;
     logo_url: string;
@@ -48,8 +52,48 @@ function isEscrowConfirmedCampaign(campaign: Partial<Campaign> | null | undefine
   );
 }
 
+function withBrandSnapshot<T extends Partial<Campaign> | null | undefined>(campaign: T): T {
+  if (!campaign) return campaign;
+
+  const profile = campaign.brand_profile || {};
+  return {
+    ...campaign,
+    brand_profile: {
+      ...profile,
+      company_name: campaign.brand_name || profile.company_name || '',
+      logo_url: campaign.brand_logo_url || profile.logo_url || '',
+      twitter_handle: campaign.brand_twitter_handle || profile.twitter_handle || ''
+    }
+  } as T;
+}
+
+function getBackendBaseUrl() {
+  const launchEndpoint = import.meta.env.VITE_ESCROW_LAUNCH_ENDPOINT;
+  if (!launchEndpoint) {
+    throw new Error('Backend endpoint is not configured');
+  }
+
+  const url = new URL(launchEndpoint);
+  url.pathname = url.pathname.replace(/\/campaigns\/launch\/?$/, '').replace(/\/$/, '');
+  url.search = '';
+  url.hash = '';
+  return url.toString().replace(/\/$/, '');
+}
+
+async function getBackendAuthHeaders() {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) throw new Error('Not authenticated');
+
+  return {
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  };
+}
+
 export function useCampaigns(brandId?: string) {
-  const { user, role } = useAuth();
+  const { user } = useAuth();
+  const location = useLocation();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -75,7 +119,8 @@ export function useCampaigns(brandId?: string) {
       if (brandId) {
         campaignsQuery = campaignsQuery.eq('brand_profile_id', brandId);
       }
-      if (role === 'brand') {
+      const isBrandWorkspace = location.pathname.startsWith('/brand');
+      if (isBrandWorkspace) {
         campaignsQuery = campaignsQuery.eq('owner_id', user.id);
       }
 
@@ -91,16 +136,16 @@ export function useCampaigns(brandId?: string) {
       }
 
       const campaignsData = (campaignsRes.data || []).filter((campaign) => {
-        if (role === 'brand') {
+        if (isBrandWorkspace) {
           return campaign.status === 'draft' || isEscrowConfirmedCampaign(campaign);
         }
-        return campaign.status === 'live' && isEscrowConfirmedCampaign(campaign);
+        return ['live', 'completed'].includes(campaign.status) && isEscrowConfirmedCampaign(campaign);
       });
       const statsData = statsRes.data || [];
 
       // 3. Merge stats into campaigns
       const mergedData = campaignsData.map(campaign => ({
-        ...campaign,
+        ...withBrandSnapshot(campaign),
         campaign_stats: statsData.filter(s => s.campaign_id === campaign.id)
       }));
 
@@ -111,7 +156,7 @@ export function useCampaigns(brandId?: string) {
     } finally {
       setLoading(false);
     }
-  }, [user, brandId]);
+  }, [user, brandId, location.pathname]);
 
   useEffect(() => {
     fetchCampaigns();
@@ -152,7 +197,7 @@ export function useCampaigns(brandId?: string) {
 
       if (campaignRes.error) throw campaignRes.error;
       
-      const campaign = campaignRes.data as Campaign;
+      const campaign = withBrandSnapshot(campaignRes.data as Campaign) as Campaign;
       if (!isEscrowConfirmedCampaign(campaign)) return null;
       if (statsRes.data) {
         campaign.campaign_stats = [statsRes.data];
@@ -221,7 +266,33 @@ export function useCampaigns(brandId?: string) {
       console.error('Error fetching active campaigns:', error);
       return [];
     }
-    return (data || []).filter((item: any) => item.campaign?.status === 'live' && isEscrowConfirmedCampaign(item.campaign));
+    return (data || [])
+      .map((item: any) => ({ ...item, campaign: withBrandSnapshot(item.campaign) }))
+      .filter((item: any) => item.campaign?.status === 'live' && isEscrowConfirmedCampaign(item.campaign));
+  }, [user]);
+
+  const getCreatorPastCampaigns = useCallback(async () => {
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from('campaign_participants')
+      .select(`
+        *,
+        campaign:campaigns (
+          *,
+          brand_profile:brand_profiles!brand_profile_id (*)
+        )
+      `)
+      .eq('creator_id', user.id)
+      .order('joined_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching past campaigns:', error);
+      return [];
+    }
+    return (data || [])
+      .map((item: any) => ({ ...item, campaign: withBrandSnapshot(item.campaign) }))
+      .filter((item: any) => item.campaign?.status === 'completed' && isEscrowConfirmedCampaign(item.campaign));
   }, [user]);
 
   const getParticipationDetail = useCallback(async (participationId: string) => {
@@ -239,8 +310,9 @@ export function useCampaigns(brandId?: string) {
         .single();
 
       if (error) throw error;
-      if (!data?.campaign || data.campaign.status !== 'live' || !isEscrowConfirmedCampaign(data.campaign)) return null;
-      return data;
+      const result = data ? { ...data, campaign: withBrandSnapshot(data.campaign) } : data;
+      if (!result?.campaign || result.campaign.status !== 'live' || !isEscrowConfirmedCampaign(result.campaign)) return null;
+      return result;
     } catch (err: any) {
       console.error('Error fetching participation detail:', err);
       return null;
@@ -280,15 +352,17 @@ export function useCampaigns(brandId?: string) {
   }, []);
 
   const updateSubmissionStatus = useCallback(async (submissionId: string, status: 'approved' | 'revision' | 'rejected', feedback?: string) => {
-    const { data, error } = await supabase
-      .from('campaign_submissions')
-      .update({ status, feedback })
-      .eq('id', submissionId)
-      .select()
-      .single();
+    const response = await fetch(`${getBackendBaseUrl()}/submissions/${encodeURIComponent(submissionId)}/status`, {
+      method: 'POST',
+      headers: await getBackendAuthHeaders(),
+      body: JSON.stringify({ status, feedback })
+    });
+    const result = await response.json().catch(() => null);
+    if (!response.ok) {
+      throw new Error(result?.error || 'Submission status update failed');
+    }
 
-    if (error) throw error;
-    return data;
+    return result.submission;
   }, []);
 
   const finalizeCampaign = useCallback(async (campaignId: string) => {
@@ -329,7 +403,7 @@ export function useCampaigns(brandId?: string) {
 
           // Award Points
           await supabase.from('points_log').insert([{
-            user_id: sub.creator_id,
+            creator_id: sub.creator_id,
             amount: 10, // 10 points per approved tweet
             event_type: 'tweet_rewarded',
             description: `Rewarded for tweet in campaign: ${campaignId}`
@@ -399,6 +473,7 @@ export function useCampaigns(brandId?: string) {
     joinCampaign,
     checkParticipation,
     getCreatorActiveCampaigns,
+    getCreatorPastCampaigns,
     getParticipationDetail,
     submitLink,
     getParticipationSubmissions,

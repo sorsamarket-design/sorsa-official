@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { User, Megaphone, PlayCircle, Trophy, Mail, Wallet, Settings, Gift, X, History } from 'lucide-react';
+import { LayoutDashboard, User, Megaphone, PlayCircle, Trophy, Mail, Wallet, Settings, Gift, X, History } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCreatorProfile } from '../hooks/useCreatorProfile';
 import { getInitialsAvatarUrl, normalizeAvatarUrl } from '../lib/avatars';
@@ -24,7 +24,7 @@ export default function CreatorSidebar() {
   }, [location.pathname]);
 
   const navItems = [
-    { icon: User, label: 'Dashboard', path: '/creator/dashboard' },
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/creator/dashboard' },
     { icon: User, label: 'Profile', path: '/creator/profile' },
     { icon: Megaphone, label: 'Campaigns', path: '/creator/campaigns' },
     { icon: PlayCircle, label: 'My Campaigns', path: '/creator/active' },

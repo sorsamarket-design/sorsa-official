@@ -5,6 +5,7 @@ import { Search, Filter, Clock, DollarSign, Users, Target, Zap, ArrowUpRight, Lo
 import CreatorSidebar from '../components/CreatorSidebar';
 import CreatorTopBar from '../components/CreatorTopBar';
 import { useCampaigns } from '../hooks/useCampaigns';
+import { formatCampaignTimeline } from '../lib/campaignTime';
 
 const appleEase = [0.16, 1, 0.3, 1];
 
@@ -38,7 +39,8 @@ export default function CreatorBrowse() {
       baseReward: Math.floor(c.budget * 0.425),
       performanceBonus: Math.floor(c.budget * 0.425),
       deadline: c.end_date!,
-            createdAt: c.created_at,
+      releaseAt: c.release_at,
+      createdAt: c.created_at,
       previewText: c.overview ? c.overview.substring(0, 150) + '...' : '',
       brief: {
         objectives: c.overview,
@@ -50,8 +52,36 @@ export default function CreatorBrowse() {
     }));
   }, [campaigns]);
 
+  const pastCampaignsMapped = useMemo(() => {
+    return campaigns
+      .filter(c => c.status === 'completed' && c.brand_profile?.company_name)
+      .map(c => ({
+        id: c.id,
+        title: c.title,
+        brandName: c.brand_profile!.company_name,
+        brandLogo: c.brand_profile?.logo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.brand_profile?.company_name || 'Brand')}`,
+        categories: c.categories || [],
+        tier: c.campaign_type === 'kol' ? 'KOL' : 'General',
+        budget: c.budget,
+        stats: c.campaign_stats?.[0] || null,
+        baseReward: Math.floor(c.budget * 0.425),
+        performanceBonus: Math.floor(c.budget * 0.425),
+        deadline: c.end_date || c.release_at || c.created_at,
+        releaseAt: c.release_at,
+        createdAt: c.created_at,
+        previewText: c.overview ? c.overview.substring(0, 150) + '...' : '',
+        brief: {
+          objectives: c.overview,
+          spotlightRequests: [],
+          requirements: c.min_sorsa_score ? [`${c.min_sorsa_score}+ Sorsa score`] : [],
+          startDate: c.start_date || c.created_at,
+          endDate: c.end_date || c.release_at || c.created_at
+        }
+      }));
+  }, [campaigns]);
+
   const filteredCampaigns = useMemo(() => {
-    const sourceData = activeTab === 'live' ? liveCampaignsMapped : [];
+    const sourceData = activeTab === 'live' ? liveCampaignsMapped : pastCampaignsMapped;
     let result = [...sourceData];
 
     if (activeCategory !== 'All') {
@@ -78,7 +108,7 @@ export default function CreatorBrowse() {
     }
 
     return result;
-  }, [activeCategory, activeTier, activeSort, budgetRange, activeTab, liveCampaignsMapped]);
+  }, [activeCategory, activeTier, activeSort, budgetRange, activeTab, liveCampaignsMapped, pastCampaignsMapped]);
 
   return (
     <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] font-sans selection:bg-cyan/30 flex">
@@ -280,15 +310,19 @@ export default function CreatorBrowse() {
                             const stats = (campaign as any).stats;
                             isFull = stats.allocated_base_pool >= stats.max_base_pool;
                           }
+                          const timeline = formatCampaignTimeline(campaign.deadline, (campaign as any).releaseAt);
+                          const isEnded = timeline.phase === 'payment' || timeline.phase === 'ready';
                           return (
                             <div className={`px-2.5 py-1 rounded-md text-xs font-semibold ${
                               activeTab === 'past'
                                 ? 'bg-gray-500/10 text-gray-400 border border-gray-500/20'
+                                : isEnded
+                                  ? 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
                                 : isFull
                                   ? 'bg-red-500/10 text-red-400 border border-red-500/20'
                                   : 'bg-green-500/10 text-green-400 border border-green-500/20'
                             }`}>
-                              {activeTab === 'past' ? 'Completed' : (isFull ? 'Full' : 'Available')}
+                              {activeTab === 'past' ? 'Completed' : (isEnded ? 'Ended' : (isFull ? 'Full' : 'Available'))}
                             </div>
                           );
                         })()}

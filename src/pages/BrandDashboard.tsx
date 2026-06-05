@@ -12,8 +12,9 @@ export default function BrandDashboard() {
   const navigate = useNavigate();
   const { campaigns, loading } = useCampaigns();
   const recentCampaigns = campaigns.slice(0, 5);
-  const activeCampaigns = campaigns.filter(c => c.status === 'live').length;
-  const totalSpent = campaigns.reduce((sum, c) => sum + Number(c.budget || 0), 0);
+  const confirmedCampaigns = campaigns.filter((c: any) => c.status !== 'draft' && c.escrow_tx_hash);
+  const activeCampaigns = confirmedCampaigns.filter(c => c.status === 'live').length;
+  const totalSpent = confirmedCampaigns.reduce((sum, c) => sum + Number(c.budget || 0), 0);
   const creatorsEngaged = campaigns.reduce((sum, c: any) => sum + Number(c.campaign_stats?.[0]?.participants_count || 0), 0);
   const avgSorsaScore = campaigns.length ? Math.round(campaigns.reduce((sum, c: any) => sum + Number(c.avg_sorsa_score || 0), 0) / campaigns.length) : 0;
   const statCards = [

@@ -11,24 +11,29 @@ const appleEase = [0.16, 1, 0.3, 1];
 
 export default function ActiveCampaigns() {
   const navigate = useNavigate();
-  const { getCreatorActiveCampaigns } = useCampaigns();
+  const { getCreatorActiveCampaigns, getCreatorPastCampaigns } = useCampaigns();
 
   const [activeTab, setActiveTab] = useState<'live' | 'past'>('live');
   const [activeCampaigns, setActiveCampaigns] = useState<any[]>([]);
+  const [pastCampaigns, setPastCampaigns] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [, setClockTick] = useState(0);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const data = await getCreatorActiveCampaigns();
-      setActiveCampaigns(data || []);
+      const [activeData, pastData] = await Promise.all([
+        getCreatorActiveCampaigns(),
+        getCreatorPastCampaigns()
+      ]);
+      setActiveCampaigns(activeData || []);
+      setPastCampaigns(pastData || []);
     } catch (err) {
-      console.error('Failed to load active campaigns', err);
+      console.error('Failed to load creator campaigns', err);
     } finally {
       setIsLoading(false);
     }
-  }, [getCreatorActiveCampaigns]);
+  }, [getCreatorActiveCampaigns, getCreatorPastCampaigns]);
 
   useEffect(() => {
     loadData();
@@ -70,7 +75,7 @@ export default function ActiveCampaigns() {
                 transition={{ duration: 0.8, ease: appleEase }}
                 className="text-3xl font-semibold tracking-tight text-white"
               >
-                My Campaigns {activeCampaigns.length > 0 && `(${activeCampaigns.length})`}
+                My Campaigns {(activeTab === 'live' ? activeCampaigns.length : pastCampaigns.length) > 0 && `(${activeTab === 'live' ? activeCampaigns.length : pastCampaigns.length})`}
               </motion.h1>
               <motion.p
                 initial={{ opacity: 0, y: 20 }}
@@ -144,7 +149,7 @@ export default function ActiveCampaigns() {
             transition={{ duration: 0.4, ease: appleEase }}
             className="grid grid-cols-1 md:grid-cols-2 gap-6"
           >
-            {isLoading && activeTab === 'live' ? (
+            {isLoading ? (
               <div className="md:col-span-2 flex flex-col items-center justify-center py-20">
                 <Loader2 className="w-8 h-8 text-cyan animate-spin mb-4" />
                 <p className="text-muted">Loading your campaigns...</p>
@@ -213,12 +218,57 @@ export default function ActiveCampaigns() {
                   </button>
                 </div>
               )
+            ) : pastCampaigns.length > 0 ? (
+              pastCampaigns.map((item) => {
+                const campaign = item.campaign;
+                const earned = Number(item.calculated_reward || 0);
+
+                return (
+                  <motion.div
+                    key={item.id}
+                    whileHover={{ scale: 1.02 }}
+                    transition={{ duration: 0.2 }}
+                    onClick={() => navigate(`/creator/campaigns/${campaign.id}`)}
+                    className="group glass-panel rounded-2xl p-6 border border-white/10 hover:border-cyan/50 hover:shadow-[0_0_30px_rgba(0,212,255,0.15)] transition-all duration-300 cursor-pointer flex flex-col h-full relative overflow-hidden"
+                  >
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-cyan/5 blur-[50px] rounded-full pointer-events-none group-hover:bg-cyan/10 transition-colors"></div>
+
+                    <div className="flex items-start justify-between mb-6 relative z-10">
+                      <div className="flex items-center gap-4">
+                        <img
+                          src={campaign?.brand_profile?.logo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(campaign?.brand_profile?.company_name || 'Brand')}`}
+                          alt={campaign?.brand_profile?.company_name}
+                          className="w-14 h-14 rounded-xl bg-white/5 border border-white/10 object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div>
+                          <h3 className="font-semibold text-white text-lg group-hover:text-cyan transition-colors line-clamp-1">{campaign?.title}</h3>
+                          <p className="text-sm text-muted">{campaign?.brand_profile?.company_name}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-auto space-y-4 relative z-10">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm text-muted">
+                          {earned > 0 ? `${earned.toLocaleString()} USDC earned` : 'Completed'}
+                        </div>
+
+                        <div className="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 bg-green-500/10 text-green-400 border border-green-500/20">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Completed
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })
             ) : (
-              <div className="md:col-span-2 text-center py-20">
-                <History className="w-12 h-12 text-white/20 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-white mb-2">No Past Campaigns</h3>
-                <p className="text-muted">Completed campaigns will appear here after payouts are synced.</p>
-              </div>
+                <div className="md:col-span-2 text-center py-20">
+                  <History className="w-12 h-12 text-white/20 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-white mb-2">No Past Campaigns</h3>
+                  <p className="text-muted">Completed campaigns will appear here.</p>
+                </div>
             )}
           </motion.div>
 

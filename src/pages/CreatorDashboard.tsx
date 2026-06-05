@@ -21,7 +21,7 @@ export default function CreatorDashboard() {
   useEffect(() => { getCreatorActiveCampaigns().then(setActiveCampaigns).catch(() => setActiveCampaigns([])); }, [getCreatorActiveCampaigns]);
   useEffect(() => {
     if (!user) return;
-    supabase.from('points_log').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5).then(({ data }) => setPoints(data || []));
+    supabase.from('points_log').select('*').eq('creator_id', user.id).order('created_at', { ascending: false }).limit(5).then(({ data }) => setPoints(data || []));
   }, [user]);
 
   if (loading) return <div className="min-h-screen bg-[#0A0A1E] flex flex-col items-center justify-center"><div className="w-12 h-12 border-4 border-cyan/20 border-t-cyan rounded-full animate-spin mb-4"></div><p className="text-white/60 animate-pulse font-medium tracking-wide">Syncing your Sorsa profile...</p></div>;
