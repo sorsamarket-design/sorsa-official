@@ -1,6 +1,6 @@
 import React from 'react';
 
-const URL_PATTERN = /(https?:\/\/[^\s<]+|www\.[^\s<]+)/gi;
+const URL_PATTERN = /((?:https?:\/\/|www\.)[^\s<]+|(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/[^\s<]*)?)/gi;
 const TRAILING_PUNCTUATION = /[),.;!?]+$/;
 
 function getLinkParts(text: string) {
@@ -19,7 +19,7 @@ function getLinkParts(text: string) {
 
     parts.push({
       text: cleanText,
-      url: cleanText.startsWith('www.') ? `https://${cleanText}` : cleanText
+      url: cleanText.startsWith('http') ? cleanText : `https://${cleanText}`
     });
 
     if (punctuation) {
