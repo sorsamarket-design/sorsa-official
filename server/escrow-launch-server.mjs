@@ -240,6 +240,16 @@ async function assertCampaignSchemaReady() {
   }
 }
 
+function isEscrowConfirmedCampaign(campaign) {
+  return Boolean(
+    campaign?.escrow_campaign_id &&
+    campaign?.escrow_contract_address &&
+    campaign?.escrow_tx_hash &&
+    campaign?.metadata_hash &&
+    campaign?.brand_wallet
+  );
+}
+
 function buildDraftPayload(campaign, userId) {
   if (!campaign || typeof campaign !== 'object') {
     throw Object.assign(new Error('Missing campaign payload'), { status: 400 });
@@ -1452,6 +1462,91 @@ app.post('/payouts/run', async (req, res) => {
   } catch (error) {
     const status = error.status || 500;
     return res.status(status).json({ error: error.message || 'Payout automation failed' });
+  }
+});
+
+app.post('/campaigns/:campaignId/join', async (req, res) => {
+  try {
+    const user = await authenticate(req);
+    const campaignId = String(req.params.campaignId || '').trim();
+    if (!campaignId) throw Object.assign(new Error('Missing campaign id'), { status: 400 });
+
+    const [{ data: creator, error: creatorError }, { data: campaign, error: campaignError }] = await Promise.all([
+      supabase
+        .from('creator_profiles')
+        .select('id, sorsa_score')
+        .eq('id', user.id)
+        .single(),
+      supabase
+        .from('campaigns')
+        .select('id, status, min_sorsa_score, escrow_campaign_id, escrow_contract_address, escrow_tx_hash, metadata_hash, brand_wallet')
+        .eq('id', campaignId)
+        .single()
+    ]);
+
+    if (creatorError || !creator) {
+      throw Object.assign(new Error('Creator profile is required to join campaigns'), { status: 403 });
+    }
+    if (campaignError || !campaign) {
+      throw Object.assign(new Error('Campaign not found'), { status: 404 });
+    }
+    if (campaign.status !== 'live') {
+      throw Object.assign(new Error('Campaign is not open for joining'), { status: 400 });
+    }
+    if (!isEscrowConfirmedCampaign(campaign)) {
+      throw Object.assign(new Error('Campaign escrow is not confirmed'), { status: 400 });
+    }
+
+    const requiredScore = Number(campaign.min_sorsa_score || 0);
+    const creatorScore = Number(creator.sorsa_score || 0);
+    if (requiredScore > 0 && creatorScore < requiredScore) {
+      throw Object.assign(new Error(`You need a Sorsa score of at least ${requiredScore} to join this campaign`), { status: 403 });
+    }
+
+    const { data: existing, error: existingError } = await supabase
+      .from('campaign_participants')
+      .select('id, status')
+      .eq('campaign_id', campaignId)
+      .eq('creator_id', user.id)
+      .maybeSingle();
+    if (existingError) throw existingError;
+    if (existing) {
+      return res.json({ participation: existing, alreadyJoined: true });
+    }
+
+    const { data: stats, error: statsError } = await supabase
+      .from('campaign_stats')
+      .select('max_base_pool, allocated_base_pool')
+      .eq('campaign_id', campaignId)
+      .maybeSingle();
+    if (statsError) {
+      console.warn(`Could not check campaign capacity for ${campaignId}:`, statsError.message || statsError);
+    }
+    if (stats && Number(stats.max_base_pool || 0) > 0 && Number(stats.allocated_base_pool || 0) >= Number(stats.max_base_pool || 0)) {
+      throw Object.assign(new Error('Campaign is full'), { status: 409 });
+    }
+
+    const { data: participation, error: insertError } = await supabase
+      .from('campaign_participants')
+      .insert({
+        campaign_id: campaignId,
+        creator_id: user.id,
+        status: 'active'
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      if (insertError.code === '23505') {
+        throw Object.assign(new Error('You have already joined this campaign'), { status: 409 });
+      }
+      throw insertError;
+    }
+
+    return res.status(201).json({ participation, alreadyJoined: false });
+  } catch (error) {
+    const status = error.status || 500;
+    return res.status(status).json({ error: error.message || 'Could not join campaign' });
   }
 });
 

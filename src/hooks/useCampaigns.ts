@@ -213,21 +213,16 @@ export function useCampaigns(brandId?: string) {
   const joinCampaign = useCallback(async (campaignId: string) => {
     if (!user) throw new Error('Not authenticated');
 
-    const { data, error } = await supabase
-      .from('campaign_participants')
-      .insert([
-        { campaign_id: campaignId, creator_id: user.id, status: 'active' }
-      ])
-      .select()
-      .single();
-
-    if (error) {
-      if (error.code === '23505') {
-        throw new Error('You have already joined this campaign');
-      }
-      throw error;
+    const response = await fetch(`${getBackendBaseUrl()}/campaigns/${encodeURIComponent(campaignId)}/join`, {
+      method: 'POST',
+      headers: await getBackendAuthHeaders()
+    });
+    const result = await response.json().catch(() => null);
+    if (!response.ok) {
+      throw new Error(result?.error || 'Could not join campaign');
     }
-    return data;
+
+    return result?.participation;
   }, [user]);
 
   const checkParticipation = useCallback(async (campaignId: string) => {
