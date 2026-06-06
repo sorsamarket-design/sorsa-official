@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ArrowLeft, Plus, X, AlertCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plus, X, AlertCircle, Loader2, Info } from 'lucide-react';
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi';
 import { isAddressEqual } from 'viem';
 import BrandConnectWalletButton from '../components/BrandConnectWalletButton';
@@ -12,6 +12,13 @@ import { useAuth } from '../context/AuthContext';
 import { assertEscrowLaunchBackendReady, authorizeEscrowLaunch, launchCampaignThroughEscrow, saveCampaignDraftThroughBackend } from '../lib/escrowLaunch';
 
 const appleEase = [0.16, 1, 0.3, 1];
+
+function getLocalDateInputValue(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
 export default function CampaignBudget() {
   const navigate = useNavigate();
@@ -41,6 +48,7 @@ export default function CampaignBudget() {
   );
   const [audience, setAudience] = useState<'everyone' | 'small'>('everyone');
   const [spotlightRequests, setSpotlightRequests] = useState<string[]>(['']);
+  const [showSpotlightTooltip, setShowSpotlightTooltip] = useState(false);
   const [agreed, setAgreed] = useState(false);
 
   const [startDate, setStartDate] = useState(campaignData?.start_date ? String(campaignData.start_date).slice(0, 10) : '');
@@ -52,6 +60,8 @@ export default function CampaignBudget() {
 
   const minBudget = campaignType === 'kol' ? 1500 : 250;
   const isBudgetValid = numBudget >= minBudget;
+  const todayDate = getLocalDateInputValue();
+  const minEndDate = startDate && startDate > todayDate ? startDate : todayDate;
 
   useEffect(() => {
     if (!campaignData) {
@@ -81,6 +91,26 @@ export default function CampaignBudget() {
     setSpotlightRequests(newReqs.length ? newReqs : ['']);
   };
 
+  const handleStartDateChange = (value: string) => {
+    if (value && value < todayDate) {
+      setStartDate('');
+      setError('Choose today or a future date for the campaign start date.');
+      return;
+    }
+    setStartDate(value);
+    setError('');
+  };
+
+  const handleEndDateChange = (value: string) => {
+    if (value && value < minEndDate) {
+      setEndDate('');
+      setError('Choose an end date that is not before the campaign start date.');
+      return;
+    }
+    setEndDate(value);
+    setError('');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isBudgetValid || !agreed || !isConnected || !isWalletSynced) return;
@@ -89,6 +119,13 @@ export default function CampaignBudget() {
     setError('');
 
     try {
+      if (!startDate || startDate < todayDate) {
+        throw new Error('Choose today or a future date for the campaign start date.');
+      }
+      if (!endDate || endDate < minEndDate) {
+        throw new Error('Choose an end date that is not before the campaign start date.');
+      }
+
       if (!address || !walletClient || !publicClient) {
         throw new Error('Connect the brand wallet before launching the campaign.');
       }
@@ -294,8 +331,9 @@ export default function CampaignBudget() {
                   <input
                     type="date"
                     required
+                    min={todayDate}
                     value={startDate}
-                    onChange={e => setStartDate(e.target.value)}
+                    onChange={e => handleStartDateChange(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl bg-black/50 border border-white/10 text-white focus:outline-none focus:border-cyan focus:ring-1 focus:ring-cyan transition-all [color-scheme:dark]"
                   />
                 </div>
@@ -304,8 +342,9 @@ export default function CampaignBudget() {
                   <input
                     type="date"
                     required
+                    min={minEndDate}
                     value={endDate}
-                    onChange={e => setEndDate(e.target.value)}
+                    onChange={e => handleEndDateChange(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl bg-black/50 border border-white/10 text-white focus:outline-none focus:border-cyan focus:ring-1 focus:ring-cyan transition-all [color-scheme:dark]"
                   />
                 </div>
@@ -314,7 +353,29 @@ export default function CampaignBudget() {
               {/* Spotlight Requests */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-white">Spotlight Requests</label>
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-white">Spotlight Requests</label>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        aria-label="Spotlight requests info"
+                        aria-expanded={showSpotlightTooltip}
+                        onClick={() => setShowSpotlightTooltip((value) => !value)}
+                        onMouseEnter={() => setShowSpotlightTooltip(true)}
+                        onMouseLeave={() => setShowSpotlightTooltip(false)}
+                        onFocus={() => setShowSpotlightTooltip(true)}
+                        onBlur={() => setShowSpotlightTooltip(false)}
+                        className="w-5 h-5 rounded-full bg-white/5 border border-white/10 text-muted hover:text-cyan hover:border-cyan/40 flex items-center justify-center transition-colors"
+                      >
+                        <Info className="w-3.5 h-3.5" />
+                      </button>
+                      {showSpotlightTooltip && (
+                        <div className="absolute left-1/2 top-7 z-20 w-64 -translate-x-1/2 rounded-xl border border-white/10 bg-[#121229] px-3 py-2 text-xs leading-relaxed text-white shadow-2xl">
+                          Share a request, guideline, or reminder you want creators to follow
+                        </div>
+                      )}
+                    </div>
+                  </div>
                   <button
                     type="button"
                     onClick={handleAddRequest}

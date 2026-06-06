@@ -84,16 +84,36 @@ export async function assertEscrowLaunchBackendReady() {
   }
 }
 
-function dateToStartTimestamp(date: string): bigint {
+function parseDateOnly(value: string, label: string) {
+  const [year, month, day] = value.split('-').map(Number);
+  if (!year || !month || !day) throw new Error(`Choose a campaign ${label} date.`);
+  return { year, month, day };
+}
+
+function dateWithClock(date: string, clock: Date) {
+  const { year, month, day } = parseDateOnly(date, 'valid');
+  return new Date(
+    year,
+    month - 1,
+    day,
+    clock.getHours(),
+    clock.getMinutes(),
+    clock.getSeconds(),
+    0
+  );
+}
+
+function dateToStartTimestamp(date: string, launchClock: Date): bigint {
   if (!date) throw new Error('Choose a campaign start date.');
-  const selected = Math.floor(new Date(`${date}T00:00:00Z`).getTime() / 1000);
+  const selected = Math.floor(dateWithClock(date, launchClock).getTime() / 1000);
   const soon = Math.floor(Date.now() / 1000) + 300;
   return BigInt(Math.max(selected, soon));
 }
 
-function dateToEndTimestamp(date: string): bigint {
+function dateToEndTimestamp(date: string, startTimestamp: bigint): bigint {
   if (!date) throw new Error('Choose a campaign end date.');
-  return BigInt(Math.floor(new Date(`${date}T23:59:59Z`).getTime() / 1000));
+  const startClock = new Date(Number(startTimestamp) * 1000);
+  return BigInt(Math.floor(dateWithClock(date, startClock).getTime() / 1000));
 }
 
 function buildMetadataHash(campaign: Record<string, unknown>) {
@@ -145,8 +165,9 @@ export async function authorizeEscrowLaunch({
   const budget = parseUnits(String(campaign.budget), 6);
   if (budget <= 0n) throw new Error('Campaign budget must be greater than zero.');
 
-  const startsAt = dateToStartTimestamp(String(campaign.start_date || ''));
-  const endsAt = dateToEndTimestamp(String(campaign.end_date || ''));
+  const launchClock = new Date();
+  const startsAt = dateToStartTimestamp(String(campaign.start_date || ''), launchClock);
+  const endsAt = dateToEndTimestamp(String(campaign.end_date || ''), startsAt);
   if (startsAt >= endsAt) {
     throw new Error('Campaign end date must be after the start date.');
   }

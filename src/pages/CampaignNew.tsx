@@ -10,6 +10,8 @@ import { saveCampaignDraftThroughBackend } from '../lib/escrowLaunch';
 
 const appleEase = [0.16, 1, 0.3, 1];
 const defaultCategories = ['DeFi', 'AI', 'NFT', 'ZK', 'DePIN'];
+const overviewMinLength = 300;
+const overviewMaxLength = 1500;
 
 export default function CampaignNew() {
   const navigate = useNavigate();
@@ -70,6 +72,11 @@ export default function CampaignNew() {
     e.preventDefault();
     if (!formData.brand_profile_id) {
       alert("Please select a brand profile first. If you don't have one, create it from the dashboard.");
+      return;
+    }
+    const overviewLength = formData.overview.trim().length;
+    if (overviewLength < overviewMinLength) {
+      alert(`Campaign objectives must be at least ${overviewMinLength} characters.`);
       return;
     }
 
@@ -336,14 +343,22 @@ export default function CampaignNew() {
               <div className="space-y-2">
                 <label className="text-sm font-medium text-white">Overview of Campaign Objectives</label>
                 <textarea 
-                  rows={5}
+                  rows={12}
                   required
                   name="overview"
                   value={formData.overview}
                   onChange={handleInputChange}
+                  minLength={overviewMinLength}
+                  maxLength={overviewMaxLength}
                   placeholder="Describe your campaign in detail. What should creators focus on? What are the key selling points?"
-                  className="w-full px-4 py-3 rounded-xl bg-black/50 border border-white/10 text-white placeholder:text-white/20 focus:outline-none focus:border-cyan focus:ring-1 focus:ring-cyan transition-all resize-none"
+                  className="w-full min-h-80 px-4 py-3 rounded-xl bg-black/50 border border-white/10 text-white placeholder:text-white/20 focus:outline-none focus:border-cyan focus:ring-1 focus:ring-cyan transition-all resize-none"
                 ></textarea>
+                <div className="flex items-center justify-between text-xs text-muted">
+                  <span>Minimum {overviewMinLength} characters</span>
+                  <span className={formData.overview.trim().length < overviewMinLength ? 'text-yellow-400' : 'text-cyan'}>
+                    {formData.overview.length}/{overviewMaxLength}
+                  </span>
+                </div>
               </div>
 
               <div className="pt-6 border-t border-white/10 flex justify-end">
