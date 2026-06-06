@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { motion } from 'motion/react';
+import { TimedPasswordInput } from '../components/TimedPasswordInput';
 import { XLogo } from '../components/XLogo';
 import { supabase } from '../lib/supabase';
 
@@ -68,7 +69,7 @@ export default function BrandLogin() {
             <form onSubmit={handleSubmit} className="space-y-5 relative z-10">
               {errorVisible && <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">Error</div>}
               <div><label className="block text-sm font-medium text-white/80 mb-2">Email Address</label><input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-cyan/50 focus:bg-white/10 transition-all placeholder:text-muted" placeholder="brand@company.com" /></div>
-              <div><label className="block text-sm font-medium text-white/80 mb-2">Password</label><input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-cyan/50 focus:bg-white/10 transition-all placeholder:text-muted" placeholder="password" /></div>
+              <TimedPasswordInput label="Password" required value={password} onChange={setPassword} />
               <button type="submit" disabled={isLoggingIn} className="w-full py-4 mt-4 rounded-full bg-white text-black font-semibold hover:scale-[1.02] transition-transform duration-300 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)] disabled:opacity-50">{isLoggingIn ? 'Signing in...' : 'Sign in with Email'}</button>
             </form>
 
