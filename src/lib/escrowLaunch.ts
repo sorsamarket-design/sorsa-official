@@ -48,6 +48,30 @@ const escrowAddress = import.meta.env.VITE_ESCROW_CONTRACT_ADDRESS as Address | 
 const usdcAddress = import.meta.env.VITE_USDC_ADDRESS as Address | undefined;
 const configuredChainId = Number(import.meta.env.VITE_ESCROW_CHAIN_ID || '0');
 
+export function getEscrowLaunchErrorMessage(error: unknown): string {
+  let current: any = error;
+
+  while (current) {
+    const message = String(current.shortMessage || current.message || '').toLowerCase();
+    if (
+      current.code === 4001 ||
+      current.name === 'UserRejectedRequestError' ||
+      message.includes('user rejected') ||
+      message.includes('user denied')
+    ) {
+      return 'Request rejected';
+    }
+    if (message.includes('transferfailed') || message.includes('0x90b8ec18')) {
+      return 'Insufficient USDC balance';
+    }
+    current = current.cause;
+  }
+
+  return error instanceof Error
+    ? error.message
+    : 'Escrow confirmation failed. No campaign was created.';
+}
+
 function requireAddress(value: Address | undefined, label: string): Address {
   if (!value || !isAddress(value)) {
     throw new Error(`Missing or invalid ${label}.`);
@@ -164,6 +188,15 @@ export async function authorizeEscrowLaunch({
 
   const budget = parseUnits(String(campaign.budget), 6);
   if (budget <= 0n) throw new Error('Campaign budget must be greater than zero.');
+  const usdcBalance = await publicClient.readContract({
+    address: usdc,
+    abi: erc20Abi,
+    functionName: 'balanceOf',
+    args: [brandWallet]
+  });
+  if (usdcBalance < budget) {
+    throw new Error('Insufficient USDC balance');
+  }
 
   const launchClock = new Date();
   const startsAt = dateToStartTimestamp(String(campaign.start_date || ''), launchClock);

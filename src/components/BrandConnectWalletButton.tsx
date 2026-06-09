@@ -1,5 +1,6 @@
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { Wallet } from 'lucide-react';
+import { LogOut, Wallet } from 'lucide-react';
+import { useDisconnect } from 'wagmi';
 
 function shortAddress(address?: string) {
   if (!address) return '';
@@ -7,6 +8,8 @@ function shortAddress(address?: string) {
 }
 
 export default function BrandConnectWalletButton() {
+  const { disconnectAsync, isPending } = useDisconnect();
+
   return (
     <ConnectButton.Custom>
       {({ account, chain, mounted, openAccountModal, openChainModal, openConnectModal }: any) => {
@@ -27,25 +30,49 @@ export default function BrandConnectWalletButton() {
 
         if (chain.unsupported) {
           return (
-            <button
-              type="button"
-              onClick={openChainModal}
-              className="px-5 py-3 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 font-semibold hover:bg-red-500/20 transition-colors"
-            >
-              Wrong Network
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={openChainModal}
+                className="px-5 py-3 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 font-semibold hover:bg-red-500/20 transition-colors"
+              >
+                Wrong Network
+              </button>
+              <button
+                type="button"
+                onClick={() => disconnectAsync()}
+                disabled={isPending}
+                className="p-3 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                aria-label="Disconnect wallet"
+                title="Disconnect wallet"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
           );
         }
 
         return (
-          <button
-            type="button"
-            onClick={openAccountModal}
-            className="px-5 py-3 rounded-full bg-white/5 border border-white/10 text-white font-semibold flex items-center gap-2 hover:bg-white/10 transition-colors"
-          >
-            <Wallet className="w-4 h-4 text-cyan" />
-            {account.displayName || shortAddress(account.address)}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={openAccountModal}
+              className="px-5 py-3 rounded-full bg-white/5 border border-white/10 text-white font-semibold flex items-center gap-2 hover:bg-white/10 transition-colors"
+            >
+              <Wallet className="w-4 h-4 text-cyan" />
+              {account.displayName || shortAddress(account.address)}
+            </button>
+            <button
+              type="button"
+              onClick={() => disconnectAsync()}
+              disabled={isPending}
+              className="p-3 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+              aria-label="Disconnect wallet"
+              title="Disconnect wallet"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
         );
       }}
     </ConnectButton.Custom>

@@ -762,17 +762,38 @@ function scheduleWeeklySorsaProfileSync() {
 
 let payoutAutomationRunning = false;
 
-async function getEscrowCampaignState(escrowCampaignId) {
+async function getEscrowCampaignState(campaign) {
   return publicClient.readContract({
-    address: escrowAddress,
+    address: campaignEscrowAddress(campaign),
     abi: campaignEscrowAbi,
     functionName: 'campaigns',
-    args: [escrowCampaignId]
+    args: [campaign.escrow_campaign_id]
   });
 }
 
 function escrowCampaignField(state, index, name) {
   return state?.[name] ?? state?.[index];
+}
+
+function campaignEscrowAddress(campaign) {
+  const address = campaign?.escrow_contract_address || escrowAddress;
+  if (!isAddress(address)) throw Object.assign(new Error('Campaign escrow address is invalid'), { status: 500 });
+  return getAddress(address);
+}
+
+async function writeCampaignEscrow(campaign, functionName, args) {
+  const address = campaignEscrowAddress(campaign);
+  const { request } = await publicClient.simulateContract({
+    account: platformAccount,
+    address,
+    abi: campaignEscrowAbi,
+    functionName,
+    args
+  });
+  const txHash = await walletClient.writeContract(request);
+  const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+  if (receipt.status !== 'success') throw new Error(`Escrow ${functionName} transaction reverted`);
+  return { txHash, receipt };
 }
 
 async function getApprovedPayoutCandidates(campaign) {
@@ -781,6 +802,7 @@ async function getApprovedPayoutCandidates(campaign) {
     .select(`
       id,
       creator_id,
+      base_reward,
       calculated_reward,
       creator_profile:creator_profiles!creator_id (
         id,
@@ -868,18 +890,16 @@ function fitRewardsToPool(candidates, poolAmount) {
 }
 
 async function prepareCampaignPayouts(campaign) {
-  const escrowState = await getEscrowCampaignState(campaign.escrow_campaign_id);
-  const cancelled = Boolean(escrowCampaignField(escrowState, 15, 'cancelled'));
-  const allocationsSet = Boolean(escrowCampaignField(escrowState, 14, 'allocationsSet'));
+  const escrowState = await getEscrowCampaignState(campaign);
+  const cancelled = Boolean(escrowCampaignField(escrowState, 21, 'cancelled'));
+  const allocationsSet = Boolean(escrowCampaignField(escrowState, 18, 'allocationsSet'));
   if (cancelled || allocationsSet) {
     return { prepared: false, reason: cancelled ? 'cancelled' : 'already_allocated' };
   }
 
   const now = Date.now();
-  const endAt = campaign.end_date ? new Date(campaign.end_date).getTime() : Number(escrowCampaignField(escrowState, 11, 'endsAt')) * 1000;
-  const releaseAt = campaign.release_at ? new Date(campaign.release_at).getTime() : Number(escrowCampaignField(escrowState, 12, 'releaseAt')) * 1000;
+  const endAt = campaign.end_date ? new Date(campaign.end_date).getTime() : Number(escrowCampaignField(escrowState, 15, 'endsAt')) * 1000;
   if (now < endAt) return { prepared: false, reason: 'campaign_active' };
-  if (now >= releaseAt) return { prepared: false, reason: 'allocation_window_missed' };
 
   const candidates = await getApprovedPayoutCandidates(campaign);
   const poolAmount = Number(formatUnits(escrowCampaignField(escrowState, 5, 'performanceRewardPool'), 6));
@@ -887,18 +907,23 @@ async function prepareCampaignPayouts(campaign) {
   if (payouts.length === 0) return { prepared: false, reason: 'no_approved_wallets' };
 
   const recipients = payouts.map((item) => item.wallet);
-  const amounts = payouts.map((item) => parseUnits(item.allocatedReward.toFixed(2), 6));
-
-  const { request } = await publicClient.simulateContract({
-    account: platformAccount,
-    address: escrowAddress,
-    abi: campaignEscrowAbi,
-    functionName: 'setAllocations',
-    args: [campaign.escrow_campaign_id, recipients, amounts]
+  if (new Set(recipients.map((recipient) => recipient.toLowerCase())).size !== recipients.length) {
+    throw new Error('Approved payout recipients must use unique wallet addresses');
+  }
+  const baseRewards = payouts.map((item) => {
+    const baseReward = Number(item.participant.base_reward || 0);
+    if (baseReward <= 0) {
+      throw new Error(`Approved participant ${item.participant.creator_id} has no valid base reward`);
+    }
+    return parseUnits(baseReward.toFixed(2), 6);
   });
-  const txHash = await walletClient.writeContract(request);
-  const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
-  if (receipt.status !== 'success') throw new Error('Escrow allocation transaction reverted');
+  const performanceRewards = payouts.map((item) => parseUnits(item.allocatedReward.toFixed(2), 6));
+
+  const { txHash, receipt } = await writeCampaignEscrow(
+    campaign,
+    'finalizeAllocations',
+    [campaign.escrow_campaign_id, recipients, baseRewards, performanceRewards]
+  );
 
   const events = parseEventLogs({
     abi: campaignEscrowAbi,
@@ -919,6 +944,27 @@ async function prepareCampaignPayouts(campaign) {
   }
 
   return { prepared: true, txHash, recipients: payouts.length };
+}
+
+async function prepareCampaignBasePayouts(campaign) {
+  let escrowState = await getEscrowCampaignState(campaign);
+  if (escrowCampaignField(escrowState, 19, 'basePayoutsPrepared')) {
+    return { prepared: false, reason: 'already_prepared' };
+  }
+
+  const maxParticipants = BigInt(Math.max(1, Number(env.PAYOUT_MAX_PAYMENTS_PER_TX || '50')));
+  const txHashes = [];
+  while (!escrowCampaignField(escrowState, 19, 'basePayoutsPrepared')) {
+    const { txHash } = await writeCampaignEscrow(
+      campaign,
+      'prepareBasePayouts',
+      [campaign.escrow_campaign_id, maxParticipants]
+    );
+    txHashes.push(txHash);
+    escrowState = await getEscrowCampaignState(campaign);
+  }
+
+  return { prepared: true, txHashes };
 }
 
 async function sendPaymentNotification(creator, campaignTitle, amount) {
@@ -964,7 +1010,9 @@ async function updatePaidParticipant(campaign, recipient, amount, txHash) {
     .update({
       status: 'paid',
       calculated_reward: amountNumber,
-      approved_at: new Date().toISOString()
+      approved_at: new Date().toISOString(),
+      paid_at: new Date().toISOString(),
+      payout_tx_hash: txHash
     })
     .eq('id', match.id);
   if (participantError) throw participantError;
@@ -988,24 +1036,24 @@ async function updatePaidParticipant(campaign, recipient, amount, txHash) {
 }
 
 async function distributeCampaignPayouts(campaign) {
-  const escrowState = await getEscrowCampaignState(campaign.escrow_campaign_id);
-  if (escrowCampaignField(escrowState, 15, 'cancelled')) return { distributed: false, reason: 'cancelled' };
-  if (!escrowCampaignField(escrowState, 14, 'allocationsSet')) return { distributed: false, reason: 'allocations_missing' };
+  let escrowState = await getEscrowCampaignState(campaign);
+  if (escrowCampaignField(escrowState, 21, 'cancelled')) return { distributed: false, reason: 'cancelled' };
+  if (!escrowCampaignField(escrowState, 18, 'allocationsSet')) return { distributed: false, reason: 'allocations_missing' };
 
-  const releaseAt = campaign.release_at ? new Date(campaign.release_at).getTime() : Number(escrowCampaignField(escrowState, 12, 'releaseAt')) * 1000;
+  if (!escrowCampaignField(escrowState, 19, 'basePayoutsPrepared')) {
+    await prepareCampaignBasePayouts(campaign);
+    escrowState = await getEscrowCampaignState(campaign);
+  }
+
+  const releaseAt = campaign.release_at ? new Date(campaign.release_at).getTime() : Number(escrowCampaignField(escrowState, 16, 'releaseAt')) * 1000;
   if (Date.now() < releaseAt) return { distributed: false, reason: 'too_early' };
 
   const maxPayments = BigInt(Math.max(1, Number(env.PAYOUT_MAX_PAYMENTS_PER_TX || '50')));
-  const { request } = await publicClient.simulateContract({
-    account: platformAccount,
-    address: escrowAddress,
-    abi: campaignEscrowAbi,
-    functionName: 'distribute',
-    args: [campaign.escrow_campaign_id, maxPayments]
-  });
-  const txHash = await walletClient.writeContract(request);
-  const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
-  if (receipt.status !== 'success') throw new Error('Escrow payout transaction reverted');
+  const { txHash, receipt } = await writeCampaignEscrow(
+    campaign,
+    'distribute',
+    [campaign.escrow_campaign_id, maxPayments]
+  );
 
   const payoutEvents = parseEventLogs({
     abi: campaignEscrowAbi,
@@ -1036,27 +1084,22 @@ async function distributeCampaignPayouts(campaign) {
 }
 
 async function refundUnallocatedCampaign(campaign) {
-  const escrowState = await getEscrowCampaignState(campaign.escrow_campaign_id);
-  if (escrowCampaignField(escrowState, 15, 'cancelled')) {
+  const escrowState = await getEscrowCampaignState(campaign);
+  if (escrowCampaignField(escrowState, 21, 'cancelled')) {
     return { refunded: false, reason: 'already_cancelled' };
   }
-  if (escrowCampaignField(escrowState, 14, 'allocationsSet')) {
+  if (escrowCampaignField(escrowState, 18, 'allocationsSet')) {
     return { refunded: false, reason: 'allocations_set' };
   }
 
-  const releaseAt = campaign.release_at ? new Date(campaign.release_at).getTime() : Number(escrowCampaignField(escrowState, 12, 'releaseAt')) * 1000;
+  const releaseAt = campaign.release_at ? new Date(campaign.release_at).getTime() : Number(escrowCampaignField(escrowState, 16, 'releaseAt')) * 1000;
   if (Date.now() < releaseAt) return { refunded: false, reason: 'too_early' };
 
-  const { request } = await publicClient.simulateContract({
-    account: platformAccount,
-    address: escrowAddress,
-    abi: campaignEscrowAbi,
-    functionName: 'cancelUnallocatedCampaign',
-    args: [campaign.escrow_campaign_id]
-  });
-  const txHash = await walletClient.writeContract(request);
-  const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
-  if (receipt.status !== 'success') throw new Error('Escrow refund transaction reverted');
+  const { txHash, receipt } = await writeCampaignEscrow(
+    campaign,
+    'cancelUnallocatedCampaign',
+    [campaign.escrow_campaign_id]
+  );
 
   const refundEvents = parseEventLogs({
     abi: campaignEscrowAbi,
@@ -1078,7 +1121,7 @@ async function refundUnallocatedCampaign(campaign) {
 async function getPayoutAutomationCampaigns() {
   const { data, error } = await supabase
     .from('campaigns')
-    .select('id, title, status, end_date, release_at, escrow_campaign_id')
+    .select('id, title, status, end_date, release_at, escrow_campaign_id, escrow_contract_address')
     .eq('status', 'live')
     .not('escrow_campaign_id', 'is', null)
     .lte('end_date', new Date().toISOString())
@@ -1100,13 +1143,20 @@ async function runPayoutAutomation() {
       try {
         const releaseAt = campaign.release_at ? new Date(campaign.release_at).getTime() : 0;
         if (releaseAt && Date.now() >= releaseAt) {
-          const result = await distributeCampaignPayouts(campaign);
+          let result = await distributeCampaignPayouts(campaign);
+          if (result.reason === 'allocations_missing') {
+            const prepared = await prepareCampaignPayouts(campaign);
+            if (prepared.prepared) {
+              result = await distributeCampaignPayouts(campaign);
+            } else if (prepared.reason === 'no_approved_wallets') {
+              const refund = await refundUnallocatedCampaign(campaign);
+              if (refund.refunded) summary.distributed += 1;
+              else summary.skipped += 1;
+              continue;
+            }
+          }
           if (result.distributed) {
             summary.distributed += 1;
-          } else if (result.reason === 'allocations_missing') {
-            const refund = await refundUnallocatedCampaign(campaign);
-            if (refund.refunded) summary.distributed += 1;
-            else summary.skipped += 1;
           } else {
             summary.skipped += 1;
           }
@@ -1474,7 +1524,7 @@ app.post('/campaigns/:campaignId/join', async (req, res) => {
     const [{ data: creator, error: creatorError }, { data: campaign, error: campaignError }] = await Promise.all([
       supabase
         .from('creator_profiles')
-        .select('id, sorsa_score')
+        .select('id, sorsa_score, wallet_address')
         .eq('id', user.id)
         .single(),
       supabase
@@ -1496,7 +1546,6 @@ app.post('/campaigns/:campaignId/join', async (req, res) => {
     if (!isEscrowConfirmedCampaign(campaign)) {
       throw Object.assign(new Error('Campaign escrow is not confirmed'), { status: 400 });
     }
-
     const requiredScore = Number(campaign.min_sorsa_score || 0);
     const creatorScore = Number(creator.sorsa_score || 0);
     if (requiredScore > 0 && creatorScore < requiredScore) {
@@ -1510,7 +1559,7 @@ app.post('/campaigns/:campaignId/join', async (req, res) => {
       .eq('creator_id', user.id)
       .maybeSingle();
     if (existingError) throw existingError;
-    if (existing) {
+    if (existing && existing.status !== 'rejected') {
       return res.json({ participation: existing, alreadyJoined: true });
     }
 
@@ -1522,28 +1571,51 @@ app.post('/campaigns/:campaignId/join', async (req, res) => {
     if (statsError) {
       console.warn(`Could not check campaign capacity for ${campaignId}:`, statsError.message || statsError);
     }
-    if (stats && Number(stats.max_base_pool || 0) > 0 && Number(stats.allocated_base_pool || 0) >= Number(stats.max_base_pool || 0)) {
-      throw Object.assign(new Error('Campaign is full'), { status: 409 });
+    const baseReward = Number((creatorScore * 0.1).toFixed(2));
+    if (baseReward <= 0) {
+      throw Object.assign(new Error('Creator Sorsa score does not qualify for a base reward'), { status: 400 });
+    }
+    if (
+      stats &&
+      Number(stats.max_base_pool || 0) > 0 &&
+      Number(stats.allocated_base_pool || 0) + baseReward > Number(stats.max_base_pool || 0)
+    ) {
+      throw Object.assign(new Error('Campaign does not have enough base reward capacity'), { status: 409 });
     }
 
-    const { data: participation, error: insertError } = await supabase
-      .from('campaign_participants')
-      .insert({
-        campaign_id: campaignId,
-        creator_id: user.id,
-        status: 'active'
-      })
-      .select()
-      .single();
+    const mutation = existing
+      ? supabase
+          .from('campaign_participants')
+          .update({
+            status: 'active',
+            base_reward: baseReward,
+            approved_at: null,
+            paid_at: null,
+            payout_tx_hash: null
+          })
+          .eq('id', existing.id)
+          .select()
+          .single()
+      : supabase
+          .from('campaign_participants')
+          .insert({
+            campaign_id: campaignId,
+            creator_id: user.id,
+            status: 'active',
+            base_reward: baseReward
+          })
+          .select()
+          .single();
 
-    if (insertError) {
-      if (insertError.code === '23505') {
+    const { data: participation, error: mutationError } = await mutation;
+    if (mutationError) {
+      if (mutationError.code === '23505') {
         throw Object.assign(new Error('You have already joined this campaign'), { status: 409 });
       }
-      throw insertError;
+      throw mutationError;
     }
 
-    return res.status(201).json({ participation, alreadyJoined: false });
+    return res.status(existing ? 200 : 201).json({ participation, alreadyJoined: false });
   } catch (error) {
     const status = error.status || 500;
     return res.status(status).json({ error: error.message || 'Could not join campaign' });
@@ -1689,7 +1761,18 @@ app.post('/submissions/:submissionId/status', async (req, res) => {
 
     const { data: existingSubmission, error: existingError } = await supabase
       .from('campaign_submissions')
-      .select('id, campaign_id, campaign:campaigns (id, owner_id)')
+      .select(`
+        id,
+        campaign_id,
+        creator_id,
+        participation_id,
+        campaign:campaigns (
+          id,
+          owner_id,
+          escrow_campaign_id,
+          escrow_contract_address
+        )
+      `)
       .eq('id', submissionId)
       .single();
     if (existingError) throw existingError;
@@ -1714,7 +1797,8 @@ app.post('/submissions/:submissionId/status', async (req, res) => {
     if (submission.participation_id) {
       const participantPayload = {
         status,
-        ...(status === 'approved' ? { approved_at: new Date().toISOString() } : {})
+        ...(status === 'approved' ? { approved_at: new Date().toISOString() } : {}),
+        ...(status === 'rejected' ? { base_reward: 0 } : {})
       };
       const { error: participantError } = await supabase
         .from('campaign_participants')

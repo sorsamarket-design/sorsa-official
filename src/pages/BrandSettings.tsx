@@ -18,7 +18,7 @@ export default function BrandSettings() {
   const [message, setMessage] = useState<string | null>(null);
   const { selectedProfile, loading, refreshProfiles } = useBrandProfiles();
   const { role, signOut } = useAuth();
-  const { disconnect } = useDisconnect();
+  const { disconnectAsync } = useDisconnect();
   const [formData, setFormData] = useState({
     company_name: '',
     website: '',
@@ -67,7 +67,11 @@ export default function BrandSettings() {
       return;
     }
 
-    disconnect();
+    try {
+      await disconnectAsync();
+    } catch (error) {
+      console.warn('Wallet disconnect during logout failed:', error);
+    }
     await signOut();
     navigate('/login');
   };

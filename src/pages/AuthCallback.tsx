@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { normalizeAvatarUrl } from '../lib/avatars';
@@ -7,16 +7,25 @@ import { attachSavedReferralToCreator, buildReferralCode, ensureCreatorReferralC
 export default function AuthCallback() {
   const navigate = useNavigate();
   const [errorVisible, setErrorVisible] = useState(false);
+  const started = useRef(false);
 
   useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+
     const handleAuth = async () => {
       try {
         if (!supabase) throw new Error('Supabase is not configured');
 
-        const code = new URLSearchParams(window.location.search).get('code');
+        const params = new URLSearchParams(window.location.search);
+        const oauthError = params.get('error_description');
+        if (oauthError) throw new Error(oauthError);
+
+        const code = params.get('code');
         if (code) {
           const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
           if (exchangeError) throw exchangeError;
+          window.history.replaceState({}, document.title, '/auth/callback');
         }
 
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -57,10 +66,15 @@ export default function AuthCallback() {
 
           try {
             const { default: sorsaApi } = await import('../lib/sorsaApi');
-            const [score, stats, about] = await Promise.all([
-              sorsaApi.fetchScore(xHandle),
-              sorsaApi.fetchInfo(xHandle),
-              sorsaApi.fetchAbout(xHandle),
+            const [score, stats, about] = await Promise.race([
+              Promise.all([
+                sorsaApi.fetchScore(xHandle),
+                sorsaApi.fetchInfo(xHandle),
+                sorsaApi.fetchAbout(xHandle),
+              ]),
+              new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('Initial Sorsa sync timed out')), 15_000)
+              ),
             ]);
             const finalLocation = stats.location || about?.country || null;
             await supabase.from('creator_profiles').update({
@@ -91,7 +105,16 @@ export default function AuthCallback() {
     handleAuth();
   }, [navigate]);
 
-  if (errorVisible) return <div className="min-h-screen bg-black flex items-center justify-center text-red-400">Error</div>;
+  if (errorVisible) {
+    return (
+      <div className="min-h-screen bg-black flex flex-col gap-4 items-center justify-center text-red-400">
+        <p>Authentication could not be completed.</p>
+        <button className="text-white underline" onClick={() => navigate('/auth/creator')}>
+          Try again
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center">

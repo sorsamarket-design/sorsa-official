@@ -13,6 +13,10 @@ const CATEGORIES = ['All', 'DeFi', 'AI', 'NFT', 'ZK', 'DePIN'];
 const TIERS = ['All', 'General', 'KOL'];
 const SORTS = ['Newest', 'Highest Budget', 'Ending Soon'];
 
+function rewardPool(campaign: { budget: number; escrowed_budget?: number | null; net_budget?: number | null }) {
+  return Number(campaign.escrowed_budget ?? campaign.net_budget ?? Number(campaign.budget || 0) * 0.85);
+}
+
 export default function CreatorBrowse() {
   const navigate = useNavigate();
   const { campaigns, loading } = useCampaigns();
@@ -34,10 +38,10 @@ export default function CreatorBrowse() {
       brandLogo: c.brand_profile?.logo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.brand_profile?.company_name || 'Brand')}`,
             categories: c.categories || [],
       tier: c.campaign_type === 'kol' ? 'KOL' : 'General',
-            budget: c.budget,
+      budget: rewardPool(c),
       stats: c.campaign_stats?.[0] || null,
-      baseReward: Math.floor(c.budget * 0.425),
-      performanceBonus: Math.floor(c.budget * 0.425),
+      baseReward: rewardPool(c) / 2,
+      performanceBonus: rewardPool(c) / 2,
       deadline: c.end_date!,
       releaseAt: c.release_at,
       createdAt: c.created_at,
@@ -62,10 +66,10 @@ export default function CreatorBrowse() {
         brandLogo: c.brand_profile?.logo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.brand_profile?.company_name || 'Brand')}`,
         categories: c.categories || [],
         tier: c.campaign_type === 'kol' ? 'KOL' : 'General',
-        budget: c.budget,
+        budget: rewardPool(c),
         stats: c.campaign_stats?.[0] || null,
-        baseReward: Math.floor(c.budget * 0.425),
-        performanceBonus: Math.floor(c.budget * 0.425),
+        baseReward: rewardPool(c) / 2,
+        performanceBonus: rewardPool(c) / 2,
         deadline: c.end_date || c.release_at || c.created_at,
         releaseAt: c.release_at,
         createdAt: c.created_at,

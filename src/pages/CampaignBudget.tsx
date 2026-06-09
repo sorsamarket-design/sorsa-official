@@ -9,7 +9,7 @@ import BrandSidebar from '../components/BrandSidebar';
 import TopBar from '../components/TopBar';
 import { useCampaigns } from '../hooks/useCampaigns';
 import { useAuth } from '../context/AuthContext';
-import { assertEscrowLaunchBackendReady, authorizeEscrowLaunch, launchCampaignThroughEscrow, saveCampaignDraftThroughBackend } from '../lib/escrowLaunch';
+import { assertEscrowLaunchBackendReady, authorizeEscrowLaunch, getEscrowLaunchErrorMessage, launchCampaignThroughEscrow, saveCampaignDraftThroughBackend } from '../lib/escrowLaunch';
 
 const appleEase = [0.16, 1, 0.3, 1];
 
@@ -189,7 +189,7 @@ export default function CampaignBudget() {
       navigate(`/brand/campaigns/${confirmedLaunch.campaignId}`);
     } catch (err: any) {
       console.error('Escrow launch failed:', err);
-      setError(err.message || 'Escrow confirmation failed. No campaign was created.');
+      setError(getEscrowLaunchErrorMessage(err));
       setTxState('idle');
     } finally {
       setIsSubmitting(false);

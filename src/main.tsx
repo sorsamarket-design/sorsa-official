@@ -22,14 +22,14 @@ const config = getDefaultConfig({
   transports: {
     [baseSepolia.id]: http(import.meta.env.VITE_ESCROW_RPC_URL),
     [base.id]: http(),
-  },
+  } as any,
 });
 
 const queryClient = new QueryClient();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <WagmiProvider config={config}>
+    <WagmiProvider config={config} reconnectOnMount={false}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider theme={darkTheme()}>
           <AuthProvider>

@@ -18,6 +18,8 @@ export interface Campaign {
   overview: string;
   budget: number;
   platform_fee: number;
+  net_budget?: number | null;
+  escrowed_budget?: number | null;
   status: string; // 'draft' | 'live' | 'completed'
   created_at: string;
   start_date?: string;
@@ -55,7 +57,7 @@ function isEscrowConfirmedCampaign(campaign: Partial<Campaign> | null | undefine
 function withBrandSnapshot<T extends Partial<Campaign> | null | undefined>(campaign: T): T {
   if (!campaign) return campaign;
 
-  const profile = campaign.brand_profile || {};
+  const profile: Partial<NonNullable<Campaign['brand_profile']>> = campaign.brand_profile || {};
   return {
     ...campaign,
     brand_profile: {

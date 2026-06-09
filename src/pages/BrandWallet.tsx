@@ -1,10 +1,13 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Wallet, Lock, CheckCircle2, TrendingUp } from 'lucide-react';
+import { Wallet, Lock, CheckCircle2, TrendingUp, CircleDollarSign } from 'lucide-react';
+import { useAccount, useReadContract } from 'wagmi';
+import { formatUnits, isAddress } from 'viem';
 import BrandConnectWalletButton from '../components/BrandConnectWalletButton';
 import BrandSidebar from '../components/BrandSidebar';
 import TopBar from '../components/TopBar';
 import { useCampaigns } from '../hooks/useCampaigns';
+import { erc20Abi } from '../lib/escrowAbi';
 
 const appleEase = [0.16, 1, 0.3, 1];
 
@@ -20,6 +23,26 @@ function getTxUrl(hash?: string | null) {
 
 export default function BrandWallet() {
   const { campaigns, loading } = useCampaigns();
+  const { address, chainId, isConnected } = useAccount();
+  const configuredChainId = Number(import.meta.env.VITE_ESCROW_CHAIN_ID || 0);
+  const configuredUsdcAddress = import.meta.env.VITE_USDC_ADDRESS;
+  const canReadUsdcBalance = Boolean(
+    isConnected &&
+    address &&
+    isAddress(configuredUsdcAddress || '') &&
+    chainId === configuredChainId
+  );
+  const { data: usdcBalance, isLoading: usdcBalanceLoading, isError: usdcBalanceError } = useReadContract({
+    address: isAddress(configuredUsdcAddress || '') ? configuredUsdcAddress : undefined,
+    abi: erc20Abi,
+    functionName: 'balanceOf',
+    args: address ? [address] : undefined,
+    chainId: configuredChainId || undefined,
+    query: { enabled: canReadUsdcBalance },
+  });
+  const formattedUsdcBalance = typeof usdcBalance === 'bigint'
+    ? Number(formatUnits(usdcBalance, 6)).toLocaleString(undefined, { maximumFractionDigits: 2 })
+    : null;
   const confirmedCampaigns = campaigns.filter((c: any) => c.status !== 'draft' && c.escrow_tx_hash);
   const amountSpent = confirmedCampaigns.reduce((sum, c) => sum + Number(c.budget || 0), 0);
   const escrow = confirmedCampaigns
@@ -57,7 +80,31 @@ export default function BrandWallet() {
             <BrandConnectWalletButton />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="glass-panel rounded-[2rem] p-8 border border-white/10">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center">
+                  <CircleDollarSign className="w-5 h-5 text-green-400" />
+                </div>
+                <h2 className="text-lg font-medium text-white">USDC Balance</h2>
+              </div>
+              <div className="text-4xl font-bold text-white tracking-tight mb-2">
+                {usdcBalanceLoading
+                  ? 'Loading...'
+                  : formattedUsdcBalance ?? '—'}{' '}
+                <span className="text-xl text-muted font-medium">USDC</span>
+              </div>
+              <p className="text-sm text-muted mt-8">
+                {!isConnected
+                  ? 'Connect a wallet to view its balance.'
+                  : chainId !== configuredChainId
+                    ? 'Switch to Base Sepolia to view the balance.'
+                    : usdcBalanceError
+                      ? 'USDC balance is currently unavailable.'
+                      : 'Available in the connected brand wallet.'}
+              </p>
+            </div>
+
             <div className="glass-panel rounded-[2rem] p-8 border border-white/10">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-xl bg-cyan/10 flex items-center justify-center">

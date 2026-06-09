@@ -1,5 +1,10 @@
 export const campaignEscrowAbi = [
   {
+    type: 'error',
+    name: 'TransferFailed',
+    inputs: []
+  },
+  {
     type: 'function',
     name: 'nonces',
     stateMutability: 'view',
@@ -47,13 +52,87 @@ export const campaignEscrowAbi = [
       { name: 'allocatedPerformanceRewards', type: 'uint256' },
       { name: 'allocated', type: 'uint256' },
       { name: 'paid', type: 'uint256' },
+      { name: 'activeParticipants', type: 'uint256' },
+      { name: 'approvedBaseRewards', type: 'uint256' },
+      { name: 'basePayoutIndex', type: 'uint256' },
+      { name: 'refundOwed', type: 'uint256' },
       { name: 'startsAt', type: 'uint64' },
       { name: 'endsAt', type: 'uint64' },
       { name: 'releaseAt', type: 'uint64' },
       { name: 'metadataHash', type: 'bytes32' },
       { name: 'allocationsSet', type: 'bool' },
+      { name: 'basePayoutsPrepared', type: 'bool' },
+      { name: 'finalized', type: 'bool' },
       { name: 'cancelled', type: 'bool' }
     ]
+  },
+  {
+    type: 'function',
+    name: 'acceptParticipant',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'campaignId', type: 'bytes32' },
+      { name: 'participant', type: 'address' },
+      { name: 'baseReward', type: 'uint256' }
+    ],
+    outputs: []
+  },
+  {
+    type: 'function',
+    name: 'approveFirstSubmission',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'campaignId', type: 'bytes32' },
+      { name: 'participant', type: 'address' }
+    ],
+    outputs: []
+  },
+  {
+    type: 'function',
+    name: 'acceptances',
+    stateMutability: 'view',
+    inputs: [
+      { name: '', type: 'bytes32' },
+      { name: '', type: 'address' }
+    ],
+    outputs: [
+      { name: 'baseReward', type: 'uint256' },
+      { name: 'firstSubmissionDeadline', type: 'uint64' },
+      { name: 'active', type: 'bool' },
+      { name: 'firstSubmissionApproved', type: 'bool' }
+    ]
+  },
+  {
+    type: 'function',
+    name: 'rejectParticipant',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'campaignId', type: 'bytes32' },
+      { name: 'participant', type: 'address' }
+    ],
+    outputs: []
+  },
+  {
+    type: 'function',
+    name: 'releaseExpiredParticipant',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'campaignId', type: 'bytes32' },
+      { name: 'participant', type: 'address' }
+    ],
+    outputs: []
+  },
+  {
+    type: 'function',
+    name: 'finalizeAllocations',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'campaignId', type: 'bytes32' },
+      { name: 'recipients', type: 'address[]' },
+      { name: 'baseRewards', type: 'uint256[]' },
+      { name: 'performanceRewards', type: 'uint256[]' }
+    ],
+    outputs: []
   },
   {
     type: 'function',
@@ -74,6 +153,23 @@ export const campaignEscrowAbi = [
       { name: 'campaignId', type: 'bytes32' },
       { name: 'maxPayments', type: 'uint256' }
     ],
+    outputs: []
+  },
+  {
+    type: 'function',
+    name: 'prepareBasePayouts',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'campaignId', type: 'bytes32' },
+      { name: 'maxParticipants', type: 'uint256' }
+    ],
+    outputs: []
+  },
+  {
+    type: 'function',
+    name: 'finalizeCampaign',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'campaignId', type: 'bytes32' }],
     outputs: []
   },
   {
@@ -163,6 +259,13 @@ export const campaignEscrowAbi = [
 ] as const;
 
 export const erc20Abi = [
+  {
+    type: 'function',
+    name: 'balanceOf',
+    stateMutability: 'view',
+    inputs: [{ name: 'account', type: 'address' }],
+    outputs: [{ name: '', type: 'uint256' }]
+  },
   {
     type: 'function',
     name: 'approve',

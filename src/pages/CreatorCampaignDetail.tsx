@@ -145,7 +145,9 @@ export default function CreatorCampaignDetail() {
   const stats = campaign.campaign_stats?.[0];
   const allocatedRatio = stats?.max_base_pool ? stats.allocated_base_pool / stats.max_base_pool : 0;
   const budgetProgress = Math.min(100, stats ? 50 + allocatedRatio * 50 : 0);
-  const poolAmount = Number(campaign.budget || 0).toLocaleString(undefined, {
+  const poolAmount = Number(
+    campaign.escrowed_budget ?? campaign.net_budget ?? Number(campaign.budget || 0) * 0.85
+  ).toLocaleString(undefined, {
     maximumFractionDigits: 2
   });
 
