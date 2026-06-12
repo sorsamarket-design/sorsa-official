@@ -1411,6 +1411,29 @@ app.get('/campaigns/launch/ready', async (_req, res) => {
   }
 });
 
+app.post('/telegram/webhook/setup', async (req, res) => {
+  try {
+    const user = await authenticate(req);
+    const role = await getUserRole(user.id);
+    if (role !== 'brand' && role !== 'admin') {
+      throw Object.assign(new Error('Only admins can configure Telegram webhooks'), { status: 403 });
+    }
+    if (!env.TELEGRAM_WEBHOOK_SECRET) {
+      throw Object.assign(new Error('Missing TELEGRAM_WEBHOOK_SECRET'), { status: 500 });
+    }
+
+    const webhookUrl = `${getBackendBaseUrl(req)}/telegram/webhook/${encodeURIComponent(env.TELEGRAM_WEBHOOK_SECRET)}`;
+    const result = await telegramRequest('setWebhook', {
+      url: webhookUrl,
+      allowed_updates: ['message']
+    });
+    return res.json({ webhookUrl, result });
+  } catch (error) {
+    const status = error.status || 500;
+    return res.status(status).json({ error: error.message || 'Telegram webhook setup failed' });
+  }
+});
+
 app.post('/telegram/webhook/:secret', async (req, res) => {
   try {
     if (!env.TELEGRAM_WEBHOOK_SECRET || req.params.secret !== env.TELEGRAM_WEBHOOK_SECRET) {
@@ -1458,29 +1481,6 @@ app.post('/telegram/webhook/:secret', async (req, res) => {
   } catch (error) {
     console.error('telegram webhook failed:', error);
     return res.json({ ok: true });
-  }
-});
-
-app.post('/telegram/webhook/setup', async (req, res) => {
-  try {
-    const user = await authenticate(req);
-    const role = await getUserRole(user.id);
-    if (role !== 'brand' && role !== 'admin') {
-      throw Object.assign(new Error('Only admins can configure Telegram webhooks'), { status: 403 });
-    }
-    if (!env.TELEGRAM_WEBHOOK_SECRET) {
-      throw Object.assign(new Error('Missing TELEGRAM_WEBHOOK_SECRET'), { status: 500 });
-    }
-
-    const webhookUrl = `${getBackendBaseUrl(req)}/telegram/webhook/${encodeURIComponent(env.TELEGRAM_WEBHOOK_SECRET)}`;
-    const result = await telegramRequest('setWebhook', {
-      url: webhookUrl,
-      allowed_updates: ['message']
-    });
-    return res.json({ webhookUrl, result });
-  } catch (error) {
-    const status = error.status || 500;
-    return res.status(status).json({ error: error.message || 'Telegram webhook setup failed' });
   }
 });
 
