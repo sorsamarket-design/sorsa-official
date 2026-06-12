@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Wallet, MapPin, Edit2, Star, Target, DollarSign, Check, X, RefreshCw } from 'lucide-react';
+import { Wallet, MapPin, Edit2, Star, Target, DollarSign, Check, X, RefreshCw, Sparkles, Calendar } from 'lucide-react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import BindWalletButton from '../components/BindWalletButton';
 import CreatorSidebar from '../components/CreatorSidebar';
@@ -13,6 +13,7 @@ import { useAuth } from '../context/AuthContext';
 import { getInitialsAvatarUrl, normalizeAvatarUrl } from '../lib/avatars';
 import { supabase } from '../lib/supabase';
 import sorsaApi from '../lib/sorsaApi';
+import { getCreatorPastCampaignHistory, type CreatorCampaignHistoryItem } from '../lib/creatorCampaignHistory';
 
 export default function CreatorProfile() {
   const { user } = useAuth();
@@ -22,6 +23,7 @@ export default function CreatorProfile() {
   const [isSyncingSorsa, setIsSyncingSorsa] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [sorsaSyncMessage, setSorsaSyncMessage] = useState<string | null>(null);
+  const [pastCampaigns, setPastCampaigns] = useState<CreatorCampaignHistoryItem[]>([]);
   const [editForm, setEditForm] = useState({
     bio: ''
   });
@@ -34,6 +36,16 @@ export default function CreatorProfile() {
       });
     }
   }, [profile]);
+
+  useEffect(() => {
+    if (!user) return;
+    getCreatorPastCampaignHistory(user.id)
+      .then(setPastCampaigns)
+      .catch((err) => {
+        console.error('Error fetching creator campaign history:', err);
+        setPastCampaigns([]);
+      });
+  }, [user]);
 
   if (loading) {
     return (
@@ -289,7 +301,7 @@ export default function CreatorProfile() {
               >
                 <div className="glass-panel rounded-2xl p-5 border border-white/10">
                   <Target className="w-5 h-5 text-muted mb-3" />
-                  <div className="text-2xl font-semibold text-white mb-1">{profile?.campaigns_completed || 0}</div>
+                  <div className="text-2xl font-semibold text-white mb-1">{pastCampaigns.length || profile?.campaigns_completed || 0}</div>
                   <div className="text-xs text-muted font-medium">Campaigns</div>
                 </div>
                 <div className="glass-panel rounded-2xl p-5 border border-white/10">
@@ -316,10 +328,46 @@ export default function CreatorProfile() {
                 transition={{ duration: 0.8, ease: appleEase, delay: 0.4 }}
                 className="glass-panel rounded-[2rem] p-6 border border-white/10"
               >
-                <h3 className="text-lg font-semibold text-white mb-4">Past Campaigns</h3>
-                <div className="p-6 rounded-xl bg-white/5 border border-white/10 text-center text-muted text-sm">
-                  Completed campaign history will appear here.
+                <div className="flex items-center justify-between gap-4 mb-4">
+                  <h3 className="text-lg font-semibold text-white">Past Campaigns</h3>
+                  <span className="text-sm text-muted">{pastCampaigns.length} total</span>
                 </div>
+                {pastCampaigns.length ? (
+                  <div className="space-y-3">
+                    {pastCampaigns.slice(0, 6).map((item) => (
+                      <div key={item.id} className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 overflow-hidden flex items-center justify-center shrink-0">
+                          {item.campaign.image_url ? (
+                            <img src={item.campaign.image_url} alt="" className="w-full h-full object-cover" />
+                          ) : item.campaign.is_nft ? (
+                            <Sparkles className="w-5 h-5 text-cyan" />
+                          ) : (
+                            <Target className="w-5 h-5 text-cyan" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="text-white font-medium truncate">{item.campaign.title}</p>
+                            {item.campaign.is_nft ? (
+                              <span className="px-2 py-0.5 rounded-full bg-cyan/10 border border-cyan/20 text-cyan text-[10px] font-bold uppercase">NFT</span>
+                            ) : null}
+                          </div>
+                          <p className="text-xs text-muted truncate">
+                            {item.campaign.brand_name || item.campaign.brand_profile?.company_name || (item.campaign.is_nft ? 'Sorsa NFT Campaigns' : 'Campaign')}
+                          </p>
+                        </div>
+                        <div className="hidden sm:flex items-center gap-2 text-xs text-muted shrink-0">
+                          <Calendar className="w-4 h-4" />
+                          {item.campaign.end_date ? new Date(item.campaign.end_date).toLocaleDateString() : 'Ended'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-6 rounded-xl bg-white/5 border border-white/10 text-center text-muted text-sm">
+                    Completed campaign history will appear here.
+                  </div>
+                )}
               </motion.div>
 
             </div>
