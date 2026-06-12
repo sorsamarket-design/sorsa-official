@@ -28,6 +28,32 @@ async function syncSorsaProfile(userId: string, xHandle: string) {
   }).eq('id', userId);
 }
 
+async function completeSupabaseRedirect() {
+  const searchParams = new URLSearchParams(window.location.search);
+  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const oauthError = searchParams.get('error_description') || hashParams.get('error_description');
+  if (oauthError) throw new Error(oauthError);
+
+  const code = searchParams.get('code');
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) throw error;
+    window.history.replaceState({}, document.title, '/auth/callback');
+    return;
+  }
+
+  const accessToken = hashParams.get('access_token');
+  const refreshToken = hashParams.get('refresh_token');
+  if (accessToken && refreshToken) {
+    const { error } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken
+    });
+    if (error) throw error;
+    window.history.replaceState({}, document.title, '/auth/callback');
+  }
+}
+
 export default function AuthCallback() {
   const navigate = useNavigate();
   const [errorVisible, setErrorVisible] = useState(false);
@@ -41,16 +67,7 @@ export default function AuthCallback() {
       try {
         if (!supabase) throw new Error('Supabase is not configured');
 
-        const params = new URLSearchParams(window.location.search);
-        const oauthError = params.get('error_description');
-        if (oauthError) throw new Error(oauthError);
-
-        const code = params.get('code');
-        if (code) {
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-          if (exchangeError) throw exchangeError;
-          window.history.replaceState({}, document.title, '/auth/callback');
-        }
+        await completeSupabaseRedirect();
 
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         if (sessionError || !session) throw new Error(sessionError?.message || 'No session found after redirect');
