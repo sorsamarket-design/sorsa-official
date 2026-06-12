@@ -723,7 +723,7 @@ async function sendTelegramPhoto(chatId, imageUrl, caption, buttonUrl = null) {
   form.append('parse_mode', 'HTML');
   if (buttonUrl) {
     form.append('reply_markup', JSON.stringify({
-      inline_keyboard: [[{ text: 'View campaign', url: buttonUrl }]]
+      inline_keyboard: [[{ text: 'View Campaign', url: buttonUrl }]]
     }));
   }
 
@@ -748,10 +748,10 @@ function buildCampaignNotification(campaign, label = 'New campaign') {
     : '';
   const campaignUrl = getCampaignUrl(campaign);
   const action = campaignUrl
-    ? `\n\n<a href="${escapeTelegramHtml(campaignUrl)}">View campaign</a>`
+    ? `\n\n<a href="${escapeTelegramHtml(campaignUrl)}">View Campaign</a>`
     : '\n\nOpen SorsaMarket to view details.';
 
-  return `<b>${escapeTelegramHtml(label).toUpperCase()}: ${title}</b>\n\nA new creator campaign is live.\n\nBrand: ${brand}\nBudget: ${budget} USDC${categories}${action}`;
+  return `<b>${escapeTelegramHtml(label).toUpperCase()}</b>\n\nA new creator opportunity is now live on SorsaMarket.\n\nCampaign: ${title}\nBrand: ${brand}\nReward Pool: ${budget} USDC${categories}\n\nOpen the campaign page to read the brief, review the requirements, and join if it fits your profile.${action}`;
 }
 
 async function sendNewCampaignNotification(chatId, campaign) {
