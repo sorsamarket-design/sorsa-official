@@ -358,70 +358,6 @@ const StatsBar = () => {
   );
 };
 
-const Waitlist = () => {
-  const [email, setEmail] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email) {
-      setSubmitted(true);
-      setEmail('');
-    }
-  };
-
-  return (
-    <section id="waitlist" className="py-40 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-cyan/5 pointer-events-none"></div>
-      <div className="max-w-4xl mx-auto px-6 relative z-10 text-center">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 40 }}
-          whileInView={{ opacity: 1, scale: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 1, ease: appleEase }}
-          className="relative rounded-[3rem] p-[1px] overflow-hidden group"
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-white/5 opacity-50 group-hover:opacity-100 transition-opacity duration-500"></div>
-          <div className="glass-panel rounded-[3rem] p-8 md:p-20 relative overflow-hidden h-full w-full bg-black/40 backdrop-blur-3xl">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-1/2 bg-cyan/10 blur-[100px] rounded-full pointer-events-none"></div>
-
-            <h2 className="text-4xl sm:text-5xl md:text-7xl font-semibold tracking-tight mb-6 text-white">Get early access.</h2>
-            <p className="text-lg md:text-xl text-muted mb-12 max-w-xl mx-auto">Join the waitlist to be notified when we launch. Limited spots available for the beta program.</p>
-
-            {submitted ? (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white/10 border border-white/20 text-white p-6 rounded-2xl flex items-center justify-center gap-3 max-w-md mx-auto backdrop-blur-md"
-              >
-                <CheckCircle2 className="w-6 h-6 text-cyan" />
-                <span className="font-medium">You're on the list! We'll be in touch.</span>
-              </motion.div>
-            ) : (
-              <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4 max-w-lg mx-auto relative z-20 w-full">
-                <input
-                  type="email"
-                  required
-                  placeholder="Enter your email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="flex-1 w-full bg-white/5 border border-white/10 rounded-full px-6 md:px-8 py-4 md:py-5 text-white focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all placeholder:text-muted"
-                />
-                <button
-                  type="submit"
-                  className="bg-white text-black px-8 md:px-10 py-4 md:py-5 rounded-full font-semibold hover:scale-105 transition-transform duration-300 whitespace-nowrap shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)] w-full sm:w-auto"
-                >
-                  Sign in
-                </button>
-              </form>
-            )}
-          </div>
-        </motion.div>
-      </div>
-    </section>
-  );
-};
-
 const Footer = () => {
   return (
     <footer className="bg-black py-20 border-t border-white/10">
@@ -445,10 +381,10 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold text-white mb-6">Platform</h4>
             <ul className="space-y-4 text-sm text-muted">
-              <li><a href="#for-brands" className="hover:text-white transition-colors">For Brands</a></li>
-              <li><a href="#for-creators" className="hover:text-white transition-colors">For Creators</a></li>
-              <li><a href="#how-it-works" className="hover:text-white transition-colors">How it Works</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Pricing</a></li>
+              <li><a href="/docs#for-brands" className="hover:text-white transition-colors">For Brands</a></li>
+              <li><a href="/docs#for-creators" className="hover:text-white transition-colors">For Creators</a></li>
+              <li><a href="/docs#how-it-works" className="hover:text-white transition-colors">How it Works</a></li>
+              <li><a href="/docs#pricing" className="hover:text-white transition-colors">Pricing</a></li>
             </ul>
           </div>
 
@@ -465,9 +401,9 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold text-white mb-6">Legal</h4>
             <ul className="space-y-4 text-sm text-muted">
-              <li><a href="#" className="hover:text-white transition-colors">Terms of Service</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Cookie Policy</a></li>
+              <li><a href="/terms" className="hover:text-white transition-colors">Terms of Service</a></li>
+              <li><a href="/privacy" className="hover:text-white transition-colors">Privacy Policy</a></li>
+              <li><a href="/cookies" className="hover:text-white transition-colors">Cookie Policy</a></li>
             </ul>
           </div>
         </div>
@@ -542,6 +478,96 @@ const FAQ = () => {
   );
 };
 
+const TeamSection = () => {
+  const members = [
+    {
+      name: 'TMDEFI',
+      role: 'CEO',
+      handle: '@tmdefi',
+      url: 'https://x.com/tmdefi',
+      initials: 'TD',
+      image: '/team-tmdefi.jpg',
+      ring: 'conic-gradient(from 140deg, #8B5CF6, #EC4899, #22D3EE, #8B5CF6)'
+    },
+    {
+      name: 'GOATXII3',
+      role: 'CMO',
+      handle: '@goatxii3',
+      url: 'https://x.com/goatxii3',
+      initials: 'GX',
+      image: '/team-goatxii3.jpg',
+      ring: 'conic-gradient(from 140deg, #14B8A6, #22D3EE, #A3E635, #14B8A6)'
+    },
+    {
+      name: 'KHALID',
+      role: 'CTO',
+      handle: '@khaliddesigns',
+      url: 'https://x.com/khaliddesigns',
+      initials: 'KH',
+      image: '/team-khalid.jpg',
+      ring: 'conic-gradient(from 140deg, #FB7185, #F97316, #FACC15, #FB7185)'
+    },
+    {
+      name: 'YUSUFPLUG',
+      role: 'COO',
+      handle: '@yusufplug_',
+      url: 'https://x.com/yusufplug_',
+      initials: 'YP',
+      image: '/team-yusufplug.jpg',
+      ring: 'conic-gradient(from 140deg, #F59E0B, #FACC15, #FB7185, #F59E0B)'
+    }
+  ];
+
+  return (
+    <section className="py-24 relative">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="text-center mb-10">
+          <p className="text-xs font-semibold tracking-[0.28em] text-muted uppercase">Meet the Team</p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {members.map((member) => (
+            <a
+              key={member.name}
+              href={member.url}
+              target="_blank"
+              rel="noreferrer"
+              className="group border border-white/10 hover:border-cyan/60 rounded-2xl p-6 flex flex-col items-center text-center transition-colors duration-300 bg-black"
+            >
+              <div className="w-24 h-24 rounded-full p-[3px]" style={{ background: member.ring }}>
+                <div className="w-full h-full rounded-full bg-[#0B0A0F] p-1">
+                  <div className="w-full h-full rounded-full bg-white/5 flex items-center justify-center overflow-hidden">
+                    {'image' in member && member.image ? (
+                      <img
+                        src={member.image}
+                        alt={`${member.name} avatar`}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-xl font-semibold text-white tracking-tight">{member.initials}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="w-full h-px bg-white/10 my-6"></div>
+
+              <h3 className="text-sm font-bold tracking-[0.18em] uppercase text-white">{member.name}</h3>
+              <div className="mt-3 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-[11px] font-semibold tracking-wider text-cyan uppercase">
+                {member.role}
+              </div>
+              <div className="mt-4 flex items-center gap-2 text-sm text-muted group-hover:text-white transition-colors">
+                <XLogo className="w-3.5 h-3.5" />
+                <span>{member.handle}</span>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
 export default function Landing() {
   const brandFeatures = [
     { icon: <ShieldCheck className="w-6 h-6 text-white" />, title: "Verified Creators", desc: "Every creator is vetted for authentic engagement and influence with the help of Sorsa." },
@@ -576,7 +602,7 @@ export default function Landing() {
       />
       <StatsBar />
       <FAQ />
-      <Waitlist />
+      <TeamSection />
       <Footer />
     </div>
   );
