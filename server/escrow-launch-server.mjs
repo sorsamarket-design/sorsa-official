@@ -966,12 +966,23 @@ function scheduleWeeklySorsaProfileSync() {
 let payoutAutomationRunning = false;
 
 async function getEscrowCampaignState(campaign) {
-  return publicClient.readContract({
-    address: campaignEscrowAddress(campaign),
-    abi: campaignEscrowAbi,
-    functionName: 'campaigns',
-    args: [campaign.escrow_campaign_id]
-  });
+  try {
+    return await publicClient.readContract({
+      address: campaignEscrowAddress(campaign),
+      abi: campaignEscrowAbi,
+      functionName: 'campaigns',
+      args: [campaign.escrow_campaign_id]
+    });
+  } catch (error) {
+    if (/out of bounds|Position `\d+` is out of bounds/i.test(error?.message || '')) {
+      throw Object.assign(new Error('Escrow contract ABI does not match the deployed campaign contract'), {
+        status: 409,
+        code: 'ESCROW_ABI_MISMATCH',
+        cause: error
+      });
+    }
+    throw error;
+  }
 }
 
 function escrowCampaignField(state, index, name) {
@@ -1369,8 +1380,16 @@ async function runPayoutAutomation() {
           else summary.skipped += 1;
         }
       } catch (error) {
-        summary.failed += 1;
-        console.warn(`Payout automation failed for campaign ${campaign.id}:`, error.message || error);
+        if (error?.code === 'ESCROW_ABI_MISMATCH') {
+          summary.skipped += 1;
+          console.warn(
+            `Payout automation skipped campaign ${campaign.id}: escrow ABI does not match ${campaignEscrowAddress(campaign)}. ` +
+            'Deploy/use the matching escrow contract before automating payouts for this campaign.'
+          );
+        } else {
+          summary.failed += 1;
+          console.warn(`Payout automation failed for campaign ${campaign.id}:`, error.message || error);
+        }
       }
     }
 
