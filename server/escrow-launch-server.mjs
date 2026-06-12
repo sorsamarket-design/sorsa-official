@@ -27,8 +27,8 @@ const env = {
   ESCROW_CONTRACT_ADDRESS: process.env.ESCROW_CONTRACT_ADDRESS || process.env.VITE_ESCROW_CONTRACT_ADDRESS,
   PLATFORM_PRIVATE_KEY: process.env.PLATFORM_PRIVATE_KEY,
   ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS || process.env.VITE_ALLOWED_ORIGINS,
-  SORSA_API_BASE: process.env.SORSA_API_BASE || 'https://api.sorsa.io/v3',
-  SORSA_API_KEY: process.env.SORSA_API_KEY,
+  SORSA_API_BASE: process.env.SORSA_API_BASE || process.env.VITE_SORSA_API_BASE || 'https://api.sorsa.io/v3',
+  SORSA_API_KEY: process.env.SORSA_API_KEY || process.env.VITE_SORSA_API_KEY,
   SORSA_WEEKLY_SYNC_ENABLED: process.env.SORSA_WEEKLY_SYNC_ENABLED !== 'false',
   TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN,
   TELEGRAM_BOT_USERNAME: process.env.TELEGRAM_BOT_USERNAME,
@@ -225,6 +225,209 @@ async function assertBrandOperator(userId, message = 'Only brand operators can p
   if (role === 'admin' || role === 'brand') return role;
   if (await userOwnsBrandProfile(userId)) return 'brand_operator';
   throw Object.assign(new Error(message), { status: 403 });
+}
+
+async function assertAdmin(userId) {
+  const role = await getUserRole(userId);
+  if (role !== 'admin') {
+    throw Object.assign(new Error('Only admins can perform this action'), { status: 403 });
+  }
+}
+
+async function getOrCreateNftBrandProfile(userId) {
+  const profilePayload = {
+    owner_id: userId,
+    company_name: 'Sorsa NFT Campaigns',
+    website: null,
+    twitter_handle: null,
+    telegram_handle: null,
+    description: 'System profile for admin-created NFT campaigns.',
+    logo_url: null
+  };
+
+  const { data: existing, error: existingError } = await supabase
+    .from('brand_profiles')
+    .select('id, company_name, logo_url, twitter_handle')
+    .eq('owner_id', userId)
+    .eq('company_name', profilePayload.company_name)
+    .limit(1)
+    .maybeSingle();
+  if (existingError) throw Object.assign(new Error(existingError.message), { status: 500 });
+  if (existing) return existing;
+
+  const { data, error } = await supabase
+    .from('brand_profiles')
+    .insert([profilePayload])
+    .select('id, company_name, logo_url, twitter_handle')
+    .single();
+  if (error) throw Object.assign(new Error(error.message), { status: 500 });
+  return data;
+}
+
+function isNftRaffleType(campaignType) {
+  return campaignType === 'raffle' || campaignType === 'fcfs';
+}
+
+function isNftContentType(campaignType) {
+  return campaignType === 'content' || campaignType === 'all';
+}
+
+function normalizeNftCampaignBody(body, userId, brandProfile) {
+  const campaign = body?.campaign;
+  if (!campaign || typeof campaign !== 'object') {
+    throw Object.assign(new Error('Missing campaign payload'), { status: 400 });
+  }
+
+  const campaignType = String(campaign.campaign_type || '').toLowerCase();
+  if (!['raffle', 'content'].includes(campaignType)) {
+    throw Object.assign(new Error('NFT campaign type must be Raffle or Content'), { status: 400 });
+  }
+
+  const title = String(campaign.title || '').trim();
+  const goal = String(campaign.goal || '').trim();
+  const overview = String(campaign.overview || '').trim();
+  const budget = Number(campaign.budget || 0);
+  const minSorsaScore = Math.max(0, Math.min(1000, Number(campaign.min_sorsa_score || 0)));
+  const imageUrl = typeof campaign.image_url === 'string' && campaign.image_url.trim() ? campaign.image_url.trim() : null;
+  const backgroundImageUrl = typeof campaign.background_image_url === 'string' && campaign.background_image_url.trim()
+    ? campaign.background_image_url.trim()
+    : null;
+  const maxCreators = null;
+  const maxContentSubmissions = isNftContentType(campaignType)
+    ? Math.max(1, Math.min(5, Number(campaign.max_content_submissions || 5)))
+    : null;
+  const followAccounts = Array.isArray(campaign.follow_accounts)
+    ? campaign.follow_accounts
+        .map((account) => cleanHandle(account))
+        .filter(Boolean)
+        .slice(0, 3)
+    : [];
+  const retweetLinks = Array.isArray(campaign.retweet_links)
+    ? campaign.retweet_links
+        .map((link) => String(link || '').trim())
+        .filter(Boolean)
+        .slice(0, 2)
+    : [];
+
+  if (!title) throw Object.assign(new Error('Campaign title is required'), { status: 400 });
+  if (!goal) throw Object.assign(new Error('Campaign goal is required'), { status: 400 });
+  if (!overview) throw Object.assign(new Error('Campaign brief is required'), { status: 400 });
+  if (budget < 0) throw Object.assign(new Error('Total WL must be a positive number'), { status: 400 });
+  const nftMetadata = {
+    nft: true,
+    image_url: imageUrl,
+    background_image_url: backgroundImageUrl,
+    max_creators: maxCreators,
+    max_content_submissions: maxContentSubmissions,
+    follow_accounts: Array.from(new Set(followAccounts)),
+    retweet_links: Array.from(new Set(retweetLinks))
+  };
+
+  return {
+    owner_id: userId,
+    brand_profile_id: brandProfile.id,
+    title,
+    goal,
+    campaign_type: campaignType,
+    min_sorsa_score: minSorsaScore,
+    language: JSON.stringify(nftMetadata),
+    categories: Array.isArray(campaign.categories) ? campaign.categories : ['NFT'],
+    overview,
+    budget,
+    platform_fee: 0,
+    net_budget: budget,
+    status: 'draft',
+    start_date: campaign.start_date || null,
+    end_date: campaign.end_date || null,
+    brand_name: brandProfile.company_name || 'Sorsa NFT Campaigns',
+    brand_logo_url: brandProfile.logo_url || null,
+    brand_twitter_handle: brandProfile.twitter_handle || null
+  };
+}
+
+function withNftCampaignMetadata(campaign) {
+  let metadata = {};
+  try {
+    metadata = campaign.language ? JSON.parse(campaign.language) : {};
+  } catch {
+    metadata = {};
+  }
+
+  return {
+    ...campaign,
+    image_url: metadata.image_url || null,
+    background_image_url: metadata.background_image_url || null,
+    max_creators: metadata.max_creators ?? null,
+    max_content_submissions: metadata.max_content_submissions ?? null,
+    follow_accounts: Array.isArray(metadata.follow_accounts) ? metadata.follow_accounts : [],
+    retweet_links: Array.isArray(metadata.retweet_links) ? metadata.retweet_links : [],
+    raffle_results: Array.isArray(metadata.raffle_results) ? metadata.raffle_results : [],
+    raffle_finalized_at: metadata.raffle_finalized_at || null
+  };
+}
+
+async function getNftCampaignStatsMap(campaignIds) {
+  const ids = Array.from(new Set((campaignIds || []).filter(Boolean)));
+  const statsMap = new Map();
+
+  for (const id of ids) {
+    statsMap.set(id, {
+      joined_count: 0,
+      approved_count: 0,
+      rejected_count: 0
+    });
+  }
+  if (!ids.length) return statsMap;
+
+  const { data: participants, error } = await supabase
+    .from('campaign_participants')
+    .select('campaign_id, status')
+    .in('campaign_id', ids);
+  if (error) throw Object.assign(new Error(error.message), { status: 500 });
+
+  for (const participant of participants || []) {
+    const stats = statsMap.get(participant.campaign_id) || {
+      joined_count: 0,
+      approved_count: 0,
+      rejected_count: 0
+    };
+    stats.joined_count += 1;
+    if (participant.status === 'approved') stats.approved_count += 1;
+    if (participant.status === 'rejected') stats.rejected_count += 1;
+    statsMap.set(participant.campaign_id, stats);
+  }
+
+  return statsMap;
+}
+
+function parseCampaignMetadata(campaign) {
+  try {
+    return campaign?.language ? JSON.parse(campaign.language) : {};
+  } catch {
+    return {};
+  }
+}
+
+function randomIndex(max) {
+  return randomBytes(4).readUInt32BE(0) % max;
+}
+
+function pickRandomItems(items, limit) {
+  const pool = [...items];
+  for (let index = pool.length - 1; index > 0; index -= 1) {
+    const swapIndex = randomIndex(index + 1);
+    [pool[index], pool[swapIndex]] = [pool[swapIndex], pool[index]];
+  }
+  return pool.slice(0, limit);
+}
+
+function getCampaignEndTime(endDate) {
+  if (!endDate) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(String(endDate))) {
+    return new Date(`${endDate}T23:59:59`).getTime();
+  }
+  const time = new Date(endDate).getTime();
+  return Number.isNaN(time) ? null : time;
 }
 
 async function assertCampaignSchemaReady() {
@@ -1427,6 +1630,691 @@ app.post('/campaigns/drafts', async (req, res) => {
   }
 });
 
+app.post('/admin/nft-campaigns', async (req, res) => {
+  try {
+    const user = await authenticate(req);
+    await assertAdmin(user.id);
+    const brandProfile = await getOrCreateNftBrandProfile(user.id);
+    const payload = normalizeNftCampaignBody(req.body, user.id, brandProfile);
+
+    const { data, error } = await supabase
+      .from('campaigns')
+      .insert([payload])
+      .select()
+      .single();
+    if (error) throw Object.assign(new Error(error.message), { status: 500 });
+
+    return res.status(201).json({
+      campaign: withNftCampaignMetadata(data)
+    });
+  } catch (error) {
+    const status = error.status || 500;
+    console.error('admin nft campaign create failed:', error);
+    return res.status(status).json({ error: error.message || 'NFT campaign could not be created' });
+  }
+});
+
+app.get('/admin/raffles', async (req, res) => {
+  try {
+    const user = await authenticate(req);
+    await assertAdmin(user.id);
+
+    const { data: campaigns, error } = await supabase
+      .from('campaigns')
+      .select('id, title, goal, campaign_type, categories, overview, budget, min_sorsa_score, language, status, start_date, end_date, created_at')
+      .in('campaign_type', ['raffle', 'fcfs'])
+      .order('created_at', { ascending: false });
+    if (error) throw Object.assign(new Error(error.message), { status: 500 });
+
+    const campaignIds = (campaigns || []).map((campaign) => campaign.id);
+    const participantStats = new Map();
+
+    if (campaignIds.length) {
+      const { data: participants, error: participantError } = await supabase
+        .from('campaign_participants')
+        .select('campaign_id, status')
+        .in('campaign_id', campaignIds);
+      if (participantError) throw Object.assign(new Error(participantError.message), { status: 500 });
+
+      for (const participant of participants || []) {
+        const stats = participantStats.get(participant.campaign_id) || {
+          joined_count: 0,
+          approved_count: 0,
+          rejected_count: 0
+        };
+        stats.joined_count += 1;
+        if (participant.status === 'approved') stats.approved_count += 1;
+        if (participant.status === 'rejected') stats.rejected_count += 1;
+        participantStats.set(participant.campaign_id, stats);
+      }
+    }
+
+    return res.json({
+      campaigns: (campaigns || []).map((campaign) => ({
+        ...withNftCampaignMetadata(campaign),
+        stats: participantStats.get(campaign.id) || {
+          joined_count: 0,
+          approved_count: 0,
+          rejected_count: 0
+        }
+      }))
+    });
+  } catch (error) {
+    const status = error.status || 500;
+    return res.status(status).json({ error: error.message || 'Raffle campaigns could not be loaded' });
+  }
+});
+
+app.get('/admin/raffles/:campaignId', async (req, res) => {
+  try {
+    const user = await authenticate(req);
+    await assertAdmin(user.id);
+    const campaignId = String(req.params.campaignId || '').trim();
+    if (!campaignId) throw Object.assign(new Error('Missing campaign id'), { status: 400 });
+
+    const [{ data: campaign, error }, { data: participants, error: participantError }] = await Promise.all([
+      supabase
+        .from('campaigns')
+        .select('id, title, goal, campaign_type, categories, overview, budget, min_sorsa_score, language, status, start_date, end_date, created_at')
+        .eq('id', campaignId)
+        .in('campaign_type', ['raffle', 'fcfs'])
+        .single(),
+      supabase
+        .from('campaign_participants')
+        .select(`
+          id,
+          creator_id,
+          status,
+          joined_at,
+          approved_at,
+          base_reward,
+          creator_profile:creator_profiles!creator_id (
+            id,
+            x_handle,
+            full_name,
+            avatar_url,
+            sorsa_score,
+            follower_count,
+            wallet_address
+          )
+        `)
+        .eq('campaign_id', campaignId)
+        .order('joined_at', { ascending: false })
+    ]);
+    if (error || !campaign) throw Object.assign(new Error('Raffle campaign not found'), { status: 404 });
+    if (participantError) throw Object.assign(new Error(participantError.message), { status: 500 });
+
+    const stats = {
+      joined_count: participants?.length || 0,
+      approved_count: (participants || []).filter((participant) => participant.status === 'approved').length,
+      rejected_count: (participants || []).filter((participant) => participant.status === 'rejected').length
+    };
+
+    return res.json({
+      campaign: withNftCampaignMetadata(campaign),
+      participants: participants || [],
+      stats
+    });
+  } catch (error) {
+    const status = error.status || 500;
+    return res.status(status).json({ error: error.message || 'Raffle campaign could not be loaded' });
+  }
+});
+
+app.post('/admin/raffles/:campaignId/finalize', async (req, res) => {
+  try {
+    const user = await authenticate(req);
+    await assertAdmin(user.id);
+    const campaignId = String(req.params.campaignId || '').trim();
+    if (!campaignId) throw Object.assign(new Error('Missing campaign id'), { status: 400 });
+
+    const [{ data: campaign, error }, { data: participants, error: participantError }] = await Promise.all([
+      supabase
+        .from('campaigns')
+        .select('id, title, campaign_type, budget, language, status')
+        .eq('id', campaignId)
+        .in('campaign_type', ['raffle', 'fcfs'])
+        .single(),
+      supabase
+        .from('campaign_participants')
+        .select(`
+          id,
+          creator_id,
+          status,
+          joined_at,
+          creator_profile:creator_profiles!creator_id (
+            id,
+            x_handle,
+            full_name,
+            wallet_address
+          )
+        `)
+        .eq('campaign_id', campaignId)
+        .neq('status', 'rejected')
+    ]);
+    if (error || !campaign) throw Object.assign(new Error('Raffle campaign not found'), { status: 404 });
+    if (participantError) throw Object.assign(new Error(participantError.message), { status: 500 });
+
+    const metadata = parseCampaignMetadata(campaign);
+    if (Array.isArray(metadata.raffle_results) && metadata.raffle_results.length > 0) {
+      return res.json({
+        winners: metadata.raffle_results,
+        finalized_at: metadata.raffle_finalized_at || null,
+        alreadyFinalized: true
+      });
+    }
+
+    const totalWl = Math.floor(Number(campaign.budget || 0));
+    if (!Number.isFinite(totalWl) || totalWl < 1) {
+      throw Object.assign(new Error('Total WL must be at least 1 before finalizing this raffle'), { status: 400 });
+    }
+
+    const eligibleParticipants = (participants || []).filter((participant) => participant.creator_profile);
+    if (eligibleParticipants.length === 0) {
+      throw Object.assign(new Error('No eligible joined creators found for this raffle'), { status: 400 });
+    }
+
+    const winners = pickRandomItems(eligibleParticipants, Math.min(totalWl, eligibleParticipants.length)).map((participant) => ({
+      participant_id: participant.id,
+      creator_id: participant.creator_id,
+      name: participant.creator_profile?.full_name || participant.creator_profile?.x_handle || 'Creator',
+      x_account: participant.creator_profile?.x_handle || '',
+      wallet_address: participant.creator_profile?.wallet_address || ''
+    }));
+    const finalizedAt = new Date().toISOString();
+
+    const { error: updateError } = await supabase
+      .from('campaigns')
+      .update({
+        status: 'completed',
+        language: JSON.stringify({
+          ...metadata,
+          raffle_results: winners,
+          raffle_finalized_at: finalizedAt
+        })
+      })
+      .eq('id', campaignId);
+    if (updateError) throw Object.assign(new Error(updateError.message), { status: 500 });
+
+    return res.json({
+      winners,
+      finalized_at: finalizedAt,
+      alreadyFinalized: false
+    });
+  } catch (error) {
+    const status = error.status || 500;
+    console.error('admin raffle finalize failed:', error);
+    return res.status(status).json({ error: error.message || 'Raffle could not be finalized' });
+  }
+});
+
+app.get('/nft-campaigns', async (req, res) => {
+  try {
+    await authenticate(req);
+    const { data, error } = await supabase
+      .from('campaigns')
+    .select('id, title, goal, campaign_type, categories, overview, budget, min_sorsa_score, language, status, start_date, end_date, created_at')
+      .in('status', ['draft', 'completed'])
+      .in('campaign_type', ['raffle', 'content', 'fcfs', 'all'])
+      .order('created_at', { ascending: false });
+    if (error) throw Object.assign(new Error(error.message), { status: 500 });
+    const statsMap = await getNftCampaignStatsMap((data || []).map((campaign) => campaign.id));
+
+    return res.json({
+      campaigns: (data || []).map((campaign) => ({
+        ...withNftCampaignMetadata(campaign),
+        stats: statsMap.get(campaign.id) || {
+          joined_count: 0,
+          approved_count: 0,
+          rejected_count: 0
+        }
+      }))
+    });
+  } catch (error) {
+    const status = error.status || 500;
+    return res.status(status).json({ error: error.message || 'NFT campaigns could not be loaded' });
+  }
+});
+
+app.get('/nft-campaigns/mine', async (req, res) => {
+  try {
+    const user = await authenticate(req);
+    const { data, error } = await supabase
+      .from('campaign_participants')
+      .select(`
+        id,
+        campaign_id,
+        creator_id,
+        status,
+        joined_at,
+        approved_at,
+        campaign:campaigns (
+          id,
+          title,
+          goal,
+          campaign_type,
+          categories,
+          overview,
+          budget,
+          min_sorsa_score,
+          language,
+          status,
+          start_date,
+          end_date,
+          created_at
+        )
+      `)
+      .eq('creator_id', user.id)
+      .neq('status', 'rejected')
+      .order('joined_at', { ascending: false });
+    if (error) throw Object.assign(new Error(error.message), { status: 500 });
+
+    const now = Date.now();
+    const campaignIds = (data || []).map((item) => item.campaign?.id).filter(Boolean);
+    const statsMap = await getNftCampaignStatsMap(campaignIds);
+    const nftParticipations = (data || [])
+      .filter((item) => item.campaign && ['raffle', 'content', 'fcfs', 'all'].includes(item.campaign.campaign_type))
+      .map((item) => ({
+        ...item,
+        campaign: {
+          ...withNftCampaignMetadata(item.campaign),
+          stats: statsMap.get(item.campaign.id) || {
+            joined_count: 0,
+            approved_count: 0,
+            rejected_count: 0
+          }
+        }
+      }));
+
+    const isPastNftCampaign = (campaign) => {
+      if (campaign.status === 'completed') return true;
+      const endTime = getCampaignEndTime(campaign.end_date);
+      return Boolean(endTime && endTime <= now);
+    };
+
+    return res.json({
+      active: nftParticipations.filter((item) => !isPastNftCampaign(item.campaign)),
+      past: nftParticipations.filter((item) => isPastNftCampaign(item.campaign))
+    });
+  } catch (error) {
+    const status = error.status || 500;
+    return res.status(status).json({ error: error.message || 'Creator NFT campaigns could not be loaded' });
+  }
+});
+
+app.get('/nft-campaigns/:campaignId', async (req, res) => {
+  try {
+    const user = await authenticate(req);
+    const campaignId = String(req.params.campaignId || '').trim();
+    if (!campaignId) throw Object.assign(new Error('Missing campaign id'), { status: 400 });
+
+    const [{ data: campaign, error }, { data: participation, error: participationError }] = await Promise.all([
+      supabase
+        .from('campaigns')
+        .select('id, title, goal, campaign_type, categories, overview, budget, min_sorsa_score, language, status, start_date, end_date, created_at')
+        .eq('id', campaignId)
+        .in('status', ['draft', 'completed'])
+        .in('campaign_type', ['raffle', 'content', 'fcfs', 'all'])
+        .single(),
+      supabase
+        .from('campaign_participants')
+        .select('id, status, joined_at')
+        .eq('campaign_id', campaignId)
+        .eq('creator_id', user.id)
+        .maybeSingle()
+    ]);
+    if (error || !campaign) throw Object.assign(new Error('NFT campaign not found'), { status: 404 });
+    if (participationError) throw Object.assign(new Error(participationError.message), { status: 500 });
+    const statsMap = await getNftCampaignStatsMap([campaign.id]);
+
+    return res.json({
+      campaign: {
+        ...withNftCampaignMetadata(campaign),
+        stats: statsMap.get(campaign.id) || {
+          joined_count: 0,
+          approved_count: 0,
+          rejected_count: 0
+        }
+      },
+      participation: participation || null
+    });
+  } catch (error) {
+    const status = error.status || 500;
+    return res.status(status).json({ error: error.message || 'NFT campaign could not be loaded' });
+  }
+});
+
+app.post('/nft-campaigns/:campaignId/verify-task', async (req, res) => {
+  try {
+    const user = await authenticate(req);
+    const campaignId = String(req.params.campaignId || '').trim();
+    const taskType = String(req.body?.type || '').trim().toLowerCase();
+    const taskValue = String(req.body?.value || '').trim();
+    if (!campaignId) throw Object.assign(new Error('Missing campaign id'), { status: 400 });
+    if (!['follow', 'retweet'].includes(taskType) || !taskValue) {
+      throw Object.assign(new Error('Missing task to verify'), { status: 400 });
+    }
+
+    const [{ data: creator, error: creatorError }, { data: campaign, error: campaignError }] = await Promise.all([
+      supabase
+        .from('creator_profiles')
+        .select('id, x_handle, sorsa_score, wallet_address')
+        .eq('id', user.id)
+        .single(),
+      supabase
+        .from('campaigns')
+        .select('id, campaign_type, min_sorsa_score, language, status')
+        .eq('id', campaignId)
+        .eq('status', 'draft')
+        .in('campaign_type', ['raffle', 'content', 'fcfs', 'all'])
+        .single()
+    ]);
+
+    if (creatorError || !creator) {
+      throw Object.assign(new Error('Creator profile is required to verify NFT tasks'), { status: 403 });
+    }
+    if (campaignError || !campaign) {
+      throw Object.assign(new Error('NFT campaign not found'), { status: 404 });
+    }
+    if (taskType === 'retweet' && !isNftRaffleType(campaign.campaign_type)) {
+      throw Object.assign(new Error('Retweet verification is only available for raffle campaigns'), { status: 400 });
+    }
+
+    const creatorHandle = cleanHandle(creator.x_handle);
+    if (!creatorHandle) {
+      throw Object.assign(new Error('Add your X handle to your creator profile before verifying tasks'), { status: 403 });
+    }
+
+    const nftCampaign = withNftCampaignMetadata(campaign);
+    if (taskType === 'follow') {
+      const targetAccount = cleanHandle(taskValue);
+      const requiredFollowAccounts = Array.isArray(nftCampaign.follow_accounts)
+        ? nftCampaign.follow_accounts.map((account) => cleanHandle(account)).filter(Boolean).slice(0, 3)
+        : [];
+      if (!requiredFollowAccounts.includes(targetAccount)) {
+        throw Object.assign(new Error('This follow task is not part of the campaign'), { status: 400 });
+      }
+
+      const followResult = await callSorsa('/check-follow', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username_1: targetAccount,
+          username_2: creatorHandle
+        })
+      });
+
+      if (followResult?.follow !== true) {
+        throw Object.assign(new Error(`Follow @${targetAccount} on X, then verify again`), { status: 403 });
+      }
+
+      return res.json({ verified: true, type: 'follow', value: targetAccount });
+    }
+
+    const tweetLink = taskValue;
+    const requiredRetweetLinks = Array.isArray(nftCampaign.retweet_links)
+      ? nftCampaign.retweet_links.map((link) => String(link || '').trim()).filter(Boolean).slice(0, 2)
+      : [];
+    if (!requiredRetweetLinks.includes(tweetLink)) {
+      throw Object.assign(new Error('This retweet task is not part of the campaign'), { status: 400 });
+    }
+
+    let nextCursor = null;
+    let retweeted = false;
+    for (let page = 0; page < 5; page += 1) {
+      const retweetResult = await callSorsa('/check-retweet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tweet_link: tweetLink,
+          username: creatorHandle,
+          ...(nextCursor ? { next_cursor: nextCursor } : {})
+        })
+      });
+
+      if (retweetResult?.retweet === true) {
+        retweeted = true;
+        break;
+      }
+      if (!retweetResult?.next_cursor) break;
+      nextCursor = retweetResult.next_cursor;
+    }
+
+    if (!retweeted) {
+      throw Object.assign(new Error('Retweet this X post, then verify again'), { status: 403 });
+    }
+
+    return res.json({ verified: true, type: 'retweet', value: tweetLink });
+  } catch (error) {
+    const status = error.status || 500;
+    return res.status(status).json({ error: error.message || 'Task could not be verified' });
+  }
+});
+
+app.post('/nft-campaigns/:campaignId/join', async (req, res) => {
+  try {
+    const user = await authenticate(req);
+    const campaignId = String(req.params.campaignId || '').trim();
+    if (!campaignId) throw Object.assign(new Error('Missing campaign id'), { status: 400 });
+
+    const [{ data: creator, error: creatorError }, { data: campaign, error: campaignError }] = await Promise.all([
+      supabase
+        .from('creator_profiles')
+        .select('id, x_handle, sorsa_score, wallet_address')
+        .eq('id', user.id)
+        .single(),
+      supabase
+        .from('campaigns')
+        .select('id, campaign_type, min_sorsa_score, language, status')
+        .eq('id', campaignId)
+        .eq('status', 'draft')
+        .in('campaign_type', ['raffle', 'content', 'fcfs', 'all'])
+        .single()
+    ]);
+
+    if (creatorError || !creator) {
+      throw Object.assign(new Error('Creator profile is required to join NFT campaigns'), { status: 403 });
+    }
+    if (campaignError || !campaign) {
+      throw Object.assign(new Error('NFT campaign not found'), { status: 404 });
+    }
+    if (!creator.wallet_address || !isAddress(creator.wallet_address)) {
+      throw Object.assign(new Error('Add a valid wallet address to your creator profile before joining campaigns'), { status: 403 });
+    }
+
+    const nftCampaign = withNftCampaignMetadata(campaign);
+    const { data: existing, error: existingError } = await supabase
+      .from('campaign_participants')
+      .select('id, status, joined_at')
+      .eq('campaign_id', campaignId)
+      .eq('creator_id', user.id)
+      .maybeSingle();
+    if (existingError) throw Object.assign(new Error(existingError.message), { status: 500 });
+    if (existing && existing.status !== 'rejected') {
+      return res.json({ participation: existing, alreadyJoined: true });
+    }
+
+    const requiredScore = Number(campaign.min_sorsa_score || 0);
+    if (requiredScore > 0 && Number(creator.sorsa_score || 0) < requiredScore) {
+      throw Object.assign(new Error(`You need a Sorsa Score of at least ${requiredScore} to join this NFT campaign`), { status: 403 });
+    }
+
+    const requiredFollowAccounts = Array.isArray(nftCampaign.follow_accounts)
+      ? nftCampaign.follow_accounts.map((account) => cleanHandle(account)).filter(Boolean).slice(0, 3)
+      : [];
+    if (requiredFollowAccounts.length > 0) {
+      const creatorHandle = cleanHandle(creator.x_handle);
+      if (!creatorHandle) {
+        throw Object.assign(new Error('Add your X handle to your creator profile before joining this campaign'), { status: 403 });
+      }
+
+      for (const account of requiredFollowAccounts) {
+        const followResult = await callSorsa('/check-follow', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username_1: account,
+            username_2: creatorHandle
+          })
+        });
+
+        if (followResult?.follow !== true) {
+          throw Object.assign(new Error(`Follow @${account} on X before joining this NFT campaign`), { status: 403 });
+        }
+      }
+    }
+
+    const requiredRetweetLinks = isNftRaffleType(campaign.campaign_type) && Array.isArray(nftCampaign.retweet_links)
+      ? nftCampaign.retweet_links.map((link) => String(link || '').trim()).filter(Boolean).slice(0, 2)
+      : [];
+    if (requiredRetweetLinks.length > 0) {
+      const creatorHandle = cleanHandle(creator.x_handle);
+      if (!creatorHandle) {
+        throw Object.assign(new Error('Add your X handle to your creator profile before joining this campaign'), { status: 403 });
+      }
+
+      for (const tweetLink of requiredRetweetLinks) {
+        let nextCursor = null;
+        let retweeted = false;
+        for (let page = 0; page < 5; page += 1) {
+          const retweetResult = await callSorsa('/check-retweet', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              tweet_link: tweetLink,
+              username: creatorHandle,
+              ...(nextCursor ? { next_cursor: nextCursor } : {})
+            })
+          });
+
+          if (retweetResult?.retweet === true) {
+            retweeted = true;
+            break;
+          }
+          if (!retweetResult?.next_cursor) break;
+          nextCursor = retweetResult.next_cursor;
+        }
+
+        if (!retweeted) {
+          throw Object.assign(new Error('Retweet all required X posts before joining this NFT campaign'), { status: 403 });
+        }
+      }
+    }
+
+    if (isNftRaffleType(campaign.campaign_type) && nftCampaign.max_creators) {
+      const { count, error: countError } = await supabase
+        .from('campaign_participants')
+        .select('id', { count: 'exact', head: true })
+        .eq('campaign_id', campaignId)
+        .neq('status', 'rejected');
+      if (countError) throw Object.assign(new Error(countError.message), { status: 500 });
+      if (Number(count || 0) >= Number(nftCampaign.max_creators)) {
+        throw Object.assign(new Error('This raffle NFT campaign is full'), { status: 409 });
+      }
+    }
+
+    const mutation = existing
+      ? supabase
+          .from('campaign_participants')
+          .update({ status: 'active', base_reward: 0 })
+          .eq('id', existing.id)
+          .select()
+          .single()
+      : supabase
+          .from('campaign_participants')
+          .insert({
+            campaign_id: campaignId,
+            creator_id: user.id,
+            status: 'active',
+            base_reward: 0
+          })
+          .select()
+          .single();
+
+    const { data: participation, error: mutationError } = await mutation;
+    if (mutationError) {
+      if (mutationError.code === '23505') {
+        throw Object.assign(new Error('You have already joined this NFT campaign'), { status: 409 });
+      }
+      throw Object.assign(new Error(mutationError.message), { status: 500 });
+    }
+
+    return res.status(existing ? 200 : 201).json({ participation, alreadyJoined: false });
+  } catch (error) {
+    const status = error.status || 500;
+    return res.status(status).json({ error: error.message || 'Could not join NFT campaign' });
+  }
+});
+
+app.post('/nft-campaigns/:campaignId/submissions', async (req, res) => {
+  try {
+    const user = await authenticate(req);
+    const campaignId = String(req.params.campaignId || '').trim();
+    const tweetUrl = String(req.body?.tweet_url || '').trim();
+    if (!campaignId) throw Object.assign(new Error('Missing campaign id'), { status: 400 });
+    if (!/^https?:\/\/(x|twitter)\.com\/.+\/status\/\d+/i.test(tweetUrl)) {
+      throw Object.assign(new Error('Submit a valid X post link'), { status: 400 });
+    }
+
+    const [{ data: campaign, error: campaignError }, { data: participation, error: participationError }] = await Promise.all([
+      supabase
+        .from('campaigns')
+        .select('id, campaign_type, status')
+        .eq('id', campaignId)
+        .eq('status', 'draft')
+        .in('campaign_type', ['content', 'all'])
+        .single(),
+      supabase
+        .from('campaign_participants')
+        .select('id, status')
+        .eq('campaign_id', campaignId)
+        .eq('creator_id', user.id)
+        .maybeSingle()
+    ]);
+
+    if (campaignError || !campaign || !isNftContentType(campaign.campaign_type)) {
+      throw Object.assign(new Error('Content NFT campaign not found'), { status: 404 });
+    }
+    if (participationError) throw Object.assign(new Error(participationError.message), { status: 500 });
+    if (!participation || participation.status === 'rejected') {
+      throw Object.assign(new Error('Join this content campaign before submitting'), { status: 403 });
+    }
+
+    const { data: duplicate, error: duplicateError } = await supabase
+      .from('campaign_submissions')
+      .select('id')
+      .eq('participation_id', participation.id)
+      .eq('tweet_url', tweetUrl)
+      .maybeSingle();
+    if (duplicateError) throw Object.assign(new Error(duplicateError.message), { status: 500 });
+    if (duplicate) throw Object.assign(new Error('This content link has already been submitted'), { status: 409 });
+
+    const { data: submission, error: submissionError } = await supabase
+      .from('campaign_submissions')
+      .insert([{
+        participation_id: participation.id,
+        campaign_id: campaignId,
+        creator_id: user.id,
+        tweet_url: tweetUrl,
+        status: 'submitted'
+      }])
+      .select()
+      .single();
+    if (submissionError) throw Object.assign(new Error(submissionError.message), { status: 500 });
+
+    const { error: participantError } = await supabase
+      .from('campaign_participants')
+      .update({ status: 'submitted' })
+      .eq('id', participation.id);
+    if (participantError) throw Object.assign(new Error(participantError.message), { status: 500 });
+
+    return res.status(201).json({ submission });
+  } catch (error) {
+    const status = error.status || 500;
+    return res.status(status).json({ error: error.message || 'Content submission failed' });
+  }
+});
+
 app.get('/sorsa/info', async (req, res) => {
   try {
     await authenticate(req);
@@ -1464,6 +2352,37 @@ app.get('/sorsa/score', async (req, res) => {
   } catch (error) {
     const status = error.status || 500;
     return res.status(status).json({ error: error.message || 'Unable to verify' });
+  }
+});
+
+app.post('/creator/sorsa/sync', async (req, res) => {
+  try {
+    const user = await authenticate(req);
+    const { data: profile, error } = await supabase
+      .from('creator_profiles')
+      .select('id, x_handle')
+      .eq('id', user.id)
+      .single();
+    if (error || !profile) {
+      throw Object.assign(new Error('Creator profile is required to sync Sorsa score'), { status: 403 });
+    }
+
+    const result = await syncCreatorProfileFromSorsa(profile);
+    if (!result.synced) {
+      throw Object.assign(new Error('Add your X handle before syncing Sorsa score'), { status: 400 });
+    }
+
+    const { data: updatedProfile, error: updatedError } = await supabase
+      .from('creator_profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+    if (updatedError) throw Object.assign(new Error(updatedError.message), { status: 500 });
+
+    return res.json({ profile: updatedProfile });
+  } catch (error) {
+    const status = error.status || 500;
+    return res.status(status).json({ error: error.message || 'Sorsa profile sync failed' });
   }
 });
 
@@ -1539,6 +2458,9 @@ app.post('/campaigns/:campaignId/join', async (req, res) => {
     }
     if (campaignError || !campaign) {
       throw Object.assign(new Error('Campaign not found'), { status: 404 });
+    }
+    if (!creator.wallet_address || !isAddress(creator.wallet_address)) {
+      throw Object.assign(new Error('Add a valid wallet address to your creator profile before joining campaigns'), { status: 403 });
     }
     if (campaign.status !== 'live') {
       throw Object.assign(new Error('Campaign is not open for joining'), { status: 400 });
@@ -1766,9 +2688,14 @@ app.post('/submissions/:submissionId/status', async (req, res) => {
         campaign_id,
         creator_id,
         participation_id,
+        status,
+        submitted_at,
         campaign:campaigns (
           id,
           owner_id,
+          campaign_type,
+          categories,
+          language,
           escrow_campaign_id,
           escrow_contract_address
         )
@@ -1780,6 +2707,34 @@ app.post('/submissions/:submissionId/status', async (req, res) => {
     const role = await getUserRole(user.id);
     if (role !== 'admin' && existingSubmission.campaign?.owner_id !== user.id) {
       throw Object.assign(new Error('Campaign does not belong to this user'), { status: 403 });
+    }
+
+    if (status === 'approved' && existingSubmission.status !== 'approved') {
+      let nftMetadata = {};
+      try {
+        nftMetadata = existingSubmission.campaign?.language ? JSON.parse(existingSubmission.campaign.language) : {};
+      } catch {
+        nftMetadata = {};
+      }
+      const campaignType = String(existingSubmission.campaign?.campaign_type || '').toLowerCase();
+      const categories = Array.isArray(existingSubmission.campaign?.categories) ? existingSubmission.campaign.categories : [];
+      const isNftContentCampaign =
+        isNftContentType(campaignType) &&
+        (nftMetadata.nft || categories.some((category) => String(category).toLowerCase() === 'nft'));
+
+      if (isNftContentCampaign) {
+        const maxAccepted = Math.max(1, Math.min(5, Number(nftMetadata.max_content_submissions || 5)));
+        const { count: approvedCount, error: approvedCountError } = await supabase
+          .from('campaign_submissions')
+          .select('id', { count: 'exact', head: true })
+          .eq('campaign_id', existingSubmission.campaign_id)
+          .eq('status', 'approved')
+          .neq('id', submissionId);
+        if (approvedCountError) throw approvedCountError;
+        if (Number(approvedCount || 0) >= maxAccepted) {
+          throw Object.assign(new Error(`This NFT content campaign already has ${maxAccepted} approved submission${maxAccepted === 1 ? '' : 's'}`), { status: 409 });
+        }
+      }
     }
 
     const { data: submission, error } = await supabase
@@ -1795,16 +2750,32 @@ app.post('/submissions/:submissionId/status', async (req, res) => {
     if (error) throw error;
 
     if (submission.participation_id) {
+      let shouldReleaseBaseReward = false;
+      if (status === 'rejected') {
+        const { data: firstSubmission, error: firstSubmissionError } = await supabase
+          .from('campaign_submissions')
+          .select('id')
+          .eq('participation_id', submission.participation_id)
+          .order('submitted_at', { ascending: true })
+          .order('id', { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        if (firstSubmissionError) throw firstSubmissionError;
+        shouldReleaseBaseReward = firstSubmission?.id === submission.id;
+      }
+
       const participantPayload = {
-        status,
+        ...(status !== 'rejected' || shouldReleaseBaseReward ? { status } : {}),
         ...(status === 'approved' ? { approved_at: new Date().toISOString() } : {}),
-        ...(status === 'rejected' ? { base_reward: 0 } : {})
+        ...(shouldReleaseBaseReward ? { base_reward: 0 } : {})
       };
-      const { error: participantError } = await supabase
-        .from('campaign_participants')
-        .update(participantPayload)
-        .eq('id', submission.participation_id);
-      if (participantError) throw participantError;
+      if (Object.keys(participantPayload).length > 0) {
+        const { error: participantError } = await supabase
+          .from('campaign_participants')
+          .update(participantPayload)
+          .eq('id', submission.participation_id);
+        if (participantError) throw participantError;
+      }
     }
 
     let activityPoints = { awarded: false };

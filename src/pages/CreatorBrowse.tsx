@@ -17,6 +17,10 @@ function rewardPool(campaign: { budget: number; escrowed_budget?: number | null;
   return Number(campaign.escrowed_budget ?? campaign.net_budget ?? Number(campaign.budget || 0) * 0.85);
 }
 
+function availableRewardPool(campaign: { budget: number; stats?: { allocated_base_pool?: number } | null }) {
+  return Math.max(0, Number(campaign.budget || 0) - Number(campaign.stats?.allocated_base_pool || 0));
+}
+
 export default function CreatorBrowse() {
   const navigate = useNavigate();
   const { campaigns, loading } = useCampaigns();
@@ -276,8 +280,7 @@ export default function CreatorBrowse() {
           >
             {loading && activeTab === 'live' ? (
               <div className="flex flex-col items-center justify-center min-h-[400px]">
-                <Loader2 className="w-8 h-8 text-cyan animate-spin mb-4" />
-                <p className="text-muted">Loading live campaigns...</p>
+                <Loader2 className="w-8 h-8 text-cyan animate-spin" />
               </div>
             ) : filteredCampaigns.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -377,7 +380,7 @@ export default function CreatorBrowse() {
                         <div className="flex items-center justify-between pt-4 border-t border-white/10">
                           <div className="flex items-center gap-4">
                             <div className="flex items-center gap-1.5 text-sm font-medium text-white">
-                              Pool ${campaign.budget.toLocaleString()}
+                              Available ${availableRewardPool(campaign).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                             </div>
                           </div>
                           <div className="text-sm font-semibold text-white flex items-center gap-1 group-hover:text-cyan transition-colors">

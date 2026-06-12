@@ -7,10 +7,15 @@ import { useCampaigns, Campaign } from '../hooks/useCampaigns';
 const appleEase = [0.16, 1, 0.3, 1];
 
 export default function AdminCampaigns() {
-  const { campaigns, finalizeCampaign, refreshCampaigns } = useCampaigns();
+  const { campaigns, finalizeCampaign, runPayoutAutomation, refreshCampaigns } = useCampaigns();
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
+  const [isRunningAutomation, setIsRunningAutomation] = useState(false);
+  const [automationMessage, setAutomationMessage] = useState('');
+  const [automationError, setAutomationError] = useState(false);
 
-  const activeCampaigns = campaigns.filter(c => c.status === 'live');
+  const isExpiredCampaign = (campaign: Campaign) => Boolean(campaign.end_date && new Date(campaign.end_date) < new Date());
+  const needsFinalizationCampaigns = campaigns.filter(c => c.status === 'live' && isExpiredCampaign(c));
+  const activeCampaigns = campaigns.filter(c => c.status === 'live' && !isExpiredCampaign(c));
   const completedCampaigns = campaigns.filter(c => c.status === 'completed');
 
   const handleFinalize = async (id: string) => {
@@ -29,6 +34,25 @@ export default function AdminCampaigns() {
     }
   };
 
+  const handleRunAutomation = async () => {
+    if (!confirm('Run payout automation for all ended live campaigns now?')) return;
+
+    setIsRunningAutomation(true);
+    setAutomationMessage('');
+    setAutomationError(false);
+    try {
+      const result = await runPayoutAutomation();
+      await refreshCampaigns();
+      setAutomationMessage(`Checked ${result.checked || 0}. Prepared ${result.prepared || 0}, distributed ${result.distributed || 0}, skipped ${result.skipped || 0}, failed ${result.failed || 0}.`);
+    } catch (err: any) {
+      console.error('Error running payout automation:', err);
+      setAutomationError(true);
+      setAutomationMessage(err.message || 'Payout automation failed.');
+    } finally {
+      setIsRunningAutomation(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] font-sans selection:bg-purple-500/30 flex">
       <AdminSidebar />
@@ -36,7 +60,7 @@ export default function AdminCampaigns() {
       <main className="flex-1 md:ml-64 p-4 md:p-8">
         <div className="max-w-6xl mx-auto">
           
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <motion.h1 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -45,7 +69,89 @@ export default function AdminCampaigns() {
             >
               Campaign Management
             </motion.h1>
+            <button
+              onClick={handleRunAutomation}
+              disabled={isRunningAutomation || needsFinalizationCampaigns.length === 0}
+              className="px-5 py-3 rounded-xl bg-cyan text-black font-semibold hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:hover:scale-100 inline-flex items-center justify-center gap-2"
+            >
+              {isRunningAutomation ? <Loader2 className="w-4 h-4 animate-spin" /> : <DollarSign className="w-4 h-4" />}
+              {isRunningAutomation ? 'Running...' : 'Run Payout Automation'}
+            </button>
           </div>
+          {automationMessage && (
+            <div className={`mb-8 p-4 rounded-xl border text-sm ${automationError ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-cyan/10 border-cyan/20 text-cyan'}`}>
+              {automationMessage}
+            </div>
+          )}
+
+          {/* Needs Finalization */}
+          <section className="mb-12">
+            <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-yellow-400" /> Needs Finalization
+              {needsFinalizationCampaigns.length > 0 && (
+                <span className="px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-xs">
+                  {needsFinalizationCampaigns.length}
+                </span>
+              )}
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {needsFinalizationCampaigns.map((campaign) => (
+                <motion.div
+                  key={campaign.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="glass-panel rounded-[2rem] p-6 border border-yellow-500/20 relative overflow-hidden group"
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center gap-4">
+                      <img
+                        src={campaign.brand_profile?.logo_url}
+                        alt={campaign.brand_profile?.company_name}
+                        className="w-12 h-12 rounded-xl object-cover bg-white/5"
+                      />
+                      <div>
+                        <h3 className="font-semibold text-white">{campaign.title}</h3>
+                        <p className="text-xs text-muted">{campaign.brand_profile?.company_name}</p>
+                      </div>
+                    </div>
+                    <span className="px-2 py-1 rounded-md bg-yellow-500/10 text-yellow-400 text-[10px] font-bold uppercase tracking-wider border border-yellow-500/20">
+                      Ended
+                    </span>
+                  </div>
+
+                  <div className="space-y-3 mb-6">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted">Budget</span>
+                      <span className="text-white font-medium">${campaign.budget}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted">Ended</span>
+                      <span className="text-yellow-400 font-medium">
+                        {campaign.end_date ? new Date(campaign.end_date).toLocaleDateString() : 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => handleFinalize(campaign.id)}
+                    disabled={!!isProcessing}
+                    className="w-full py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 bg-cyan text-black hover:scale-[1.02] shadow-[0_0_20px_rgba(0,212,255,0.2)] disabled:opacity-50 disabled:hover:scale-100"
+                  >
+                    {isProcessing === campaign.id ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <>Finalize & Payout <Sparkles className="w-4 h-4" /></>
+                    )}
+                  </button>
+                </motion.div>
+              ))}
+              {needsFinalizationCampaigns.length === 0 && (
+                <div className="col-span-full p-12 text-center glass-panel rounded-[2rem] border border-dashed border-white/10">
+                  <p className="text-muted">No ended campaigns waiting for finalization.</p>
+                </div>
+              )}
+            </div>
+          </section>
 
           {/* Active Campaigns */}
           <section className="mb-12">
@@ -54,7 +160,6 @@ export default function AdminCampaigns() {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {activeCampaigns.map((campaign) => {
-                const isExpired = campaign.end_date && new Date(campaign.end_date) < new Date();
                 return (
                   <motion.div 
                     key={campaign.id}
@@ -74,11 +179,6 @@ export default function AdminCampaigns() {
                           <p className="text-xs text-muted">{campaign.brand_profile?.company_name}</p>
                         </div>
                       </div>
-                      {isExpired && (
-                        <span className="px-2 py-1 rounded-md bg-yellow-500/10 text-yellow-400 text-[10px] font-bold uppercase tracking-wider border border-yellow-500/20">
-                          Expired
-                        </span>
-                      )}
                     </div>
 
                     <div className="space-y-3 mb-6">
@@ -88,7 +188,7 @@ export default function AdminCampaigns() {
                       </div>
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted">End Date</span>
-                        <span className={isExpired ? 'text-yellow-400 font-medium' : 'text-white'}>
+                        <span className="text-white">
                           {campaign.end_date ? new Date(campaign.end_date).toLocaleDateString() : 'N/A'}
                         </span>
                       </div>
@@ -96,12 +196,8 @@ export default function AdminCampaigns() {
 
                     <button 
                       onClick={() => handleFinalize(campaign.id)}
-                      disabled={!!isProcessing || !isExpired}
-                      className={`w-full py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
-                        isExpired 
-                          ? 'bg-cyan text-black hover:scale-[1.02] shadow-[0_0_20px_rgba(0,212,255,0.2)]' 
-                          : 'bg-white/5 text-muted cursor-not-allowed'
-                      }`}
+                      disabled
+                      className="w-full py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 bg-white/5 text-muted cursor-not-allowed"
                     >
                       {isProcessing === campaign.id ? (
                         <Loader2 className="w-5 h-5 animate-spin" />
@@ -109,9 +205,7 @@ export default function AdminCampaigns() {
                         <>Finalize & Payout <Sparkles className="w-4 h-4" /></>
                       )}
                     </button>
-                    {!isExpired && (
-                      <p className="text-[10px] text-center text-muted mt-2">Finalization available after end date</p>
-                    )}
+                    <p className="text-[10px] text-center text-muted mt-2">Finalization available after end date</p>
                   </motion.div>
                 );
               })}

@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
-    "server:escrow": "tsx server/escrow-launch-server.mjs"
+    "server:escrow": "node --import tsx server/escrow-launch-server.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",

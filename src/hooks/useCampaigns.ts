@@ -362,6 +362,19 @@ export function useCampaigns(brandId?: string) {
     return result.submission;
   }, []);
 
+  const runPayoutAutomation = useCallback(async () => {
+    const response = await fetch(`${getBackendBaseUrl()}/payouts/run`, {
+      method: 'POST',
+      headers: await getBackendAuthHeaders()
+    });
+    const result = await response.json().catch(() => null);
+    if (!response.ok) {
+      throw new Error(result?.error || 'Payout automation failed');
+    }
+
+    return result;
+  }, []);
+
   const finalizeCampaign = useCallback(async (campaignId: string) => {
     try {
       // 1. Fetch all approved submissions
@@ -475,6 +488,7 @@ export function useCampaigns(brandId?: string) {
     submitLink,
     getParticipationSubmissions,
     updateSubmissionStatus,
+    runPayoutAutomation,
     finalizeCampaign,
     getCampaignParticipants,
     getAllSubmissions,

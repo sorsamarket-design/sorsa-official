@@ -73,6 +73,10 @@ export default function CreatorCampaignDetail() {
       }
       return;
     }
+    if (!creatorProfile?.wallet_address) {
+      setVerificationError('Add a wallet address to your creator profile before joining campaigns.');
+      return;
+    }
 
     setIsVerifying(true);
     setVerificationError(null);
@@ -124,6 +128,7 @@ export default function CreatorCampaignDetail() {
     );
   }
   const userSorsaScore = creatorProfile?.sorsa_score ?? 0;
+  const hasWalletAddress = Boolean(creatorProfile?.wallet_address);
 
   // Determine required score
   const requiredScore = campaign.min_sorsa_score || 0;
@@ -145,9 +150,11 @@ export default function CreatorCampaignDetail() {
   const stats = campaign.campaign_stats?.[0];
   const allocatedRatio = stats?.max_base_pool ? stats.allocated_base_pool / stats.max_base_pool : 0;
   const budgetProgress = Math.min(100, stats ? 50 + allocatedRatio * 50 : 0);
-  const poolAmount = Number(
+  const totalPoolAmount = Number(
     campaign.escrowed_budget ?? campaign.net_budget ?? Number(campaign.budget || 0) * 0.85
-  ).toLocaleString(undefined, {
+  );
+  const reservedBaseAmount = Number(stats?.allocated_base_pool || 0);
+  const availablePoolAmount = Math.max(0, totalPoolAmount - reservedBaseAmount).toLocaleString(undefined, {
     maximumFractionDigits: 2
   });
 
@@ -221,9 +228,9 @@ export default function CreatorCampaignDetail() {
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2 text-sm font-medium text-muted">
                       <DollarSign className="w-4 h-4 text-cyan" />
-                      Pool
+                      Available
                     </div>
-                    <div className="text-lg font-semibold text-white">${poolAmount}</div>
+                    <div className="text-lg font-semibold text-white">${availablePoolAmount}</div>
                   </div>
                   <div className="space-y-1.5">
                     <div className="flex justify-between text-xs font-medium">
@@ -378,10 +385,10 @@ export default function CreatorCampaignDetail() {
                   return (
                     <div className="space-y-3">
                       <button
-                        onClick={() => meetsScoreRequirement && setIsJoinModalOpen(true)}
-                        disabled={!meetsScoreRequirement}
+                        onClick={() => meetsScoreRequirement && hasWalletAddress && setIsJoinModalOpen(true)}
+                        disabled={!meetsScoreRequirement || !hasWalletAddress}
                         className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all duration-300 ${
-                          meetsScoreRequirement
+                          meetsScoreRequirement && hasWalletAddress
                             ? 'bg-cyan text-black hover:scale-[1.02] shadow-[0_0_20px_rgba(0,212,255,0.3)] hover:shadow-[0_0_30px_rgba(0,212,255,0.5)]'
                             : 'bg-white/5 text-muted border border-white/10 cursor-not-allowed'
                         }`}
@@ -391,6 +398,11 @@ export default function CreatorCampaignDetail() {
                       {!meetsScoreRequirement && (
                         <p className="text-red-400 text-xs text-center font-medium">
                           You don't have enough Sorsa score to join this campaign.
+                        </p>
+                      )}
+                      {!hasWalletAddress && (
+                        <p className="text-yellow-400 text-xs text-center font-medium">
+                          Add a wallet address to your creator profile before joining campaigns.
                         </p>
                       )}
                     </div>
