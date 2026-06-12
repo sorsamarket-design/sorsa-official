@@ -33,12 +33,13 @@ async function proxySorsa(path: string, options: RequestInit = {}) {
       ...authHeaders
     }
   });
+  const body = await response.json().catch(() => null);
 
   if (!response.ok) {
-    throw new Error('Unable to verify');
+    throw new Error(body?.error || 'Unable to verify');
   }
 
-  return response.json();
+  return body;
 }
 
 /**
@@ -100,6 +101,15 @@ const sorsaApi = {
       })
     });
     return data.follow === true;
+  },
+
+  /**
+   * Forces the backend to refresh the signed-in creator's stored Sorsa profile.
+   */
+  async syncCreatorProfile() {
+    return proxySorsa('/creator/sorsa/sync', {
+      method: 'POST'
+    });
   }
 };
 
