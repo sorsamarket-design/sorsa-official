@@ -1,0 +1,465 @@
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { motion } from 'motion/react';
+import { AlertCircle, ArrowLeft, CheckCircle2, Clock, ExternalLink, Loader2, Sparkles, Star, Ticket, Users } from 'lucide-react';
+import CreatorSidebar from '../components/CreatorSidebar';
+import CreatorTopBar from '../components/CreatorTopBar';
+import LinkifiedText from '../components/LinkifiedText';
+import { getNftCampaign, joinNftCampaign, submitNftCampaignContent, verifyNftCampaignTask, type NftCampaign } from '../lib/nftCampaigns';
+import { formatCampaignTimeLeft, getCampaignEndTime } from '../lib/campaignTime';
+import { useCreatorProfile } from '../hooks/useCreatorProfile';
+
+const appleEase = [0.16, 1, 0.3, 1];
+
+function nftCampaignTypeLabel(type: string) {
+  if (type === 'raffle' || type === 'fcfs') return 'Raffle';
+  return 'Content';
+}
+
+function isContentCampaign(type: string) {
+  return type === 'content' || type === 'all';
+}
+
+function verifiedTaskMap(campaign: NftCampaign) {
+  const next: Record<string, boolean> = {};
+  for (const account of campaign.follow_accounts || []) {
+    next[`follow:${account}`] = true;
+  }
+  for (const link of campaign.retweet_links || []) {
+    next[`retweet:${link}`] = true;
+  }
+  return next;
+}
+
+export default function CreatorNFTCampaignDetail() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { profile: creatorProfile } = useCreatorProfile();
+  const [campaign, setCampaign] = useState<NftCampaign | null>(null);
+  const [participation, setParticipation] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [joining, setJoining] = useState(false);
+  const [error, setError] = useState('');
+  const [joinError, setJoinError] = useState('');
+  const [verifyingTask, setVerifyingTask] = useState('');
+  const [verifiedTasks, setVerifiedTasks] = useState<Record<string, boolean>>({});
+  const [taskErrors, setTaskErrors] = useState<Record<string, string>>({});
+  const [submissionUrl, setSubmissionUrl] = useState('');
+  const [submittingContent, setSubmittingContent] = useState(false);
+  const [submissionSuccess, setSubmissionSuccess] = useState('');
+  const [submissionError, setSubmissionError] = useState('');
+
+  useEffect(() => {
+    let isMounted = true;
+    if (!id) return;
+
+    getNftCampaign(id)
+      .then((result) => {
+        if (!isMounted) return;
+        setCampaign(result.campaign);
+        setParticipation(result.participation || null);
+        if (result.participation && result.participation.status !== 'rejected') {
+          setVerifiedTasks(verifiedTaskMap(result.campaign));
+        }
+      })
+      .catch((err) => {
+        if (isMounted) setError(err.message || 'NFT campaign could not be loaded.');
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);
+
+  const handleJoin = async () => {
+    if (!id) return;
+    if (!creatorProfile?.wallet_address) {
+      setJoinError('Add a wallet address to your creator profile before joining campaigns.');
+      return;
+    }
+    setJoining(true);
+    setJoinError('');
+
+    try {
+      const result = await joinNftCampaign(id);
+      setParticipation(result.participation);
+      if (campaign) setVerifiedTasks(verifiedTaskMap(campaign));
+    } catch (err: any) {
+      setJoinError(err.message || 'Could not join NFT campaign.');
+    } finally {
+      setJoining(false);
+    }
+  };
+
+  const taskKey = (type: 'follow' | 'retweet', value: string) => `${type}:${value}`;
+
+  const handleVerifyTask = async (type: 'follow' | 'retweet', value: string) => {
+    if (!id) return;
+    const key = taskKey(type, value);
+    setVerifyingTask(key);
+    setTaskErrors((current) => ({ ...current, [key]: '' }));
+
+    try {
+      await verifyNftCampaignTask(id, { type, value });
+      setVerifiedTasks((current) => ({ ...current, [key]: true }));
+    } catch (err: any) {
+      setVerifiedTasks((current) => ({ ...current, [key]: false }));
+      setTaskErrors((current) => ({ ...current, [key]: err.message || 'Task could not be verified yet.' }));
+    } finally {
+      setVerifyingTask('');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0A0A1E] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-cyan animate-spin" />
+      </div>
+    );
+  }
+
+  if (error || !campaign) {
+    return (
+      <div className="min-h-screen bg-[#0A0A1E] flex flex-col items-center justify-center p-4 text-center">
+        <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
+        <h2 className="text-xl font-bold text-white mb-2">{error || 'NFT campaign not found'}</h2>
+        <button onClick={() => navigate('/creator/nft-campaigns')} className="text-cyan hover:underline">Back to NFT Campaigns</button>
+      </div>
+    );
+  }
+
+  const hasJoined = Boolean(participation && participation.status !== 'rejected');
+  const isContent = isContentCampaign(campaign.campaign_type);
+  const campaignEndTime = getCampaignEndTime(campaign.end_date);
+  const campaignEnded = campaign.status === 'completed' || Boolean(campaignEndTime && campaignEndTime <= Date.now());
+  const hasWalletAddress = Boolean(creatorProfile?.wallet_address);
+
+  const handleSubmitContent = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!id) return;
+    setSubmittingContent(true);
+    setSubmissionSuccess('');
+    setSubmissionError('');
+
+    try {
+      await submitNftCampaignContent(id, submissionUrl.trim());
+      setSubmissionUrl('');
+      setSubmissionSuccess('Content submitted for review.');
+    } catch (err: any) {
+      setSubmissionError(err.message || 'Content submission failed.');
+    } finally {
+      setSubmittingContent(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] font-sans selection:bg-cyan/30 flex">
+      <CreatorSidebar />
+      <CreatorTopBar />
+
+      <main className="flex-1 md:ml-64 mt-20 p-4 md:p-8">
+        <div className="max-w-4xl mx-auto space-y-8">
+          <button
+            onClick={() => navigate('/creator/nft-campaigns')}
+            className="inline-flex items-center gap-2 text-muted hover:text-white transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" /> Back to NFT Campaigns
+          </button>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: appleEase }}
+            className="glass-panel rounded-[2rem] border border-white/10 overflow-hidden"
+          >
+            <div className="w-full aspect-[3/1] bg-white/5 border-b border-white/10 relative overflow-hidden">
+              {campaign.background_image_url || campaign.image_url ? (
+                <img
+                  src={campaign.background_image_url || campaign.image_url}
+                  alt=""
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-cyan/10 via-white/[0.03] to-blue-500/10" />
+              )}
+              <div className="absolute inset-0 bg-gradient-to-b from-black/5 via-transparent to-[#0A0A1E]/70"></div>
+            </div>
+
+            <div className="p-8 flex flex-col md:flex-row md:items-start justify-between gap-8">
+              <div className="flex items-start gap-5">
+                <div className="w-24 h-24 rounded-2xl bg-white/5 border border-white/10 overflow-hidden flex items-center justify-center shrink-0">
+                  {campaign.image_url ? (
+                    <img src={campaign.image_url} alt={campaign.title} className="w-full h-full object-cover" />
+                  ) : (
+                    <Sparkles className="w-10 h-10 text-cyan" />
+                  )}
+                </div>
+                <div>
+                  <div className="flex flex-wrap items-center gap-3 mb-3">
+                    <span className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-cyan/10 text-cyan border border-cyan/20 text-xs font-semibold uppercase tracking-wider">
+                      <Sparkles className="w-3.5 h-3.5" /> NFT
+                    </span>
+                    <span className="px-3 py-1 rounded-full bg-white/10 border border-white/10 text-xs font-bold uppercase text-white">
+                      {nftCampaignTypeLabel(campaign.campaign_type)}
+                    </span>
+                  </div>
+                  <h1 className="text-3xl font-semibold tracking-tight text-white">{campaign.title}</h1>
+                  <p className="text-muted mt-2">{campaign.goal}</p>
+                </div>
+              </div>
+
+              <button
+                onClick={handleJoin}
+                disabled={joining || hasJoined || campaignEnded || !hasWalletAddress}
+                className={`px-6 py-3 rounded-full font-semibold transition-all inline-flex items-center justify-center gap-2 ${
+                  hasJoined
+                    ? 'bg-green-500/10 text-green-400 border border-green-500/20 cursor-default'
+                    : campaignEnded
+                      ? 'bg-white/5 text-muted border border-white/10 cursor-not-allowed'
+                    : hasWalletAddress
+                      ? 'bg-cyan text-black hover:scale-[1.02]'
+                      : 'bg-white/5 text-muted border border-white/10 cursor-not-allowed'
+                } disabled:opacity-70 disabled:hover:scale-100`}
+              >
+                {joining ? <Loader2 className="w-4 h-4 animate-spin" /> : hasJoined ? <CheckCircle2 className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
+                {joining ? 'Joining...' : hasJoined ? 'Joined' : campaignEnded ? 'Campaign Ended' : 'Join Campaign'}
+              </button>
+            </div>
+
+            {!hasWalletAddress && !hasJoined && (
+              <div className="mx-8 mb-6 p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-300 text-sm flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                Add a wallet address to your creator profile before joining campaigns.
+              </div>
+            )}
+
+            {joinError && (
+              <div className="mx-8 mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                {joinError}
+              </div>
+            )}
+          </motion.div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="glass-panel rounded-2xl p-5 border border-white/10">
+              <Ticket className="w-5 h-5 text-cyan mb-3" />
+              <div className="text-sm text-muted">Total WL</div>
+              <div className="text-2xl font-semibold text-white">{Number(campaign.budget || 0).toLocaleString()}</div>
+            </div>
+            <div className="glass-panel rounded-2xl p-5 border border-white/10">
+              <Users className="w-5 h-5 text-cyan mb-3" />
+              <div className="text-sm text-muted">Participants</div>
+              <div className="text-2xl font-semibold text-white">{Number(campaign.stats?.joined_count || 0).toLocaleString()}</div>
+            </div>
+            <div className="glass-panel rounded-2xl p-5 border border-white/10">
+              <Star className="w-5 h-5 text-cyan mb-3" />
+              <div className="text-sm text-muted">Sorsa Score</div>
+              <div className="text-2xl font-semibold text-white">{Number(campaign.min_sorsa_score || 0).toLocaleString()}+</div>
+            </div>
+            <div className="glass-panel rounded-2xl p-5 border border-white/10">
+              <Clock className="w-5 h-5 text-cyan mb-3" />
+              <div className="text-sm text-muted">Time Left</div>
+              <div className="text-2xl font-semibold text-white">
+                {formatCampaignTimeLeft(campaign.end_date)}
+              </div>
+            </div>
+          </div>
+
+          <section className="glass-panel rounded-[2rem] p-8 border border-white/10">
+            <h2 className="text-xl font-semibold text-white mb-4">Campaign Details</h2>
+            <div className="text-muted leading-relaxed whitespace-pre-line">
+              <LinkifiedText text={campaign.overview || 'No campaign brief provided.'} />
+            </div>
+          </section>
+
+          <section className="glass-panel rounded-[2rem] p-8 border border-white/10">
+            <h2 className="text-xl font-semibold text-white mb-4">{isContent ? 'Content Submission' : 'Eligibility Tasks'}</h2>
+            {isContent ? (
+              <div className="space-y-6">
+                {campaign.follow_accounts?.length ? (
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold uppercase tracking-wider text-muted">Join Requirements</h3>
+                    {campaign.follow_accounts.map((account) => {
+                      const key = taskKey('follow', account);
+                      const isVerified = hasJoined || verifiedTasks[key];
+                      const isVerifying = verifyingTask === key;
+
+                      return (
+                        <div
+                          key={account}
+                          className={`p-4 rounded-2xl bg-white/5 border transition-colors ${
+                            isVerified ? 'border-green-500/30 bg-green-500/5' : 'border-white/10 hover:border-cyan/30'
+                          }`}
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div>
+                              <p className="text-white font-medium">Follow @{account}</p>
+                              <p className="text-xs text-muted mt-1">Required before joining this content campaign.</p>
+                            </div>
+                            <div className="flex items-center gap-3 shrink-0">
+                              <a
+                                href={`https://x.com/${account}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="w-10 h-10 rounded-full border border-white/10 bg-white/5 text-cyan hover:border-cyan/30 inline-flex items-center justify-center transition-colors"
+                                aria-label={`Open @${account} on X`}
+                              >
+                                <ExternalLink className="w-4 h-4" />
+                              </a>
+                              <button
+                                onClick={() => handleVerifyTask('follow', account)}
+                                disabled={isVerifying || isVerified}
+                                className={`px-4 py-2 rounded-full text-sm font-semibold inline-flex items-center gap-2 transition-colors ${
+                                  isVerified
+                                    ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                                    : 'bg-cyan text-black hover:bg-cyan/90'
+                                } disabled:opacity-80`}
+                              >
+                                {isVerifying ? <Loader2 className="w-4 h-4 animate-spin" /> : isVerified ? <CheckCircle2 className="w-4 h-4" /> : null}
+                                {isVerifying ? 'Verifying...' : isVerified ? 'Verified' : 'Verify'}
+                              </button>
+                            </div>
+                          </div>
+                          {taskErrors[key] ? <p className="text-xs text-red-400 mt-3">{taskErrors[key]}</p> : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : null}
+                <p className="text-muted">This is a content campaign. Join the campaign, then submit your X post link for review.</p>
+                <form onSubmit={handleSubmitContent} className="space-y-4">
+                  <input
+                    value={submissionUrl}
+                    onChange={(event) => setSubmissionUrl(event.target.value)}
+                    disabled={!hasJoined || submittingContent || campaignEnded}
+                    placeholder="https://x.com/account/status/..."
+                    className="w-full px-4 py-3 rounded-xl bg-black/50 border border-white/10 text-white placeholder:text-white/20 focus:outline-none focus:border-cyan focus:ring-1 focus:ring-cyan transition-all disabled:opacity-50"
+                  />
+                  {submissionError ? <p className="text-sm text-red-400">{submissionError}</p> : null}
+                  {submissionSuccess ? <p className="text-sm text-green-400">{submissionSuccess}</p> : null}
+                  <button
+                    type="submit"
+                    disabled={!hasJoined || submittingContent || campaignEnded || !submissionUrl.trim()}
+                    className="px-6 py-3 rounded-full bg-cyan text-black font-semibold hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 inline-flex items-center gap-2"
+                  >
+                    {submittingContent ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                    {campaignEnded ? 'Campaign Ended' : hasJoined ? (submittingContent ? 'Submitting...' : 'Submit Content') : 'Join to Submit'}
+                  </button>
+                </form>
+              </div>
+            ) : campaign.follow_accounts?.length || campaign.retweet_links?.length ? (
+              <div className="space-y-6">
+                {campaign.follow_accounts?.length ? (
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold uppercase tracking-wider text-muted">Follow</h3>
+                    {campaign.follow_accounts.map((account) => {
+                      const key = taskKey('follow', account);
+                      const isVerified = hasJoined || verifiedTasks[key];
+                      const isVerifying = verifyingTask === key;
+
+                      return (
+                        <div
+                          key={account}
+                          className={`p-4 rounded-2xl bg-white/5 border transition-colors ${
+                            isVerified ? 'border-green-500/30 bg-green-500/5' : 'border-white/10 hover:border-cyan/30'
+                          }`}
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div>
+                              <p className="text-white font-medium">Follow @{account}</p>
+                              <p className="text-xs text-muted mt-1">Required before joining this NFT campaign.</p>
+                            </div>
+                            <div className="flex items-center gap-3 shrink-0">
+                              <a
+                                href={`https://x.com/${account}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="w-10 h-10 rounded-full border border-white/10 bg-white/5 text-cyan hover:border-cyan/30 inline-flex items-center justify-center transition-colors"
+                                aria-label={`Open @${account} on X`}
+                              >
+                                <ExternalLink className="w-4 h-4" />
+                              </a>
+                              <button
+                                onClick={() => handleVerifyTask('follow', account)}
+                                disabled={isVerifying || isVerified}
+                                className={`px-4 py-2 rounded-full text-sm font-semibold inline-flex items-center gap-2 transition-colors ${
+                                  isVerified
+                                    ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                                    : 'bg-cyan text-black hover:bg-cyan/90'
+                                } disabled:opacity-80`}
+                              >
+                                {isVerifying ? <Loader2 className="w-4 h-4 animate-spin" /> : isVerified ? <CheckCircle2 className="w-4 h-4" /> : null}
+                                {isVerifying ? 'Verifying...' : isVerified ? 'Verified' : 'Verify'}
+                              </button>
+                            </div>
+                          </div>
+                          {taskErrors[key] ? <p className="text-xs text-red-400 mt-3">{taskErrors[key]}</p> : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : null}
+
+                {campaign.retweet_links?.length ? (
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold uppercase tracking-wider text-muted">Retweet</h3>
+                    {campaign.retweet_links.map((link) => {
+                      const key = taskKey('retweet', link);
+                      const isVerified = hasJoined || verifiedTasks[key];
+                      const isVerifying = verifyingTask === key;
+
+                      return (
+                        <div
+                          key={link}
+                          className={`p-4 rounded-2xl bg-white/5 border transition-colors ${
+                            isVerified ? 'border-green-500/30 bg-green-500/5' : 'border-white/10 hover:border-cyan/30'
+                          }`}
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="min-w-0">
+                              <p className="text-white font-medium">Retweet required post</p>
+                              <p className="text-xs text-muted mt-1 break-all">{link}</p>
+                            </div>
+                            <div className="flex items-center gap-3 shrink-0">
+                              <a
+                                href={link}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="w-10 h-10 rounded-full border border-white/10 bg-white/5 text-cyan hover:border-cyan/30 inline-flex items-center justify-center transition-colors"
+                                aria-label="Open required X post"
+                              >
+                                <ExternalLink className="w-4 h-4" />
+                              </a>
+                              <button
+                                onClick={() => handleVerifyTask('retweet', link)}
+                                disabled={isVerifying || isVerified}
+                                className={`px-4 py-2 rounded-full text-sm font-semibold inline-flex items-center gap-2 transition-colors ${
+                                  isVerified
+                                    ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                                    : 'bg-cyan text-black hover:bg-cyan/90'
+                                } disabled:opacity-80`}
+                              >
+                                {isVerifying ? <Loader2 className="w-4 h-4 animate-spin" /> : isVerified ? <CheckCircle2 className="w-4 h-4" /> : null}
+                                {isVerifying ? 'Verifying...' : isVerified ? 'Verified' : 'Verify'}
+                              </button>
+                            </div>
+                          </div>
+                          {taskErrors[key] ? <p className="text-xs text-red-400 mt-3">{taskErrors[key]}</p> : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <p className="text-muted">No eligibility tasks are required for this campaign.</p>
+            )}
+          </section>
+        </div>
+      </main>
+    </div>
+  );
+}

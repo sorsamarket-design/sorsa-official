@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
-import { Clock, AlertCircle, CheckCircle2, Send, History, Loader2 } from 'lucide-react';
+import { Clock, AlertCircle, CheckCircle2, Send, History, Loader2, Sparkles } from 'lucide-react';
 import CreatorSidebar from '../components/CreatorSidebar';
 import CreatorTopBar from '../components/CreatorTopBar';
 import { useCampaigns } from '../hooks/useCampaigns';
+import { listCreatorNftParticipations } from '../lib/nftCampaigns';
 import { formatCampaignTimeline, isCampaignEndingSoon } from '../lib/campaignTime';
 
 const appleEase = [0.16, 1, 0.3, 1];
@@ -26,8 +27,12 @@ export default function ActiveCampaigns() {
         getCreatorActiveCampaigns(),
         getCreatorPastCampaigns()
       ]);
-      setActiveCampaigns(activeData || []);
-      setPastCampaigns(pastData || []);
+      const nftData = await listCreatorNftParticipations().catch((err) => {
+        console.error('Failed to load creator NFT campaigns', err);
+        return { active: [], past: [] };
+      });
+      setActiveCampaigns([...(activeData || []), ...((nftData.active || []).map((item: any) => ({ ...item, isNft: true })))]);
+      setPastCampaigns([...(pastData || []), ...((nftData.past || []).map((item: any) => ({ ...item, isNft: true })))]);
     } catch (err) {
       console.error('Failed to load creator campaigns', err);
     } finally {
@@ -151,8 +156,7 @@ export default function ActiveCampaigns() {
           >
             {isLoading ? (
               <div className="md:col-span-2 flex flex-col items-center justify-center py-20">
-                <Loader2 className="w-8 h-8 text-cyan animate-spin mb-4" />
-                <p className="text-muted">Loading your campaigns...</p>
+                <Loader2 className="w-8 h-8 text-cyan animate-spin" />
               </div>
             ) : activeTab === 'live' ? (
               activeCampaigns.length > 0 ? (
@@ -161,6 +165,51 @@ export default function ActiveCampaigns() {
                   const statusConfig = getStatusConfig(item.status);
                   const timeline = formatCampaignTimeline(campaign?.end_date, campaign?.release_at);
                   const endingSoon = isCampaignEndingSoon(campaign?.end_date);
+
+                  if (item.isNft) {
+                    return (
+                      <motion.div
+                        key={item.id}
+                        whileHover={{ scale: 1.02 }}
+                        transition={{ duration: 0.2 }}
+                        onClick={() => navigate(`/creator/nft-campaigns/${campaign.id}`)}
+                        className="group glass-panel rounded-2xl p-6 border border-white/10 hover:border-cyan/50 hover:shadow-[0_0_30px_rgba(0,212,255,0.15)] transition-all duration-300 cursor-pointer flex flex-col h-full relative overflow-hidden"
+                      >
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-cyan/5 blur-[50px] rounded-full pointer-events-none group-hover:bg-cyan/10 transition-colors"></div>
+
+                        <div className="flex items-start justify-between mb-6 relative z-10">
+                          <div className="flex items-center gap-4">
+                            <img
+                              src={campaign?.image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(campaign?.title || 'NFT')}`}
+                              alt={campaign?.title}
+                              className="w-14 h-14 rounded-xl bg-white/5 border border-white/10 object-cover"
+                              referrerPolicy="no-referrer"
+                            />
+                            <div>
+                              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-cyan/10 text-cyan border border-cyan/20 text-[10px] font-bold uppercase tracking-wider mb-2">
+                                <Sparkles className="w-3 h-3" /> NFT
+                              </div>
+                              <h3 className="font-semibold text-white text-lg group-hover:text-cyan transition-colors line-clamp-1">{campaign?.title}</h3>
+                              <p className="text-sm text-muted">{campaign?.campaign_type === 'content' ? 'Content Campaign' : 'Raffle Campaign'}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-auto space-y-4 relative z-10">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-sm text-muted">
+                              <Clock className="w-4 h-4" />
+                              <span className={endingSoon ? 'text-yellow-400 font-medium' : ''}>{timeline.label}</span>
+                            </div>
+                            <div className="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 bg-green-500/10 text-green-400 border border-green-500/20">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              Joined
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  }
 
                   return (
                     <motion.div
@@ -222,6 +271,51 @@ export default function ActiveCampaigns() {
               pastCampaigns.map((item) => {
                 const campaign = item.campaign;
                 const earned = Number(item.calculated_reward || 0);
+
+                if (item.isNft) {
+                  return (
+                    <motion.div
+                      key={item.id}
+                      whileHover={{ scale: 1.02 }}
+                      transition={{ duration: 0.2 }}
+                      onClick={() => navigate(`/creator/nft-campaigns/${campaign.id}`)}
+                      className="group glass-panel rounded-2xl p-6 border border-white/10 hover:border-cyan/50 hover:shadow-[0_0_30px_rgba(0,212,255,0.15)] transition-all duration-300 cursor-pointer flex flex-col h-full relative overflow-hidden"
+                    >
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-cyan/5 blur-[50px] rounded-full pointer-events-none group-hover:bg-cyan/10 transition-colors"></div>
+
+                      <div className="flex items-start justify-between mb-6 relative z-10">
+                        <div className="flex items-center gap-4">
+                          <img
+                            src={campaign?.image_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(campaign?.title || 'NFT')}`}
+                            alt={campaign?.title}
+                            className="w-14 h-14 rounded-xl bg-white/5 border border-white/10 object-cover"
+                            referrerPolicy="no-referrer"
+                          />
+                          <div>
+                            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-cyan/10 text-cyan border border-cyan/20 text-[10px] font-bold uppercase tracking-wider mb-2">
+                              <Sparkles className="w-3 h-3" /> NFT
+                            </div>
+                            <h3 className="font-semibold text-white text-lg group-hover:text-cyan transition-colors line-clamp-1">{campaign?.title}</h3>
+                            <p className="text-sm text-muted">{campaign?.campaign_type === 'content' ? 'Content Campaign' : 'Raffle Campaign'}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-auto space-y-4 relative z-10">
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm text-muted">
+                            {campaign?.status === 'completed' ? 'Completed' : 'Ended'}
+                          </div>
+
+                          <div className="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 bg-green-500/10 text-green-400 border border-green-500/20">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            Past
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                }
 
                 return (
                   <motion.div

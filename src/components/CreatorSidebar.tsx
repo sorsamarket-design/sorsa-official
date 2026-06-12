@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, User, Megaphone, PlayCircle, Trophy, Mail, Wallet, Settings, Gift, X, History } from 'lucide-react';
+import { LayoutDashboard, User, Megaphone, PlayCircle, Trophy, Mail, Wallet, Settings, Gift, X, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCreatorProfile } from '../hooks/useCreatorProfile';
 import { getInitialsAvatarUrl, normalizeAvatarUrl } from '../lib/avatars';
@@ -27,6 +27,7 @@ export default function CreatorSidebar() {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/creator/dashboard' },
     { icon: User, label: 'Profile', path: '/creator/profile' },
     { icon: Megaphone, label: 'Campaigns', path: '/creator/campaigns' },
+    { icon: Sparkles, label: 'NFT Campaigns', path: '/creator/nft-campaigns' },
     { icon: PlayCircle, label: 'My Campaigns', path: '/creator/active' },
     { icon: Trophy, label: 'Leaderboard', path: '/creator/leaderboard' },
     { icon: Wallet, label: 'Wallet', path: '/creator/wallet' },
@@ -66,7 +67,7 @@ export default function CreatorSidebar() {
           </button>
         </div>
 
-        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {navItems.map((item) => (
             <NavLink
               key={item.path}

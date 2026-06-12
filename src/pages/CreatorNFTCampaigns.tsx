@@ -1,0 +1,213 @@
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'motion/react';
+import { Clock, Loader2, Sparkles, Ticket, Users } from 'lucide-react';
+import CreatorSidebar from '../components/CreatorSidebar';
+import CreatorTopBar from '../components/CreatorTopBar';
+import { listNftCampaigns } from '../lib/nftCampaigns';
+import { formatCampaignTimeLeft, getCampaignEndTime } from '../lib/campaignTime';
+
+function nftCampaignTypeLabel(type: string) {
+  if (type === 'raffle' || type === 'fcfs') return 'Raffle';
+  return 'Content';
+}
+
+export default function CreatorNFTCampaigns() {
+  const navigate = useNavigate();
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'live' | 'past'>('live');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let isMounted = true;
+
+    listNftCampaigns()
+      .then((result) => {
+        if (isMounted) setCampaigns(result.campaigns || []);
+      })
+      .catch((err) => {
+        if (isMounted) setError(err.message || 'Could not load NFT campaigns.');
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const isPastCampaign = (campaign: any) => {
+    if (campaign.status === 'completed') return true;
+    const endTime = getCampaignEndTime(campaign.end_date);
+    return Boolean(endTime && endTime <= Date.now());
+  };
+  const visibleCampaigns = campaigns.filter((campaign) =>
+    activeTab === 'past' ? isPastCampaign(campaign) : !isPastCampaign(campaign)
+  );
+
+  return (
+    <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] font-sans selection:bg-cyan/30 flex">
+      <CreatorSidebar />
+      <CreatorTopBar />
+      <main className="flex-1 md:ml-64 mt-20 p-4 md:p-8">
+        <div className="max-w-6xl mx-auto space-y-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div className="w-14 h-14 rounded-2xl bg-cyan/10 border border-cyan/20 flex items-center justify-center mb-5">
+                <Sparkles className="w-7 h-7 text-cyan" />
+              </div>
+              <h1 className="text-3xl font-semibold tracking-tight text-white mb-3">NFT Campaigns</h1>
+              <p className="text-muted max-w-2xl leading-relaxed">
+                Browse NFT-focused creator campaigns, complete raffle tasks, or submit content for review.
+              </p>
+            </div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
+              className="inline-flex bg-white/5 p-1.5 rounded-full border border-white/10"
+            >
+              <button
+                onClick={() => setActiveTab('live')}
+                className={`relative px-6 py-2 rounded-full text-sm font-medium transition-colors ${
+                  activeTab === 'live' ? 'text-black' : 'text-muted hover:text-white'
+                }`}
+              >
+                {activeTab === 'live' && (
+                  <motion.div
+                    layoutId="nftBrowseTabBg"
+                    className="absolute inset-0 bg-white rounded-full"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+                <span className="relative z-10 flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${activeTab === 'live' ? 'bg-green-500' : 'bg-transparent'}`} />
+                  Live
+                </span>
+              </button>
+              <button
+                onClick={() => setActiveTab('past')}
+                className={`relative px-6 py-2 rounded-full text-sm font-medium transition-colors ${
+                  activeTab === 'past' ? 'text-black' : 'text-muted hover:text-white'
+                }`}
+              >
+                {activeTab === 'past' && (
+                  <motion.div
+                    layoutId="nftBrowseTabBg"
+                    className="absolute inset-0 bg-white rounded-full"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+                <span className="relative z-10">Past</span>
+              </button>
+            </motion.div>
+          </div>
+
+          {error && (
+            <div className="glass-panel rounded-2xl p-5 border border-red-500/20 bg-red-500/10 text-red-400">
+              {error}
+            </div>
+          )}
+
+          {loading ? (
+            <div className="glass-panel rounded-[2rem] p-12 border border-white/10 text-center">
+              <Loader2 className="w-8 h-8 text-cyan animate-spin mx-auto" />
+            </div>
+          ) : visibleCampaigns.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {visibleCampaigns.map((campaign) => (
+                <button
+                  key={campaign.id}
+                  type="button"
+                  onClick={() => navigate(`/creator/nft-campaigns/${campaign.id}`)}
+                  className="group text-left glass-panel rounded-2xl border border-white/10 hover:border-cyan/50 hover:shadow-[0_0_30px_rgba(0,212,255,0.15)] transition-all duration-300 cursor-pointer flex flex-col h-full relative overflow-hidden"
+                >
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-cyan/5 blur-[50px] rounded-full pointer-events-none group-hover:bg-cyan/10 transition-colors"></div>
+
+                  <div className="w-full aspect-[3/1] bg-white/5 border-b border-white/10 relative overflow-hidden">
+                    {campaign.background_image_url || campaign.image_url ? (
+                      <img
+                        src={campaign.background_image_url || campaign.image_url}
+                        alt=""
+                        className="w-full h-full object-contain opacity-90"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-cyan/10 via-white/[0.03] to-blue-500/10" />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#0A0A1E]/45"></div>
+                  </div>
+
+                  <div className="p-6 flex flex-col flex-1 relative z-10">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 overflow-hidden flex items-center justify-center shrink-0">
+                        {campaign.image_url ? (
+                          <img src={campaign.image_url} alt={campaign.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <Sparkles className="w-6 h-6 text-cyan" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-white group-hover:text-cyan transition-colors line-clamp-1">{campaign.title}</h3>
+                        <p className="text-sm text-muted line-clamp-1">{campaign.goal || 'NFT Campaign'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <p className="text-sm text-muted line-clamp-2 leading-relaxed">
+                      {campaign.overview}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 mb-6">
+                    <span className="px-2.5 py-1 rounded-md bg-cyan/10 border border-cyan/20 text-xs font-semibold text-cyan">
+                      NFT
+                    </span>
+                    <span className="px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-xs font-medium text-muted uppercase">
+                      {nftCampaignTypeLabel(campaign.campaign_type)}
+                    </span>
+                    {(campaign.categories || []).filter((category: string) => category.toLowerCase() !== 'nft').map((category: string) => (
+                      <span key={category} className="px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-xs font-medium text-muted">
+                        {category}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="mt-auto">
+                    <div className="flex items-center justify-between pt-4 border-t border-white/10">
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1.5 text-sm font-medium text-white">
+                          <Ticket className="w-4 h-4 text-muted" />
+                          {Number(campaign.budget || 0).toLocaleString()} WL
+                        </div>
+                        <div className="hidden sm:flex items-center gap-1.5 text-sm font-medium text-white">
+                          <Users className="w-4 h-4 text-muted" />
+                          {Number(campaign.stats?.joined_count || 0).toLocaleString()}
+                        </div>
+                      </div>
+                      <div className="text-sm font-semibold text-white flex items-center gap-1 group-hover:text-cyan transition-colors">
+                        <Clock className="w-4 h-4 text-muted" />
+                        {formatCampaignTimeLeft(campaign.end_date)}
+                      </div>
+                    </div>
+                  </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="glass-panel rounded-[2rem] p-12 border border-white/10 text-center">
+              <Sparkles className="w-10 h-10 text-muted mx-auto mb-4" />
+              <h2 className="text-xl font-semibold text-white mb-2">No {activeTab === 'live' ? 'live' : 'past'} NFT campaigns</h2>
+              <p className="text-muted">NFT-focused creator campaigns will appear here when available.</p>
+            </div>
+          )}
+        </div>
+      </main>
+    </div>
+  );
+}

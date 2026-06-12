@@ -14,6 +14,10 @@ import CampaignBudget from './pages/CampaignBudget';
 import CampaignDetail from './pages/CampaignDetail';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminCampaigns from './pages/AdminCampaigns';
+import AdminRaffles from './pages/AdminRaffles';
+import AdminNFTCampaignNew from './pages/AdminNFTCampaignNew';
+import AdminNFTApprovals from './pages/AdminNFTApprovals';
+import AdminNFTSubmissions from './pages/AdminNFTSubmissions';
 import AdminApprovals from './pages/AdminApprovals';
 import AdminTickets from './pages/AdminTickets';
 import AdminLogin from './pages/AdminLogin';
@@ -21,6 +25,8 @@ import CreatorDashboard from './pages/CreatorDashboard';
 import CreatorProfile from './pages/CreatorProfile';
 import CreatorBrowse from './pages/CreatorBrowse';
 import CreatorCampaignDetail from './pages/CreatorCampaignDetail';
+import CreatorNFTCampaigns from './pages/CreatorNFTCampaigns';
+import CreatorNFTCampaignDetail from './pages/CreatorNFTCampaignDetail';
 import ActiveCampaigns from './pages/ActiveCampaigns';
 import ActiveCampaignDetail from './pages/ActiveCampaignDetail';
 import Leaderboard from './pages/Leaderboard';
@@ -32,6 +38,8 @@ import CreatorSettings from './pages/CreatorSettings';
 import CreatorReferral from './pages/CreatorReferral';
 import ReferralLanding from './pages/ReferralLanding';
 import PublicProfile from './pages/PublicProfile';
+import Docs from './pages/Docs';
+import LegalPage from './pages/LegalPage';
 import NotFound from './pages/NotFound';
 import ProtectedRoute from './components/ProtectedRoute';
 import AuthCallback from './pages/AuthCallback';
@@ -70,6 +78,10 @@ export default function App() {
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/auth/callback/brand" element={<BrandAuthCallback />} />
         <Route path="/campaigns" element={<CampaignsRedirect />} />
+        <Route path="/docs" element={<Docs />} />
+        <Route path="/terms" element={<LegalPage type="terms" />} />
+        <Route path="/privacy" element={<LegalPage type="privacy" />} />
+        <Route path="/cookies" element={<LegalPage type="cookies" />} />
         <Route path="/ref/:code" element={<ReferralLanding />} />
         <Route path="/ref/:code/:name" element={<ReferralLanding />} />
         
@@ -87,7 +99,13 @@ export default function App() {
         {/* Admin Routes */}
         <Route path="/admin/dashboard" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
         <Route path="/admin/campaigns" element={<ProtectedRoute requiredRole="admin"><AdminCampaigns /></ProtectedRoute>} />
+        <Route path="/admin/raffles" element={<ProtectedRoute requiredRole="admin"><AdminRaffles /></ProtectedRoute>} />
+        <Route path="/admin/raffles/:id" element={<ProtectedRoute requiredRole="admin"><AdminRaffles /></ProtectedRoute>} />
+        <Route path="/admin/campaigns/new" element={<ProtectedRoute requiredRole="admin"><AdminNFTCampaignNew /></ProtectedRoute>} />
         <Route path="/admin/approvals" element={<ProtectedRoute requiredRole="admin"><AdminApprovals /></ProtectedRoute>} />
+        <Route path="/admin/nft-approvals" element={<ProtectedRoute requiredRole="admin"><AdminNFTApprovals /></ProtectedRoute>} />
+        <Route path="/admin/nft-submissions" element={<ProtectedRoute requiredRole="admin"><AdminNFTSubmissions /></ProtectedRoute>} />
+        <Route path="/admin/nft-submissions/:id" element={<ProtectedRoute requiredRole="admin"><AdminNFTSubmissions /></ProtectedRoute>} />
         <Route path="/admin/tickets" element={<ProtectedRoute requiredRole="admin"><AdminTickets /></ProtectedRoute>} />
 
         {/* Creator Routes */}
@@ -95,6 +113,8 @@ export default function App() {
         <Route path="/creator/profile" element={<ProtectedRoute requiredRole="creator"><CreatorProfile /></ProtectedRoute>} />
         <Route path="/creator/campaigns" element={<ProtectedRoute requiredRole="creator"><CreatorBrowse /></ProtectedRoute>} />
         <Route path="/creator/campaigns/:id" element={<ProtectedRoute requiredRole="creator"><CreatorCampaignDetail /></ProtectedRoute>} />
+        <Route path="/creator/nft-campaigns" element={<ProtectedRoute requiredRole="creator"><CreatorNFTCampaigns /></ProtectedRoute>} />
+        <Route path="/creator/nft-campaigns/:id" element={<ProtectedRoute requiredRole="creator"><CreatorNFTCampaignDetail /></ProtectedRoute>} />
         <Route path="/creator/active" element={<ProtectedRoute requiredRole="creator"><ActiveCampaigns /></ProtectedRoute>} />
         <Route path="/creator/active/:id" element={<ProtectedRoute requiredRole="creator"><ActiveCampaignDetail /></ProtectedRoute>} />
         <Route path="/creator/leaderboard" element={<ProtectedRoute requiredRole="creator"><Leaderboard /></ProtectedRoute>} />

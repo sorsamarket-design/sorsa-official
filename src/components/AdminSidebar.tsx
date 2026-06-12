@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Inbox, LayoutDashboard, LogOut, Megaphone, ShieldCheck, X } from 'lucide-react';
+import { FileText, Inbox, LayoutDashboard, LogOut, Megaphone, PlusCircle, ShieldCheck, Sparkles, Ticket, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function AdminSidebar() {
@@ -23,7 +23,11 @@ export default function AdminSidebar() {
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin/dashboard' },
     { icon: Megaphone, label: 'Campaigns', path: '/admin/campaigns' },
+    { icon: Ticket, label: 'Raffle', path: '/admin/raffles' },
+    { icon: PlusCircle, label: 'Create Campaign', path: '/admin/campaigns/new' },
     { icon: ShieldCheck, label: 'Approvals', path: '/admin/approvals' },
+    { icon: Sparkles, label: 'NFT Approvals', path: '/admin/nft-approvals' },
+    { icon: FileText, label: 'NFT Submissions', path: '/admin/nft-submissions' },
     { icon: Inbox, label: 'Tickets', path: '/admin/tickets' },
   ];
 
@@ -63,6 +67,7 @@ export default function AdminSidebar() {
             <NavLink
               key={item.path}
               to={item.path}
+              end
               className={({ isActive }) =>
                 `flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                   isActive
