@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase, hasSupabaseConfig } from '../lib/supabase';
 
 const AuthContext = createContext({
@@ -14,6 +14,7 @@ export const AuthProvider = ({ children }) => {
   const [role, setRole] = useState(null);
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
+  const userIdRef = useRef(null);
 
   useEffect(() => {
     if (!hasSupabaseConfig || !supabase) {
@@ -21,21 +22,9 @@ export const AuthProvider = ({ children }) => {
       return;
     }
 
-    // 1. Initial session fetch
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchUserRole(session.user.id);
-      } else {
-        setLoading(false);
-      }
-    });
-
-    // 2. Fetch role from DB
     async function fetchUserRole(userId) {
       try {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', userId)
@@ -44,9 +33,8 @@ export const AuthProvider = ({ children }) => {
         if (data) {
           setRole(data.role);
         } else {
-          // Fallback to metadata if DB row isn't there yet
-          const { data: { user } } = await supabase.auth.getUser();
-          setRole(user?.user_metadata?.role ?? null);
+          const { data: { user: currentUser } } = await supabase.auth.getUser();
+          setRole(currentUser?.user_metadata?.role ?? null);
         }
       } catch (err) {
         console.error('Error fetching role:', err);
@@ -55,15 +43,40 @@ export const AuthProvider = ({ children }) => {
       }
     }
 
-    // 3. Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchUserRole(session.user.id);
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      const initialUser = initialSession?.user ?? null;
+      setSession(initialSession);
+      setUser(initialUser);
+      userIdRef.current = initialUser?.id ?? null;
+
+      if (initialUser) {
+        fetchUserRole(initialUser.id);
       } else {
+        setLoading(false);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      const nextUser = nextSession?.user ?? null;
+      const nextUserId = nextUser?.id ?? null;
+      const userChanged = userIdRef.current !== nextUserId;
+
+      setSession(nextSession);
+
+      if (userChanged) {
+        userIdRef.current = nextUserId;
+        setUser(nextUser);
+      }
+
+      if (nextUser && userChanged) {
+        setLoading(true);
+        fetchUserRole(nextUser.id);
+      } else if (!nextUser) {
+        setUser(null);
         setRole(null);
         setLoading(false);
+      } else if (event === 'USER_UPDATED') {
+        setUser(nextUser);
       }
     });
 
@@ -79,7 +92,7 @@ export const AuthProvider = ({ children }) => {
     role,
     session,
     loading,
-    signOut
+    signOut,
   }), [user, role, session, loading, signOut]);
 
   return (

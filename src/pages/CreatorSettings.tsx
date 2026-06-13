@@ -143,17 +143,18 @@ export default function CreatorSettings() {
   return (
     <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] font-sans selection:bg-cyan/30 flex">
       <CreatorSidebar />
-      <CreatorTopBar />
-      
-      <main className="flex-1 md:ml-64 mt-20 p-4 md:p-8">
+      <main className="creator-page-main flex-1 md:ml-64 p-4 md:p-8">
         <div className="max-w-4xl mx-auto space-y-8">
-          <div>
-            <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: appleEase }} className="text-3xl font-semibold tracking-tight text-white flex items-center gap-3">
-              <SettingsIcon className="w-8 h-8 text-cyan" /> Settings
-            </motion.h1>
-            <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: appleEase, delay: 0.1 }} className="text-muted mt-2">
-              Manage your account preferences and connected services.
-            </motion.p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: appleEase }} className="text-3xl font-semibold tracking-tight text-white flex items-center gap-3">
+                <SettingsIcon className="w-8 h-8 text-cyan" /> Settings
+              </motion.h1>
+              <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: appleEase, delay: 0.1 }} className="text-muted mt-2">
+                Manage your account preferences and connected services.
+              </motion.p>
+            </div>
+            <CreatorTopBar embedded />
           </div>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: appleEase, delay: 0.2 }} className="flex flex-col md:flex-row gap-8">

@@ -50,8 +50,7 @@ export default function CreatorNFTCampaigns() {
   return (
     <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] font-sans selection:bg-cyan/30 flex">
       <CreatorSidebar />
-      <CreatorTopBar />
-      <main className="flex-1 md:ml-64 mt-20 p-4 md:p-8">
+      <main className="creator-page-main flex-1 md:ml-64 p-4 md:p-8">
         <div className="max-w-6xl mx-auto space-y-8">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
@@ -64,46 +63,49 @@ export default function CreatorNFTCampaigns() {
               </p>
             </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
-              className="inline-flex bg-white/5 p-1.5 rounded-full border border-white/10"
-            >
-              <button
-                onClick={() => setActiveTab('live')}
-                className={`relative px-6 py-2 rounded-full text-sm font-medium transition-colors ${
-                  activeTab === 'live' ? 'text-black' : 'text-muted hover:text-white'
-                }`}
+            <div className="flex items-center gap-3 self-start md:self-center">
+              <CreatorTopBar embedded />
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
+                className="inline-flex bg-white/5 p-1.5 rounded-full border border-white/10"
               >
-                {activeTab === 'live' && (
-                  <motion.div
-                    layoutId="nftBrowseTabBg"
-                    className="absolute inset-0 bg-white rounded-full"
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                  />
-                )}
-                <span className="relative z-10 flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${activeTab === 'live' ? 'bg-green-500' : 'bg-transparent'}`} />
-                  Live
-                </span>
-              </button>
-              <button
-                onClick={() => setActiveTab('past')}
-                className={`relative px-6 py-2 rounded-full text-sm font-medium transition-colors ${
-                  activeTab === 'past' ? 'text-black' : 'text-muted hover:text-white'
-                }`}
-              >
-                {activeTab === 'past' && (
-                  <motion.div
-                    layoutId="nftBrowseTabBg"
-                    className="absolute inset-0 bg-white rounded-full"
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                  />
-                )}
-                <span className="relative z-10">Past</span>
-              </button>
-            </motion.div>
+                <button
+                  onClick={() => setActiveTab('live')}
+                  className={`relative px-6 py-2 rounded-full text-sm font-medium transition-colors ${
+                    activeTab === 'live' ? 'text-black' : 'text-muted hover:text-white'
+                  }`}
+                >
+                  {activeTab === 'live' && (
+                    <motion.div
+                      layoutId="nftBrowseTabBg"
+                      className="absolute inset-0 bg-white rounded-full"
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    />
+                  )}
+                  <span className="relative z-10 flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${activeTab === 'live' ? 'bg-green-500' : 'bg-transparent'}`} />
+                    Live
+                  </span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('past')}
+                  className={`relative px-6 py-2 rounded-full text-sm font-medium transition-colors ${
+                    activeTab === 'past' ? 'text-black' : 'text-muted hover:text-white'
+                  }`}
+                >
+                  {activeTab === 'past' && (
+                    <motion.div
+                      layoutId="nftBrowseTabBg"
+                      className="absolute inset-0 bg-white rounded-full"
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    />
+                  )}
+                  <span className="relative z-10">Past</span>
+                </button>
+              </motion.div>
+            </div>
           </div>
 
           {error && (

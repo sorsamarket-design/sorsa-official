@@ -158,16 +158,17 @@ export default function CreatorNFTCampaignDetail() {
   return (
     <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] font-sans selection:bg-cyan/30 flex">
       <CreatorSidebar />
-      <CreatorTopBar />
-
-      <main className="flex-1 md:ml-64 mt-20 p-4 md:p-8">
+      <main className="creator-page-main flex-1 md:ml-64 p-4 md:p-8">
         <div className="max-w-4xl mx-auto space-y-8">
-          <button
-            onClick={() => navigate('/creator/nft-campaigns')}
-            className="inline-flex items-center gap-2 text-muted hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" /> Back to NFT Campaigns
-          </button>
+          <div className="flex items-center justify-between gap-4">
+            <button
+              onClick={() => navigate('/creator/nft-campaigns')}
+              className="inline-flex items-center gap-2 text-muted hover:text-white transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" /> Back to NFT Campaigns
+            </button>
+            <CreatorTopBar embedded />
+          </div>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}

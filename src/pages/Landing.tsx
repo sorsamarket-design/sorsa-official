@@ -492,7 +492,7 @@ const TeamSection = () => {
   const members = [
     {
       name: 'TMDEFI',
-      role: 'CEO',
+      role: 'Co-founder & CEO',
       handle: '@tmdefi',
       url: 'https://x.com/tmdefi',
       initials: 'TD',
@@ -501,7 +501,7 @@ const TeamSection = () => {
     },
     {
       name: 'GOATXII3',
-      role: 'CMO',
+      role: 'Co-founder & CMO',
       handle: '@goatxii3',
       url: 'https://x.com/goatxii3',
       initials: 'GX',
@@ -510,7 +510,7 @@ const TeamSection = () => {
     },
     {
       name: 'KHALID',
-      role: 'CTO',
+      role: 'Co-founder & CTO',
       handle: '@khaliddesigns',
       url: 'https://x.com/khaliddesigns',
       initials: 'KH',
@@ -519,7 +519,7 @@ const TeamSection = () => {
     },
     {
       name: 'YUSUFPLUG',
-      role: 'COO',
+      role: 'Co-founder & COO',
       handle: '@yusufplug_',
       url: 'https://x.com/yusufplug_',
       initials: 'YP',
@@ -535,16 +535,16 @@ const TeamSection = () => {
           <p className="text-xs font-semibold tracking-[0.28em] text-muted uppercase">Meet the Team</p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
           {members.map((member) => (
             <a
               key={member.name}
               href={member.url}
               target="_blank"
               rel="noreferrer"
-              className="group border border-white/10 hover:border-cyan/60 rounded-2xl p-6 flex flex-col items-center text-center transition-colors duration-300 bg-black"
+              className="group min-w-0 border border-white/10 hover:border-cyan/60 rounded-2xl p-3 sm:p-6 flex flex-col items-center text-center transition-colors duration-300 bg-black"
             >
-              <div className="w-24 h-24 rounded-full p-[3px]" style={{ background: member.ring }}>
+              <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-full p-[3px]" style={{ background: member.ring }}>
                 <div className="w-full h-full rounded-full bg-[#0B0A0F] p-1">
                   <div className="w-full h-full rounded-full bg-white/5 flex items-center justify-center overflow-hidden">
                     {'image' in member && member.image ? (
@@ -560,15 +560,15 @@ const TeamSection = () => {
                 </div>
               </div>
 
-              <div className="w-full h-px bg-white/10 my-6"></div>
+              <div className="w-full h-px bg-white/10 my-4 sm:my-6"></div>
 
-              <h3 className="text-sm font-bold tracking-[0.18em] uppercase text-white">{member.name}</h3>
-              <div className="mt-3 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-[11px] font-semibold tracking-wider text-cyan uppercase">
+              <h3 className="max-w-full truncate text-[11px] sm:text-sm font-bold tracking-[0.12em] sm:tracking-[0.18em] uppercase text-white">{member.name}</h3>
+              <div className="mt-2 sm:mt-3 max-w-full px-2 sm:px-3 py-1 rounded-full border border-white/10 bg-white/5 text-[8px] sm:text-[11px] font-semibold leading-tight tracking-wide sm:tracking-wider text-cyan uppercase">
                 {member.role}
               </div>
-              <div className="mt-4 flex items-center gap-2 text-sm text-muted group-hover:text-white transition-colors">
-                <XLogo className="w-3.5 h-3.5" />
-                <span>{member.handle}</span>
+              <div className="mt-3 sm:mt-4 flex min-w-0 max-w-full items-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm text-muted group-hover:text-white transition-colors">
+                <XLogo className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+                <span className="truncate">{member.handle}</span>
               </div>
             </a>
           ))}

@@ -4,30 +4,6 @@ import { supabase } from '../lib/supabase';
 import { normalizeAvatarUrl } from '../lib/avatars';
 import { attachSavedReferralToCreator, buildReferralCode, ensureCreatorReferralCode } from '../lib/referrals';
 
-async function syncSorsaProfile(userId: string, xHandle: string) {
-  const { default: sorsaApi } = await import('../lib/sorsaApi');
-  const [score, stats, about] = await Promise.race([
-    Promise.all([
-      sorsaApi.fetchScore(xHandle),
-      sorsaApi.fetchInfo(xHandle),
-      sorsaApi.fetchAbout(xHandle),
-    ]),
-    new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Initial Sorsa sync timed out')), 15_000)
-    ),
-  ]);
-  const finalLocation = stats.location || about?.country || null;
-  await supabase.from('creator_profiles').update({
-    sorsa_score: score,
-    follower_count: stats.followers_count,
-    avatar_url: normalizeAvatarUrl(stats.profile_image_url),
-    bio: stats.description,
-    country: finalLocation,
-    full_name: stats.display_name,
-    last_profile_sync_at: new Date().toISOString(),
-  }).eq('id', userId);
-}
-
 async function completeSupabaseRedirect() {
   const searchParams = new URLSearchParams(window.location.search);
   const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
@@ -80,7 +56,7 @@ export default function AuthCallback() {
 
         const { data: existingProfile, error: existingProfileError } = await supabase
           .from('creator_profiles')
-          .select('id, sorsa_score, last_profile_sync_at')
+          .select('id')
           .eq('id', user.id)
           .maybeSingle();
         if (existingProfileError) throw existingProfileError;
@@ -104,21 +80,8 @@ export default function AuthCallback() {
           if (creatorError) throw creatorError;
 
           await attachSavedReferralToCreator(user.id);
-
-          try {
-            await syncSorsaProfile(user.id, xHandle);
-          } catch (sorsaErr) {
-            console.warn('Initial Sorsa sync failed:', sorsaErr);
-          }
         } else {
           await ensureCreatorReferralCode(user.id, xHandle);
-          if (!Number(existingProfile.sorsa_score || 0) || !existingProfile.last_profile_sync_at) {
-            try {
-              await syncSorsaProfile(user.id, xHandle);
-            } catch (sorsaErr) {
-              console.warn('Existing creator Sorsa sync failed:', sorsaErr);
-            }
-          }
         }
 
         const { error: updateError } = await supabase.auth.updateUser({ data: { role: 'creator' } });

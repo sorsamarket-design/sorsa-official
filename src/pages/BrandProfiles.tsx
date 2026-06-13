@@ -26,7 +26,7 @@ export default function BrandProfiles() {
       <main className="flex-1 md:ml-64 mt-20 p-4 md:p-8">
         <div className="max-w-6xl mx-auto">
           
-          <div className="flex items-center justify-between mb-10">
+          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between mb-8 sm:mb-10">
             <motion.h1 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -44,7 +44,7 @@ export default function BrandProfiles() {
                 if (!profileLimitReached) navigate('/brand/profiles/new');
               }}
               disabled={profileLimitReached}
-              className="px-6 py-3 rounded-full bg-cyan text-black font-semibold flex items-center gap-2 hover:scale-[1.02] transition-transform duration-300 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              className="w-full sm:w-auto px-5 sm:px-6 py-3 rounded-full bg-cyan text-black font-semibold flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform duration-300 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               <Plus className="w-5 h-5" />
               {profileLimitReached ? 'Profile Limit Reached' : 'New Brand Profile'}
@@ -89,8 +89,8 @@ export default function BrandProfiles() {
                       className="w-16 h-16 rounded-2xl object-cover border border-white/20 shadow-lg"
                       referrerPolicy="no-referrer"
                     />
-                    <div>
-                      <h3 className="text-xl font-semibold text-white tracking-tight">{profile.company_name}</h3>
+                    <div className="min-w-0">
+                      <h3 className="truncate text-xl font-semibold text-white tracking-tight">{profile.company_name}</h3>
                       <div className="flex flex-col gap-1 mt-1">
                         {profile.twitter_handle && (
                           <a href={`https://x.com/${profile.twitter_handle.replace('@', '')}`} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-xs text-muted hover:text-white transition-colors">

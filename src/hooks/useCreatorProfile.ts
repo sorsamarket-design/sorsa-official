@@ -14,6 +14,7 @@ const CreatorProfileContext = createContext<CreatorProfileContextValue | null>(n
 
 export function CreatorProfileProvider({ children }: { children: React.ReactNode }) {
   const { user, role, loading: authLoading } = useAuth();
+  const userId = user?.id;
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +22,7 @@ export function CreatorProfileProvider({ children }: { children: React.ReactNode
   const fetchProfile = useCallback(async () => {
     if (authLoading) return;
 
-    if (!user || role !== 'creator') {
+    if (!userId || role !== 'creator') {
       setProfile(null);
       setError(null);
       setLoading(false);
@@ -34,7 +35,7 @@ export function CreatorProfileProvider({ children }: { children: React.ReactNode
       const { data, error } = await supabase
         .from('creator_profiles')
         .select('*')
-        .eq('id', user.id)
+        .eq('id', userId)
         .single();
 
       if (error) throw error;
@@ -45,7 +46,7 @@ export function CreatorProfileProvider({ children }: { children: React.ReactNode
     } finally {
       setLoading(false);
     }
-  }, [authLoading, role, user]);
+  }, [authLoading, role, userId]);
 
   useEffect(() => {
     fetchProfile();

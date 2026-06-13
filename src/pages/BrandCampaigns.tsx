@@ -35,7 +35,7 @@ export default function BrandCampaigns() {
       <main className="flex-1 md:ml-64 mt-20 p-4 md:p-8">
         <div className="max-w-6xl mx-auto">
           
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
             <motion.h1 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -50,7 +50,7 @@ export default function BrandCampaigns() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, ease: appleEase, delay: 0.1 }}
               onClick={() => navigate('/brand/campaigns/new')}
-              className="px-6 py-3 rounded-full bg-cyan text-black font-semibold flex items-center gap-2 hover:scale-[1.02] transition-transform duration-300 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]"
+              className="w-full sm:w-auto px-5 sm:px-6 py-3 rounded-full bg-cyan text-black font-semibold flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform duration-300 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]"
             >
               <Plus className="w-5 h-5" />
               Create Campaign
@@ -64,12 +64,12 @@ export default function BrandCampaigns() {
             transition={{ duration: 0.8, ease: appleEase, delay: 0.2 }}
             className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6"
           >
-            <div className="flex items-center gap-2 p-1 bg-white/5 rounded-xl border border-white/10 w-fit">
+            <div className="flex w-full items-center gap-1 overflow-x-auto rounded-xl border border-white/10 bg-white/5 p-1 md:w-fit md:gap-2">
               {['All', 'Active', 'Draft', 'Completed'].map(tab => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                  className={`shrink-0 px-3 sm:px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                     activeTab === tab ? 'bg-white/10 text-white shadow-sm' : 'text-muted hover:text-white'
                   }`}
                 >
@@ -78,15 +78,15 @@ export default function BrandCampaigns() {
               ))}
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="relative">
+            <div className="flex w-full items-center gap-3 md:w-auto">
+              <div className="relative min-w-0 flex-1 md:flex-none">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                 <input 
                   type="text"
                   placeholder="Search campaigns..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 rounded-xl bg-black/50 border border-white/10 text-white placeholder:text-muted focus:outline-none focus:border-cyan focus:ring-1 focus:ring-cyan transition-all text-sm w-64"
+                  className="w-full pl-10 pr-4 py-2 rounded-xl bg-black/50 border border-white/10 text-white placeholder:text-muted focus:outline-none focus:border-cyan focus:ring-1 focus:ring-cyan transition-all text-sm md:w-64"
                 />
               </div>
               <button className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-muted hover:text-white hover:bg-white/10 transition-colors">

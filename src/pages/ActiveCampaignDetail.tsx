@@ -121,11 +121,10 @@ export default function ActiveCampaignDetail() {
   return (
     <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] font-sans selection:bg-cyan-500/30 flex">
       <CreatorSidebar />
-
-      <main className="flex-1 md:ml-64 p-4 md:p-8">
+      <main className="creator-page-main flex-1 md:ml-64 p-4 md:p-8">
         <div className="max-w-4xl mx-auto space-y-8">
           {/* Header */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
             <button
               onClick={() => navigate('/creator/active')}
               className="group flex items-center gap-2 text-muted hover:text-white transition-colors"
@@ -135,9 +134,12 @@ export default function ActiveCampaignDetail() {
               </div>
               <span className="font-medium">Back to My Campaigns</span>
             </button>
-            <div className="flex items-center gap-3 px-4 py-2 rounded-full bg-cyan/10 border border-cyan/20">
-              <Sparkles className="w-4 h-4 text-cyan" />
-              <span className="text-sm font-semibold text-cyan">Active Campaign</span>
+            <div className="flex items-center gap-3">
+              <CreatorTopBar embedded />
+              <div className="flex items-center gap-3 px-4 py-2 rounded-full bg-cyan/10 border border-cyan/20">
+                <Sparkles className="w-4 h-4 text-cyan" />
+                <span className="text-sm font-semibold text-cyan">Active Campaign</span>
+              </div>
             </div>
           </div>
 

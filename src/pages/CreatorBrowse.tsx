@@ -121,9 +121,7 @@ export default function CreatorBrowse() {
   return (
     <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] font-sans selection:bg-cyan/30 flex">
       <CreatorSidebar />
-      <CreatorTopBar />
-
-      <main className="flex-1 md:ml-64 mt-20 p-4 md:p-8">
+      <main className="creator-page-main flex-1 md:ml-64 p-4 md:p-8">
         <div className="max-w-7xl mx-auto space-y-8">
 
           {/* Header & Toggle */}
@@ -149,13 +147,15 @@ export default function CreatorBrowse() {
               </motion.p>
             </div>
 
-            {/* Toggle */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: appleEase, delay: 0.2 }}
-              className="inline-flex bg-white/5 p-1.5 rounded-full border border-white/10"
-            >
+            <div className="flex items-center gap-3 self-start md:self-center">
+              <CreatorTopBar embedded />
+              {/* Toggle */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, ease: appleEase, delay: 0.2 }}
+                className="inline-flex bg-white/5 p-1.5 rounded-full border border-white/10"
+              >
               <button
                 onClick={() => setActiveTab('live')}
                 className={`relative px-6 py-2 rounded-full text-sm font-medium transition-colors ${
@@ -189,7 +189,8 @@ export default function CreatorBrowse() {
                 )}
                 <span className="relative z-10">Past</span>
               </button>
-            </motion.div>
+              </motion.div>
+            </div>
           </div>
 
           {/* Filters Bar */}

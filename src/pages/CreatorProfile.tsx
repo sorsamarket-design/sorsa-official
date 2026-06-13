@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Wallet, MapPin, Edit2, Star, Target, DollarSign, Check, X, RefreshCw, Sparkles, Calendar } from 'lucide-react';
+import { Wallet, MapPin, Edit2, Star, Target, DollarSign, Check, X, Sparkles, Calendar } from 'lucide-react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import BindWalletButton from '../components/BindWalletButton';
 import CreatorSidebar from '../components/CreatorSidebar';
@@ -12,7 +12,6 @@ import { useCreatorProfile } from '../hooks/useCreatorProfile';
 import { useAuth } from '../context/AuthContext';
 import { getInitialsAvatarUrl, normalizeAvatarUrl } from '../lib/avatars';
 import { supabase } from '../lib/supabase';
-import sorsaApi from '../lib/sorsaApi';
 import { getCreatorPastCampaignHistory, type CreatorCampaignHistoryItem } from '../lib/creatorCampaignHistory';
 
 export default function CreatorProfile() {
@@ -20,9 +19,7 @@ export default function CreatorProfile() {
   const { profile, loading, setProfile, refreshProfile } = useCreatorProfile();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isSyncingSorsa, setIsSyncingSorsa] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
-  const [sorsaSyncMessage, setSorsaSyncMessage] = useState<string | null>(null);
   const [pastCampaigns, setPastCampaigns] = useState<CreatorCampaignHistoryItem[]>([]);
   const [editForm, setEditForm] = useState({
     bio: ''
@@ -92,32 +89,11 @@ export default function CreatorProfile() {
     setIsEditing(false);
   };
 
-  const handleSyncSorsa = async () => {
-    if (isSyncingSorsa) return;
-
-    setIsSyncingSorsa(true);
-    setSorsaSyncMessage(null);
-
-    try {
-      const result = await sorsaApi.syncCreatorProfile();
-      if (result.profile) {
-        setProfile(result.profile);
-      }
-      await refreshProfile();
-      setSorsaSyncMessage('Sorsa score synced.');
-    } catch (err: any) {
-      setSorsaSyncMessage(err.message || 'Unable to sync Sorsa score right now.');
-    } finally {
-      setIsSyncingSorsa(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] font-sans selection:bg-cyan/30 flex">
       <CreatorSidebar />
-      <CreatorTopBar />
 
-      <main className="flex-1 md:ml-64 mt-20 p-4 md:p-8">
+      <main className="creator-page-main flex-1 md:ml-64 p-4 md:p-8">
         <div className="max-w-4xl mx-auto space-y-8">
 
           {/* Header Section */}
@@ -129,12 +105,12 @@ export default function CreatorProfile() {
           >
             <div className="absolute top-0 right-0 w-96 h-96 bg-cyan/5 blur-[120px] rounded-full pointer-events-none"></div>
 
-            <div className="relative z-10 flex flex-col md:flex-row gap-8 items-start">
-              <div className="shrink-0 relative group">
+            <div className="relative z-10 flex flex-col items-start gap-6 sm:flex-row sm:items-center md:gap-8">
+              <div className="relative shrink-0 self-center group sm:self-auto">
                 <img
                   src={normalizeAvatarUrl(profile?.avatar_url) || normalizeAvatarUrl(user?.user_metadata?.avatar_url) || getInitialsAvatarUrl(profile?.x_handle || 'Creator')}
                   alt={profile?.full_name || profile?.x_handle || 'Creator'}
-                  className="w-32 h-32 rounded-[2rem] object-cover border-2 border-white/10"
+                  className="h-32 w-32 rounded-2xl border border-white/10 object-cover sm:h-36 sm:w-36 md:h-40 md:w-40"
                   referrerPolicy="no-referrer"
                 />
               </div>
@@ -155,7 +131,8 @@ export default function CreatorProfile() {
                     )}
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                    <CreatorTopBar embedded />
                     {!isEditing ? (
                       <button
                         onClick={() => setIsEditing(true)}
@@ -243,20 +220,6 @@ export default function CreatorProfile() {
                     <Star key={star} className={`w-5 h-5 ${star <= 4 ? 'text-cyan fill-cyan' : 'text-white/20'}`} />
                   ))}
                 </div>
-
-                <button
-                  onClick={handleSyncSorsa}
-                  disabled={isSyncingSorsa}
-                  className="mt-6 px-4 py-2 rounded-full bg-cyan text-black text-sm font-semibold hover:scale-[1.02] transition-transform inline-flex items-center justify-center gap-2 disabled:opacity-60 disabled:hover:scale-100"
-                >
-                  <RefreshCw className={`w-4 h-4 ${isSyncingSorsa ? 'animate-spin' : ''}`} />
-                  {isSyncingSorsa ? 'Syncing...' : 'Sync Sorsa Score'}
-                </button>
-                {sorsaSyncMessage && (
-                  <p className={`mt-3 text-xs ${sorsaSyncMessage.includes('Unable') ? 'text-red-400' : 'text-green-400'}`}>
-                    {sorsaSyncMessage}
-                  </p>
-                )}
 
                 <div className="mt-8 pt-6 border-t border-white/10 flex items-center justify-between">
                   <div className="text-left">

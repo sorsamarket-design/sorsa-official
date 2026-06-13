@@ -1,9 +1,42 @@
-import React, { useState, useEffect } from 'react';
-import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, User, Megaphone, PlayCircle, Trophy, Mail, Wallet, Settings, Gift, X, Sparkles } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import {
+  Gift,
+  LayoutDashboard,
+  Mail,
+  Megaphone,
+  PlayCircle,
+  Settings,
+  Sparkles,
+  Trophy,
+  User,
+  Wallet,
+  X,
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCreatorProfile } from '../hooks/useCreatorProfile';
 import { getInitialsAvatarUrl, normalizeAvatarUrl } from '../lib/avatars';
+
+const navigationGroups = [
+  [
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/creator/dashboard' },
+    { icon: User, label: 'Profile', path: '/creator/profile' },
+  ],
+  [
+    { icon: Megaphone, label: 'Campaigns', path: '/creator/campaigns' },
+    { icon: Sparkles, label: 'NFT Campaigns', path: '/creator/nft-campaigns' },
+    { icon: PlayCircle, label: 'My Campaigns', path: '/creator/active' },
+    { icon: Trophy, label: 'Leaderboard', path: '/creator/leaderboard' },
+  ],
+  [
+    { icon: Wallet, label: 'Wallet', path: '/creator/wallet' },
+    { icon: Gift, label: 'Refer & Earn', path: '/creator/referral' },
+  ],
+  [
+    { icon: Mail, label: 'Contact', path: '/creator/contact' },
+    { icon: Settings, label: 'Settings', path: '/creator/settings' },
+  ],
+];
 
 export default function CreatorSidebar() {
   const { user } = useAuth();
@@ -13,94 +46,107 @@ export default function CreatorSidebar() {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    const handleToggle = () => setIsOpen(prev => !prev);
+    const handleToggle = () => setIsOpen((previous) => !previous);
     document.addEventListener('toggleSidebar', handleToggle);
     return () => document.removeEventListener('toggleSidebar', handleToggle);
   }, []);
 
-  // Close sidebar on route change on mobile
   useEffect(() => {
     setIsOpen(false);
   }, [location.pathname]);
 
-  const navItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/creator/dashboard' },
-    { icon: User, label: 'Profile', path: '/creator/profile' },
-    { icon: Megaphone, label: 'Campaigns', path: '/creator/campaigns' },
-    { icon: Sparkles, label: 'NFT Campaigns', path: '/creator/nft-campaigns' },
-    { icon: PlayCircle, label: 'My Campaigns', path: '/creator/active' },
-    { icon: Trophy, label: 'Leaderboard', path: '/creator/leaderboard' },
-    { icon: Wallet, label: 'Wallet', path: '/creator/wallet' },
-    { icon: Gift, label: 'Refer & Earn', path: '/creator/referral' },
-    { icon: Mail, label: 'Contact', path: '/creator/contact' },
-    { icon: Settings, label: 'Settings', path: '/creator/settings' },
-  ];
+  const handle =
+    profile?.x_handle ||
+    user?.user_metadata?.user_name ||
+    user?.user_metadata?.full_name ||
+    'Creator';
+  const displayHandle = handle.startsWith('@') ? handle : `@${handle}`;
   const avatar =
     normalizeAvatarUrl(profile?.avatar_url) ||
     normalizeAvatarUrl(user?.user_metadata?.avatar_url) ||
-    getInitialsAvatarUrl(profile?.x_handle || user?.user_metadata?.full_name || 'Creator');
+    getInitialsAvatarUrl(handle);
 
   return (
     <>
-      {/* Mobile Overlay */}
       {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
+        <button
+          type="button"
+          aria-label="Close navigation"
+          className="fixed inset-0 z-40 bg-black/65 backdrop-blur-sm md:hidden"
           onClick={() => setIsOpen(false)}
         />
       )}
 
-      <aside className={`w-64 h-screen bg-[#0A0A1E] border-r border-white/10 fixed left-0 top-0 flex flex-col z-50 transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
-        <div className="p-6 flex items-center justify-between">
-          <div
-            className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+      <aside
+        className={`app-sidebar fixed left-0 top-0 z-50 flex h-screen w-64 flex-col border-r border-white/10 bg-[#0A0A1E] transition-transform duration-300 ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        } md:translate-x-0`}
+      >
+        <div className="flex h-16 items-center justify-between px-4">
+          <button
+            type="button"
+            className="flex min-h-11 items-center gap-3 rounded-xl text-left transition-opacity hover:opacity-80"
             onClick={() => navigate('/')}
           >
-            <img src="/SorsaMarketlogo.PNG" alt="Logo" className="w-8 h-8 object-contain" />
-            <span className="text-xl font-bold text-white tracking-tight">SorsaMarket</span>
-          </div>
+            <img src="/SorsaMarketlogo.PNG" alt="" className="h-6 w-6 object-contain" />
+            <span className="text-base font-semibold tracking-tight text-white">SorsaMarket</span>
+          </button>
+
           <button
-            className="md:hidden text-muted hover:text-white"
+            type="button"
+            aria-label="Close navigation"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-muted transition-colors hover:bg-white/5 hover:text-white md:hidden"
             onClick={() => setIsOpen(false)}
           >
-            <X className="w-6 h-6" />
+            <X className="h-5 w-5" />
           </button>
         </div>
 
-        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-                  isActive
-                    ? 'bg-cyan/10 text-cyan border border-cyan/20'
-                    : 'text-muted hover:text-white hover:bg-white/5 border border-transparent'
-                }`
-              }
+        <nav className="flex-1 space-y-1 overflow-y-auto px-3 pb-4 pt-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          {navigationGroups.map((group, groupIndex) => (
+            <div
+              key={group[0].path}
+              className={groupIndex ? 'mt-2 border-t border-dashed border-white/[0.08] pt-2' : ''}
             >
-              <item.icon className="w-5 h-5" />
-              <span className="font-medium">{item.label}</span>
-            </NavLink>
+              <div className="space-y-1">
+                {group.map((item) => (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    className={({ isActive }) =>
+                      `app-nav-link group flex min-h-9 items-center gap-2.5 rounded-lg border px-2.5 py-1.5 text-[13px] font-medium ${
+                        isActive
+                          ? 'border-white/[0.09] bg-white/[0.075] text-cyan'
+                          : 'border-transparent text-muted hover:border-white/[0.06] hover:bg-white/[0.045] hover:text-white'
+                      }`
+                    }
+                  >
+                    <item.icon className="h-[18px] w-[18px] shrink-0 stroke-[1.8]" />
+                    <span>{item.label}</span>
+                  </NavLink>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
 
-        <div className="p-4 border-t border-white/10">
-          <div className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3">
+        <div className="border-t border-white/10 p-2.5">
+          <button
+            type="button"
+            onClick={() => navigate('/creator/profile')}
+            className="app-profile-card flex w-full items-center gap-2.5 rounded-lg border border-white/10 bg-white/[0.035] p-2.5 text-left"
+          >
             <img
               src={avatar}
               alt="Creator"
-              className="w-10 h-10 rounded-full border border-white/20 object-cover"
+              className="h-9 w-9 shrink-0 rounded-full border border-white/20 object-cover"
               referrerPolicy="no-referrer"
             />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">
-                @{user?.user_metadata?.user_name || user?.user_metadata?.full_name || 'Creator'}
-              </p>
-              <p className="text-xs text-cyan">Score: {Math.round(profile?.sorsa_score || 0)}</p>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-white">{displayHandle}</p>
+              <p className="mt-0.5 text-xs text-cyan">Score: {Math.round(profile?.sorsa_score || 0)}</p>
             </div>
-          </div>
+          </button>
         </div>
       </aside>
     </>

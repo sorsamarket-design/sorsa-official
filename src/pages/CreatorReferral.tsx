@@ -107,12 +107,13 @@ export default function CreatorReferral() {
   return (
     <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] font-sans selection:bg-cyan/30 flex">
       <CreatorSidebar />
-      <CreatorTopBar />
-      
-      <main className="flex-1 md:ml-64 mt-20 p-4 md:p-8">
+      <main className="creator-page-main flex-1 md:ml-64 p-4 md:p-8">
         <div className="max-w-5xl mx-auto space-y-8">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: appleEase }} className="glass-panel rounded-[2rem] p-8 md:p-12 border border-white/10 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-96 h-96 bg-cyan/10 blur-[120px] rounded-full pointer-events-none"></div>
+            <div className="absolute right-4 top-4 z-20">
+              <CreatorTopBar embedded />
+            </div>
             
             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-12">
               <div className="flex-1 space-y-6">
