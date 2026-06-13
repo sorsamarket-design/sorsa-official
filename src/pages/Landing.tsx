@@ -15,7 +15,8 @@ import {
   Menu,
   X,
   Target,
-  ArrowRight
+  ArrowRight,
+  ChevronRight
 } from 'lucide-react';
 import { XLogo } from '../components/XLogo';
 import { useAuth } from '../context/AuthContext';
@@ -278,6 +279,7 @@ const HowItWorks = () => {
 
 const FeatureSection = ({ id, title, subtitle, features, reverse }: any) => {
   const compactBrandsMobile = id === 'for-brands';
+  const compactCreatorsMobile = id === 'for-creators';
 
   return (
     <section className="py-32 relative overflow-hidden">
@@ -294,13 +296,21 @@ const FeatureSection = ({ id, title, subtitle, features, reverse }: any) => {
           <p className="text-xl text-muted">{subtitle}</p>
         </motion.div>
 
-        <div className={`grid grid-cols-1 md:grid-cols-3 md:gap-6 ${compactBrandsMobile ? 'gap-3' : 'gap-6'}`}>
+        <div className={`grid md:grid-cols-3 md:gap-6 ${
+          compactBrandsMobile
+            ? 'grid-cols-2 items-stretch gap-[10px]'
+            : compactCreatorsMobile
+              ? 'grid-cols-2 items-stretch gap-[10px]'
+              : 'grid-cols-1 gap-6'
+        }`}>
           {features.map((feature: any, idx: number) => (
             <motion.div
               key={idx}
               className={`relative overflow-hidden group ${
                 compactBrandsMobile
-                  ? 'rounded-lg border border-[#1f2937] md:rounded-[2.5rem] md:border-0 md:p-[1px]'
+                  ? 'h-full rounded-[14px] border border-[#1f2937] md:rounded-[2.5rem] md:border-0 md:p-[1px]'
+                  : compactCreatorsMobile
+                    ? 'h-full rounded-[14px] border border-[#1f2937] md:rounded-[2.5rem] md:border-0 md:p-[1px]'
                   : 'rounded-[2.5rem] p-[1px]'
               } ${idx === 0 || idx === 3 ? 'md:col-span-2' : 'md:col-span-1'}`}
               initial={{ opacity: 0, y: 40 }}
@@ -308,31 +318,47 @@ const FeatureSection = ({ id, title, subtitle, features, reverse }: any) => {
               viewport={{ once: true, margin: "-100px" }}
               transition={{ delay: idx * 0.1, duration: 0.8, ease: appleEase }}
             >
-              <div className={`${compactBrandsMobile ? 'hidden md:block' : ''} absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
+              <div className={`${compactBrandsMobile || compactCreatorsMobile ? 'hidden md:block' : ''} absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
               <div className={`relative flex h-full w-full flex-col overflow-hidden ${
                 compactBrandsMobile
-                  ? 'gap-2 rounded-lg bg-[#0f1117] p-5 md:glass-panel md:rounded-[2.5rem] md:bg-black/40 md:p-10 md:backdrop-blur-3xl md:gap-0 md:justify-between'
+                  ? 'gap-2 rounded-[14px] bg-[#0f1117] p-[14px] md:glass-panel md:rounded-[2.5rem] md:bg-black/40 md:p-10 md:backdrop-blur-3xl md:gap-0 md:justify-between'
+                  : compactCreatorsMobile
+                    ? 'gap-2 rounded-[14px] bg-[#0f1117] p-[14px] md:glass-panel md:rounded-[2.5rem] md:bg-black/40 md:p-10 md:backdrop-blur-3xl md:gap-0 md:justify-between'
                   : 'glass-panel rounded-[2.5rem] bg-black/40 p-10 backdrop-blur-3xl justify-between'
               }`}>
-                <div className={compactBrandsMobile ? 'flex items-center gap-2 md:block' : ''}>
+                <div className={compactBrandsMobile ? 'flex items-center gap-3 md:block' : ''}>
                   <div className={`flex items-center justify-center border ${
                     compactBrandsMobile
-                      ? 'h-8 w-8 shrink-0 rounded-lg border-white/10 bg-[#090b10] [&_svg]:h-4 [&_svg]:w-4 md:mb-12 md:h-14 md:w-14 md:rounded-2xl md:border-white/5 md:bg-white/10 md:[&_svg]:h-6 md:[&_svg]:w-6'
+                      ? 'h-8 w-8 shrink-0 rounded-lg border-[#1f2937] bg-[#1f2937] [&_svg]:h-4 [&_svg]:w-4 md:mb-12 md:h-14 md:w-14 md:rounded-2xl md:border-white/5 md:bg-white/10 md:[&_svg]:h-6 md:[&_svg]:w-6'
+                      : compactCreatorsMobile
+                        ? 'h-8 w-8 shrink-0 rounded-lg border-[#1f2937] bg-[#1f2937] [&_svg]:h-4 [&_svg]:w-4 md:mb-12 md:h-14 md:w-14 md:rounded-2xl md:border-white/5 md:bg-white/10 md:[&_svg]:h-6 md:[&_svg]:w-6'
                       : 'w-14 h-14 rounded-2xl bg-white/10 mb-12 border-white/5'
                   }`}>
                     {feature.icon}
                   </div>
                   {compactBrandsMobile && (
-                    <span className="text-[0.65rem] font-semibold uppercase tracking-wider text-cyan md:hidden">
+                    <span className="text-[0.6rem] font-semibold uppercase tracking-wider text-[#22d3ee] md:hidden">
                       Feature 0{idx + 1}
                     </span>
                   )}
                 </div>
-                <div className={compactBrandsMobile ? 'flex flex-col gap-2 md:block' : ''}>
-                  <h3 className={`text-white tracking-tight ${compactBrandsMobile ? 'text-lg font-semibold md:mb-3 md:text-2xl' : 'text-2xl font-semibold mb-3'}`}>
+                <div className={compactBrandsMobile || compactCreatorsMobile ? 'flex flex-col gap-2 md:block' : ''}>
+                  <h3 className={`text-white tracking-tight ${
+                    compactBrandsMobile
+                      ? 'text-[0.85rem] font-bold leading-tight md:mb-3 md:text-2xl md:font-semibold'
+                      : compactCreatorsMobile
+                        ? 'text-[0.85rem] font-bold leading-tight md:mb-3 md:text-2xl md:font-semibold'
+                        : 'text-2xl font-semibold mb-3'
+                  }`}>
                     {feature.title}
                   </h3>
-                  <p className={compactBrandsMobile ? 'text-sm leading-relaxed text-muted md:text-base' : 'text-muted leading-relaxed'}>
+                  <p className={
+                    compactBrandsMobile
+                      ? 'text-xs leading-snug text-[#6b7280] md:text-base md:leading-relaxed md:text-muted'
+                      : compactCreatorsMobile
+                        ? 'text-xs leading-snug text-[#6b7280] md:text-base md:leading-relaxed md:text-muted'
+                        : 'text-muted leading-relaxed'
+                  }>
                     {feature.desc}
                   </p>
                 </div>
@@ -347,43 +373,43 @@ const FeatureSection = ({ id, title, subtitle, features, reverse }: any) => {
 
 const StatsBar = () => {
   return (
-    <section className="py-32 relative overflow-hidden">
+    <section className="relative overflow-hidden px-5 py-10 md:px-0 md:py-32">
       <div className="absolute inset-0 flex items-center justify-center opacity-30 pointer-events-none">
         <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent absolute top-0"></div>
         <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent absolute bottom-0"></div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 relative z-10">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-center divide-y md:divide-y-0 md:divide-x divide-white/10">
+      <div className="relative z-10 mx-auto max-w-7xl md:px-6">
+        <div className="grid grid-cols-3 items-center text-center divide-x divide-[#1f2937] md:gap-12 md:divide-white/10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8, ease: appleEase }}
-            className="py-8 md:py-0"
+            className="px-2 md:px-0"
           >
-            <div className="text-6xl md:text-7xl font-semibold tracking-tighter text-white mb-4">10k+</div>
-            <div className="text-sm font-medium text-muted uppercase tracking-widest">Creators</div>
+            <div className="mb-2 text-2xl font-extrabold text-white md:mb-4 md:text-7xl md:font-semibold md:tracking-tighter">10k+</div>
+            <div className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-[#6b7280] md:text-sm md:tracking-widest md:text-muted">Creators</div>
           </motion.div>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8, ease: appleEase, delay: 0.1 }}
-            className="py-8 md:py-0"
+            className="px-2 md:px-0"
           >
-            <div className="text-6xl md:text-7xl font-semibold tracking-tighter text-white mb-4">500+</div>
-            <div className="text-sm font-medium text-muted uppercase tracking-widest">Brands</div>
+            <div className="mb-2 text-2xl font-extrabold text-white md:mb-4 md:text-7xl md:font-semibold md:tracking-tighter">500+</div>
+            <div className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-[#6b7280] md:text-sm md:tracking-widest md:text-muted">Brands</div>
           </motion.div>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8, ease: appleEase, delay: 0.2 }}
-            className="py-8 md:py-0"
+            className="px-2 md:px-0"
           >
-            <div className="text-6xl md:text-7xl font-semibold tracking-tighter text-white mb-4">$2M+</div>
-            <div className="text-sm font-medium text-muted uppercase tracking-widest">In Rewards</div>
+            <div className="mb-2 text-2xl font-extrabold text-white md:mb-4 md:text-7xl md:font-semibold md:tracking-tighter">$2M+</div>
+            <div className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-[#6b7280] md:text-sm md:tracking-widest md:text-muted">In Rewards</div>
           </motion.div>
         </div>
       </div>
@@ -458,6 +484,7 @@ const Footer = () => {
 };
 
 const FAQ = () => {
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const faqs = [
     {
       q: "What is SorsaMarket?",
@@ -486,7 +513,7 @@ const FAQ = () => {
       <div className="max-w-4xl mx-auto px-6">
         <motion.div
           id="faq"
-          className="scroll-mt-10 text-center mb-20 md:scroll-mt-0"
+          className="mb-5 scroll-mt-10 text-center md:mb-20 md:scroll-mt-0"
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
@@ -496,7 +523,7 @@ const FAQ = () => {
           <p className="text-xl text-muted">Everything you need to know about SorsaMarket.</p>
         </motion.div>
 
-        <div className="space-y-6">
+        <div className="flex flex-col gap-3 md:gap-6">
           {faqs.map((faq, idx) => (
             <motion.div
               key={idx}
@@ -504,10 +531,36 @@ const FAQ = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: idx * 0.1, duration: 0.8, ease: appleEase }}
-              className="glass-panel rounded-3xl p-8 border border-white/10"
+              className="rounded-[14px] border border-[#1f2937] bg-[#0f1117] p-4 md:glass-panel md:rounded-3xl md:border-white/10 md:p-8"
             >
-              <h3 className="text-xl font-semibold text-white mb-4">{faq.q}</h3>
-              <div className="text-muted leading-relaxed">{faq.a}</div>
+              <button
+                type="button"
+                className="flex w-full items-center justify-between gap-4 text-left md:cursor-default"
+                aria-expanded={openFaqIndex === idx}
+                aria-controls={`faq-answer-${idx}`}
+                onClick={() => setOpenFaqIndex((current) => current === idx ? null : idx)}
+              >
+                <span className="text-[0.9rem] font-bold text-white md:text-xl md:font-semibold">
+                  {faq.q}
+                </span>
+                <ChevronRight
+                  className={`h-5 w-5 shrink-0 text-muted transition-transform duration-300 md:hidden ${
+                    openFaqIndex === idx ? 'rotate-90' : ''
+                  }`}
+                />
+              </button>
+              <div
+                id={`faq-answer-${idx}`}
+                className={`grid transition-[grid-template-rows,opacity,margin] duration-300 md:mt-4 md:grid-rows-[1fr] md:opacity-100 ${
+                  openFaqIndex === idx
+                    ? 'mt-3 grid-rows-[1fr] opacity-100'
+                    : 'grid-rows-[0fr] opacity-0'
+                }`}
+              >
+                <div className="overflow-hidden text-[0.8rem] leading-[1.6] text-[#6b7280] md:text-base md:leading-relaxed md:text-muted">
+                  {faq.a}
+                </div>
+              </div>
             </motion.div>
           ))}
         </div>
