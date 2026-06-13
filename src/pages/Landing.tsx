@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, useScroll, useTransform } from 'motion/react';
+import { motion, useScroll, useSpring, useTransform } from 'motion/react';
 import { useDisconnect } from 'wagmi';
 import {
   CheckCircle2,
@@ -28,11 +28,20 @@ const Navbar = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    let frame = 0;
+
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        setIsScrolled(window.scrollY > 20);
+        frame = 0;
+      });
     };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
   }, []);
 
   return (
@@ -43,10 +52,10 @@ const Navbar = () => {
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 flex justify-center ${isScrolled ? 'py-4 px-4' : 'py-6 px-6'}`}
     >
       <div className={`transition-all duration-500 w-full max-w-7xl mx-auto flex items-center justify-between ${isScrolled ? 'bg-black/70 backdrop-blur-2xl border border-white/10 rounded-full py-3 px-6' : 'bg-transparent'}`}>
-        <div className="text-xl font-semibold text-white tracking-tight flex items-center gap-3">
+        <a href="#top" aria-label="Back to top" className="text-xl font-semibold text-white tracking-tight flex items-center gap-3">
           <img src="/SorsaMarketlogo.PNG" alt="Logo" className="w-8 h-8 object-contain" />
           <div>Sorsa<span className="text-cyan">.market</span></div>
-        </div>
+        </a>
 
         <div className="hidden md:flex items-center space-x-8">
           <a href="#how-it-works" className="text-sm font-medium text-muted hover:text-white transition-colors">How It Works</a>
@@ -84,10 +93,12 @@ const Navbar = () => {
 
 const Hero = () => {
   const { scrollY } = useScroll();
-  const y1 = useTransform(scrollY, [0, 1000], [0, 200]);
-  const y2 = useTransform(scrollY, [0, 1000], [0, -100]);
-  const opacity = useTransform(scrollY, [0, 500], [1, 0]);
-  const scale = useTransform(scrollY, [0, 500], [1, 0.95]);
+  const smoothScrollY = useSpring(scrollY, { stiffness: 90, damping: 24, mass: 0.35 });
+  const y1 = useTransform(smoothScrollY, [0, 1000], [0, 200]);
+  const y2 = useTransform(smoothScrollY, [0, 1000], [0, -100]);
+  const opacity = useTransform(smoothScrollY, [0, 500], [1, 0]);
+  const glowOpacity = useTransform(smoothScrollY, [0, 500], [0.5, 0]);
+  const scale = useTransform(smoothScrollY, [0, 500], [1, 0.95]);
   const navigate = useNavigate();
   const { session, role, signOut } = useAuth();
   const { disconnect } = useDisconnect();
@@ -112,33 +123,21 @@ const Hero = () => {
   };
 
   return (
-    <section className="relative min-h-screen flex items-center pt-32 pb-20 overflow-hidden">
+    <section id="top" className="relative min-h-[100svh] flex items-center pt-24 pb-8 md:pt-28 md:pb-10 overflow-hidden">
       {/* Subtle Apple-style Ambient Glow */}
-      <motion.div style={{ y: y1, opacity: useTransform(scrollY, [0, 500], [0.5, 0]), willChange: "transform, opacity" }} className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[400px] md:w-[800px] h-[200px] md:h-[400px] bg-cyan/20 blur-[80px] md:blur-[120px] rounded-full pointer-events-none"></motion.div>
-      <motion.div style={{ y: y2, opacity: useTransform(scrollY, [0, 500], [0.5, 0]), willChange: "transform, opacity" }} className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[300px] md:w-[600px] h-[150px] md:h-[300px] bg-purple/20 blur-[80px] md:blur-[120px] rounded-full pointer-events-none"></motion.div>
+      <motion.div style={{ y: y1, opacity: glowOpacity, willChange: "transform, opacity" }} className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[400px] md:w-[800px] h-[200px] md:h-[400px] bg-cyan/20 blur-[80px] md:blur-[120px] rounded-full pointer-events-none"></motion.div>
+      <motion.div style={{ y: y2, opacity: glowOpacity, willChange: "transform, opacity" }} className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[300px] md:w-[600px] h-[150px] md:h-[300px] bg-purple/20 blur-[80px] md:blur-[120px] rounded-full pointer-events-none"></motion.div>
 
-      <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center z-10 w-full">
+      <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-8 lg:gap-10 items-center z-10 w-full">
         <motion.div
           style={{ y: y1, opacity, scale, willChange: "transform, opacity" }}
           className="flex flex-col items-start"
         >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, ease: appleEase }}
-            className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass-panel text-xs font-medium text-cyan mb-8"
-          >
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan"></span>
-            </span>
-            Platform Beta 1.0
-          </motion.div>
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, ease: appleEase, delay: 0.1 }}
-            className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tighter leading-[1.05] mb-6 text-gradient"
+            className="mt-11 text-4xl md:text-5xl lg:text-[3.4rem] xl:text-6xl font-semibold tracking-tighter leading-[1.03] mb-4 text-gradient"
           >
             Where Brands <br/> Meet Creators.
           </motion.h1>
@@ -146,7 +145,7 @@ const Hero = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, ease: appleEase, delay: 0.2 }}
-            className="text-base md:text-lg text-muted mb-8 max-w-md font-medium leading-relaxed"
+            className="text-sm md:text-base lg:text-[1.05rem] text-muted mb-6 max-w-md font-medium leading-relaxed"
           >
             Post campaigns. Match creators. Pay on results. The decentralized marketplace for performance.
           </motion.p>
@@ -154,12 +153,12 @@ const Hero = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, ease: appleEase, delay: 0.3 }}
-            className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto"
+            className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto"
           >
-            <button onClick={() => handleRoleEntry('brand')} className="px-8 py-4 rounded-full bg-white text-black font-medium text-center hover:scale-105 transition-transform duration-300 flex items-center justify-center gap-2">
+            <button onClick={() => handleRoleEntry('brand')} className="hero-cta px-6 py-3 rounded-full bg-white text-black text-sm font-medium text-center flex items-center justify-center gap-2">
               I'm a Brand <ArrowRight className="w-4 h-4" />
             </button>
-            <button onClick={() => handleRoleEntry('creator')} className="px-8 py-4 rounded-full glass-panel text-white font-medium text-center hover:bg-white/10 transition-colors duration-300">
+            <button onClick={() => handleRoleEntry('creator')} className="hero-cta px-6 py-3 rounded-full glass-panel text-white text-sm font-medium text-center hover:bg-white/10">
               I'm a Creator
             </button>
           </motion.div>
@@ -167,7 +166,7 @@ const Hero = () => {
 
         <motion.div
           style={{ y: y2, opacity, scale, willChange: "transform, opacity" }}
-          className="relative h-[400px] sm:h-[500px] lg:h-[700px] w-full flex items-center justify-center"
+          className="relative h-[300px] sm:h-[380px] lg:h-[500px] xl:h-[560px] w-full flex items-center justify-center"
         >
           {/* Apple-style clean visual container */}
           <div className="relative w-full max-w-lg aspect-square flex items-center justify-center">
@@ -188,14 +187,16 @@ const Hero = () => {
                 className="w-24 h-24 md:w-40 md:h-40 glass-panel rounded-full z-10 flex items-center justify-center shadow-2xl"
               >
                 {/* The massively oversized image as requested previously */}
-                <motion.img
-                  src="/SorsaMarketlogo.PNG"
-                  alt="SorsaMarket Logo"
-                  className="w-[80vw] h-[80vw] sm:w-[400px] sm:h-[400px] md:w-[600px] md:h-[600px] lg:w-[800px] lg:h-[800px] max-w-[300px] sm:max-w-none object-contain z-20 relative drop-shadow-2xl will-change-transform"
-                  initial={{ y: 20 }}
-                  animate={{ y: [-10, 10, -10] }}
-                  transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                />
+                <div className="relative z-20 lg:-translate-x-12 xl:-translate-x-16">
+                  <motion.img
+                    src="/SorsaMarketlogo.PNG"
+                    alt="SorsaMarket Logo"
+                    className="w-[76vw] h-[76vw] sm:w-[360px] sm:h-[360px] md:w-[480px] md:h-[480px] lg:w-[620px] lg:h-[620px] xl:w-[680px] xl:h-[680px] max-w-[280px] sm:max-w-none object-contain drop-shadow-2xl will-change-transform"
+                    initial={{ y: 20 }}
+                    animate={{ y: [-10, 10, -10] }}
+                    transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+                  />
+                </div>
               </motion.div>
             </div>
           </div>
@@ -225,9 +226,10 @@ const HowItWorks = () => {
   ];
 
   return (
-    <section id="how-it-works" className="py-32 relative">
+    <section className="py-32 relative">
       <div className="max-w-7xl mx-auto px-6">
         <motion.div
+          id="how-it-works"
           className="text-center mb-20"
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -271,9 +273,10 @@ const HowItWorks = () => {
 
 const FeatureSection = ({ id, title, subtitle, features, reverse }: any) => {
   return (
-    <section id={id} className="py-32 relative overflow-hidden">
+    <section className="py-32 relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-6">
         <motion.div
+          id={id}
           className="mb-20 md:w-2/3"
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -445,9 +448,10 @@ const FAQ = () => {
   ];
 
   return (
-    <section id="faq" className="py-32 relative overflow-hidden">
+    <section className="py-32 relative overflow-hidden">
       <div className="max-w-4xl mx-auto px-6">
         <motion.div
+          id="faq"
           className="text-center mb-20"
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -584,7 +588,7 @@ export default function Landing() {
   ];
 
   return (
-    <div className="min-h-screen bg-black text-[#F5F5F7] font-sans selection:bg-cyan/30 selection:text-white overflow-x-hidden">
+    <div className="landing-page min-h-screen bg-black text-[#F5F5F7] font-sans selection:bg-cyan/30 selection:text-white overflow-x-hidden">
       <Navbar />
       <Hero />
       <HowItWorks />
