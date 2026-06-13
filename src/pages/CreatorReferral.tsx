@@ -8,7 +8,7 @@ import { useCreatorProfile } from '../hooks/useCreatorProfile';
 import { supabase } from '../lib/supabase';
 import { buildReferralCode, ensureCreatorReferralCode } from '../lib/referrals';
 
-const appleEase = [0.16, 1, 0.3, 1];
+const appleEase = [0.16, 1, 0.3, 1] as const;
 
 function slugifyReferralName(value: string | null | undefined) {
   return String(value || '')

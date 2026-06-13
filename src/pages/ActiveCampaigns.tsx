@@ -8,7 +8,7 @@ import { useCampaigns } from '../hooks/useCampaigns';
 import { listCreatorNftParticipations } from '../lib/nftCampaigns';
 import { formatCampaignTimeline, isCampaignEndingSoon } from '../lib/campaignTime';
 
-const appleEase = [0.16, 1, 0.3, 1];
+const appleEase = [0.16, 1, 0.3, 1] as const;
 
 export default function ActiveCampaigns() {
   const navigate = useNavigate();

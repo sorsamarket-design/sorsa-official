@@ -6,7 +6,7 @@ import { TimedPasswordInput } from '../components/TimedPasswordInput';
 import { XLogo } from '../components/XLogo';
 import { supabase } from '../lib/supabase';
 
-const appleEase = [0.16, 1, 0.3, 1];
+const appleEase = [0.16, 1, 0.3, 1] as const;
 
 export default function BrandLogin() {
   const navigate = useNavigate();

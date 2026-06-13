@@ -7,7 +7,7 @@ import CreatorTopBar from '../components/CreatorTopBar';
 import { useCampaigns } from '../hooks/useCampaigns';
 import { formatCampaignTimeline } from '../lib/campaignTime';
 
-const appleEase = [0.16, 1, 0.3, 1];
+const appleEase = [0.16, 1, 0.3, 1] as const;
 
 const CATEGORIES = ['All', 'DeFi', 'AI', 'NFT', 'ZK', 'DePIN'];
 const TIERS = ['All', 'General', 'KOL'];

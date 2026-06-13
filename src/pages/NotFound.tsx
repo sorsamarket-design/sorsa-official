@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Compass, ArrowLeft } from 'lucide-react';
 
-const appleEase = [0.16, 1, 0.3, 1];
+const appleEase = [0.16, 1, 0.3, 1] as const;
 
 export default function NotFound() {
   const navigate = useNavigate();

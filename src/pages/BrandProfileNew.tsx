@@ -6,7 +6,7 @@ import BrandSidebar from '../components/BrandSidebar';
 import TopBar from '../components/TopBar';
 import { useBrandProfiles } from '../hooks/useBrandProfiles';
 
-const appleEase = [0.16, 1, 0.3, 1];
+const appleEase = [0.16, 1, 0.3, 1] as const;
 
 export default function BrandProfileNew() {
   const navigate = useNavigate();

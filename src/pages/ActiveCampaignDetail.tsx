@@ -7,7 +7,7 @@ import CreatorTopBar from '../components/CreatorTopBar';
 import { useCampaigns } from '../hooks/useCampaigns';
 import { useCreatorProfile } from '../hooks/useCreatorProfile';
 
-const appleEase = [0.16, 1, 0.3, 1];
+const appleEase = [0.16, 1, 0.3, 1] as const;
 
 export default function ActiveCampaignDetail() {
   const { id } = useParams(); // This is the participation ID

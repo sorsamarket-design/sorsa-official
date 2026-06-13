@@ -5,7 +5,7 @@ import { motion } from 'motion/react';
 import { XLogo } from '../components/XLogo';
 import { supabase } from '../lib/supabase';
 
-const appleEase = [0.16, 1, 0.3, 1];
+const appleEase = [0.16, 1, 0.3, 1] as const;
 
 export default function CreatorLogin() {
   const navigate = useNavigate();

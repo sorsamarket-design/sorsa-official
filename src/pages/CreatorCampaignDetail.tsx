@@ -12,7 +12,7 @@ import sorsaApi from '../lib/sorsaApi';
 import { formatCampaignTimeline } from '../lib/campaignTime';
 import { splitCampaignBrief } from '../lib/campaignBrief';
 
-const appleEase = [0.16, 1, 0.3, 1];
+const appleEase = [0.16, 1, 0.3, 1] as const;
 
 export default function CreatorCampaignDetail() {
   const { id } = useParams();

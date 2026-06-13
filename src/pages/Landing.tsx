@@ -20,7 +20,7 @@ import {
 import { XLogo } from '../components/XLogo';
 import { useAuth } from '../context/AuthContext';
 
-const appleEase = [0.16, 1, 0.3, 1];
+const appleEase = [0.16, 1, 0.3, 1] as const;
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -215,59 +215,58 @@ const Hero = () => {
 const HowItWorks = () => {
   const steps = [
     {
-      icon: <Megaphone className="w-6 h-6 text-white" />,
+      icon: <Megaphone className="w-4 h-4 md:w-6 md:h-6 text-white" />,
       title: "Post Campaign",
-      desc: "Set clear objectives, define your target audience, and assign a reward for each interaction."
+      desc: "Set your goals, audience, and campaign reward."
     },
     {
-      icon: <Search className="w-6 h-6 text-white" />,
+      icon: <Search className="w-4 h-4 md:w-6 md:h-6 text-white" />,
       title: "Match Creators",
-      desc: "Campaigns are paired with high-value creators who can effectively deliver on your key objectives and goals."
+      desc: "Get paired with creators suited to your campaign goals."
     },
     {
-      icon: <Wallet className="w-6 h-6 text-white" />,
+      icon: <Wallet className="w-4 h-4 md:w-6 md:h-6 text-white" />,
       title: "Reward Distribution",
-      desc: "Rewards are distributed after participant posts are verified and the required targets are met."
+      desc: "Verified creator posts trigger reward payouts."
     }
   ];
 
   return (
-    <section className="py-32 relative">
-      <div className="max-w-7xl mx-auto px-6">
+    <section id="how-it-works" className="scroll-mt-10 py-16 md:scroll-mt-0 md:py-32 relative">
+      <div className="max-w-7xl mx-auto px-3 md:px-6">
         <motion.div
-          id="how-it-works"
-          className="scroll-mt-10 text-center mb-20 md:scroll-mt-0"
+          className="text-center mb-8 md:mb-20"
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
           transition={{ duration: 0.8, ease: appleEase }}
         >
-          <h2 className="text-4xl md:text-6xl font-semibold tracking-tight mb-6">How it works.</h2>
-          <p className="text-xl text-muted max-w-2xl mx-auto">Three simple steps to launch your performance-driven campaign.</p>
+          <h2 className="text-3xl md:text-6xl font-semibold tracking-tight mb-3 md:mb-6">How it works.</h2>
+          <p className="text-sm md:text-xl text-muted max-w-2xl mx-auto">Three simple steps to launch your performance-driven campaign.</p>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-3 gap-2 md:gap-8">
           {steps.map((step, idx) => (
             <motion.div
               key={idx}
-              className="relative rounded-3xl p-[1px] overflow-hidden group"
+              className="relative rounded-lg md:rounded-3xl overflow-hidden group border border-[#1f2937] md:border-0 md:p-[1px]"
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-100px" }}
               transition={{ delay: idx * 0.15, duration: 0.8, ease: appleEase }}
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="glass-panel rounded-3xl p-10 flex flex-col items-start relative overflow-hidden h-full w-full bg-black/40 backdrop-blur-3xl">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-cyan/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-bl-full"></div>
+              <div className="hidden md:block absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="rounded-lg md:rounded-3xl p-[14px] md:p-10 flex flex-col items-start gap-2 md:gap-0 relative overflow-hidden h-full w-full bg-[#0f1117] md:glass-panel md:bg-black/40 md:backdrop-blur-3xl">
+                <div className="hidden md:block absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-cyan/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-bl-full"></div>
 
-                <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center mb-8 border border-white/10">
+                <div className="w-8 h-8 md:w-14 md:h-14 rounded-lg md:rounded-2xl bg-[#090b10] md:bg-white/10 flex items-center justify-center md:mb-8 border border-white/10 shrink-0">
                   {step.icon}
                 </div>
-                <div className="text-sm font-semibold text-cyan mb-3 tracking-wider uppercase">
-                  Step 0{idx + 1}
+                <div className="text-[0.65rem] md:text-sm font-semibold text-cyan md:mb-3 tracking-wider uppercase leading-none">
+                  STEP 0{idx + 1}
                 </div>
-                <h3 className="text-2xl font-semibold mb-4 text-white">{step.title}</h3>
-                <p className="text-muted leading-relaxed">{step.desc}</p>
+                <h3 className="text-[0.8rem] md:text-2xl font-bold md:font-semibold md:mb-4 text-white leading-tight">{step.title}</h3>
+                <p className="text-[0.72rem] md:text-base text-muted leading-snug md:leading-relaxed">{step.desc}</p>
               </div>
             </motion.div>
           ))}

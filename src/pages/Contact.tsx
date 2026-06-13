@@ -6,7 +6,7 @@ import CreatorTopBar from '../components/CreatorTopBar';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
-const appleEase = [0.16, 1, 0.3, 1];
+const appleEase = [0.16, 1, 0.3, 1] as const;
 
 const faqs = [
   {

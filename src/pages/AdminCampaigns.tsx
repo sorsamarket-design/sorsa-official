@@ -4,7 +4,7 @@ import { Megaphone, Clock, CheckCircle2, AlertCircle, Loader2, Sparkles, DollarS
 import AdminSidebar from '../components/AdminSidebar';
 import { useCampaigns, Campaign } from '../hooks/useCampaigns';
 
-const appleEase = [0.16, 1, 0.3, 1];
+const appleEase = [0.16, 1, 0.3, 1] as const;
 
 export default function AdminCampaigns() {
   const { campaigns, finalizeCampaign, runPayoutAutomation, refreshCampaigns } = useCampaigns();

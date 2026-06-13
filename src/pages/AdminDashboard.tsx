@@ -4,7 +4,7 @@ import { Users, Megaphone, ShieldCheck, AlertCircle, CheckCircle2, XCircle, Exte
 import AdminSidebar from '../components/AdminSidebar';
 import { useCampaigns } from '../hooks/useCampaigns';
 
-const appleEase = [0.16, 1, 0.3, 1];
+const appleEase = [0.16, 1, 0.3, 1] as const;
 
 export default function AdminDashboard() {
   const { getAllSubmissions, updateSubmissionStatus } = useCampaigns();

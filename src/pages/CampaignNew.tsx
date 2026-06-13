@@ -8,7 +8,7 @@ import { useBrandProfiles } from '../hooks/useBrandProfiles';
 import { useAuth } from '../context/AuthContext';
 import { saveCampaignDraftThroughBackend } from '../lib/escrowLaunch';
 
-const appleEase = [0.16, 1, 0.3, 1];
+const appleEase = [0.16, 1, 0.3, 1] as const;
 const defaultCategories = ['DeFi', 'AI', 'NFT', 'ZK', 'DePIN'];
 const overviewMinLength = 300;
 const overviewMaxLength = 1500;

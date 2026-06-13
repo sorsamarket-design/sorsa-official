@@ -6,7 +6,7 @@ import BindWalletButton from '../components/BindWalletButton';
 import CreatorSidebar from '../components/CreatorSidebar';
 import CreatorTopBar from '../components/CreatorTopBar';
 
-const appleEase = [0.16, 1, 0.3, 1];
+const appleEase = [0.16, 1, 0.3, 1] as const;
 
 import { useCreatorProfile } from '../hooks/useCreatorProfile';
 import { useAuth } from '../context/AuthContext';

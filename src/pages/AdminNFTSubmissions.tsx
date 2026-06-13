@@ -7,7 +7,7 @@ import { useCampaigns } from '../hooks/useCampaigns';
 import { listNftCampaigns, type NftCampaign } from '../lib/nftCampaigns';
 import { formatCampaignTimeLeft, getCampaignEndTime } from '../lib/campaignTime';
 
-const appleEase = [0.16, 1, 0.3, 1];
+const appleEase = [0.16, 1, 0.3, 1] as const;
 
 type CreatorProfile = {
   full_name?: string | null;

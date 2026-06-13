@@ -7,7 +7,7 @@ import CreatorTopBar from '../components/CreatorTopBar';
 import { useLeaderboard } from '../hooks/useLeaderboard';
 import CreatorAvatar from '../components/CreatorAvatar';
 
-const appleEase = [0.16, 1, 0.3, 1];
+const appleEase = [0.16, 1, 0.3, 1] as const;
 
 type SortType = 'sorsaScore' | 'points' | 'campaignsCompleted';
 

@@ -7,7 +7,7 @@ import TopBar from '../components/TopBar';
 import { XLogo } from '../components/XLogo';
 import { MAX_BRAND_PROFILES, useBrandProfiles } from '../hooks/useBrandProfiles';
 
-const appleEase = [0.16, 1, 0.3, 1];
+const appleEase = [0.16, 1, 0.3, 1] as const;
 
 export default function BrandProfiles() {
   const navigate = useNavigate();

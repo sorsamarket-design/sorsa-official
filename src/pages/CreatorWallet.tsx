@@ -8,7 +8,7 @@ import { useCreatorProfile } from '../hooks/useCreatorProfile';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
-const appleEase = [0.16, 1, 0.3, 1];
+const appleEase = [0.16, 1, 0.3, 1] as const;
 
 function formatTxHash(hash?: string | null) {
   if (!hash) return '-';

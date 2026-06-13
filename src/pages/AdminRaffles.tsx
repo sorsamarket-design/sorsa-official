@@ -7,7 +7,7 @@ import LinkifiedText from '../components/LinkifiedText';
 import { finalizeAdminRaffle, getAdminRaffle, listAdminRaffles, type NftCampaign, type RaffleWinner } from '../lib/nftCampaigns';
 import { formatCampaignTimeLeft, getCampaignEndTime } from '../lib/campaignTime';
 
-const appleEase = [0.16, 1, 0.3, 1];
+const appleEase = [0.16, 1, 0.3, 1] as const;
 
 type RaffleParticipant = {
   id: string;

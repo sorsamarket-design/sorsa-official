@@ -8,7 +8,7 @@ import {
 import AdminSidebar from '../components/AdminSidebar';
 import { useCampaigns } from '../hooks/useCampaigns';
 
-const appleEase = [0.16, 1, 0.3, 1];
+const appleEase = [0.16, 1, 0.3, 1] as const;
 
 export default function AdminApprovals() {
   const { getAllSubmissions } = useCampaigns();

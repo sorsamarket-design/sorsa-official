@@ -8,7 +8,7 @@ import LinkifiedText from '../components/LinkifiedText';
 import { useCampaigns } from '../hooks/useCampaigns';
 import { splitCampaignBrief } from '../lib/campaignBrief';
 
-const appleEase = [0.16, 1, 0.3, 1];
+const appleEase = [0.16, 1, 0.3, 1] as const;
 
 export default function CampaignDetail() {
   const navigate = useNavigate();

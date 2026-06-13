@@ -5,7 +5,7 @@ import { ArrowLeft, Calendar, CheckCircle2, Image, Loader2, Minus, Plus, Sparkle
 import AdminSidebar from '../components/AdminSidebar';
 import { createNftCampaign, type NftCampaignType } from '../lib/nftCampaigns';
 
-const appleEase = [0.16, 1, 0.3, 1];
+const appleEase = [0.16, 1, 0.3, 1] as const;
 
 function cleanXHandle(value: string) {
   return value

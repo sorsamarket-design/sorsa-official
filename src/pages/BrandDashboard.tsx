@@ -6,7 +6,7 @@ import BrandSidebar from '../components/BrandSidebar';
 import TopBar from '../components/TopBar';
 import { useCampaigns } from '../hooks/useCampaigns';
 
-const appleEase = [0.16, 1, 0.3, 1];
+const appleEase = [0.16, 1, 0.3, 1] as const;
 
 export default function BrandDashboard() {
   const navigate = useNavigate();

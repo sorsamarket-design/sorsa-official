@@ -10,7 +10,7 @@ import { useCreatorProfile } from '../hooks/useCreatorProfile';
 import { useTelegramPreferences } from '../hooks/useTelegramPreferences';
 import { type TelegramPreferences } from '../lib/telegramNotifications';
 
-const appleEase = [0.16, 1, 0.3, 1];
+const appleEase = [0.16, 1, 0.3, 1] as const;
 const TELEGRAM_CONNECT_POLL_MS = 4000;
 const TELEGRAM_CONNECT_POLL_MAX_MS = 30 * 60 * 1000;
 

@@ -9,7 +9,7 @@ import { useCampaigns } from '../hooks/useCampaigns';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 
-const appleEase = [0.16, 1, 0.3, 1];
+const appleEase = [0.16, 1, 0.3, 1] as const;
 
 export default function CreatorDashboard() {
   const { user } = useAuth();

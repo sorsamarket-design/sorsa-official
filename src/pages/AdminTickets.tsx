@@ -4,7 +4,7 @@ import { Inbox, Loader2, MessageSquare, RefreshCw } from 'lucide-react';
 import AdminSidebar from '../components/AdminSidebar';
 import { supabase } from '../lib/supabase';
 
-const appleEase = [0.16, 1, 0.3, 1];
+const appleEase = [0.16, 1, 0.3, 1] as const;
 
 const statuses = ['open', 'in_review', 'resolved', 'closed'] as const;
 type TicketStatus = typeof statuses[number];

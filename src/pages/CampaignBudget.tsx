@@ -11,7 +11,7 @@ import { useCampaigns } from '../hooks/useCampaigns';
 import { useAuth } from '../context/AuthContext';
 import { assertEscrowLaunchBackendReady, authorizeEscrowLaunch, getEscrowLaunchErrorMessage, launchCampaignThroughEscrow, saveCampaignDraftThroughBackend } from '../lib/escrowLaunch';
 
-const appleEase = [0.16, 1, 0.3, 1];
+const appleEase = [0.16, 1, 0.3, 1] as const;
 
 function getLocalDateInputValue(date = new Date()) {
   const year = date.getFullYear();

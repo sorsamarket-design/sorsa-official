@@ -9,7 +9,7 @@ import { getNftCampaign, joinNftCampaign, submitNftCampaignContent, verifyNftCam
 import { formatCampaignTimeLeft, getCampaignEndTime } from '../lib/campaignTime';
 import { useCreatorProfile } from '../hooks/useCreatorProfile';
 
-const appleEase = [0.16, 1, 0.3, 1];
+const appleEase = [0.16, 1, 0.3, 1] as const;
 
 function nftCampaignTypeLabel(type: string) {
   if (type === 'raffle' || type === 'fcfs') return 'Raffle';

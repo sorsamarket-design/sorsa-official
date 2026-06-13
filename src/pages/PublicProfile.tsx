@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase';
 import { getInitialsAvatarUrl, normalizeAvatarUrl } from '../lib/avatars';
 import { getCreatorPastCampaignHistory, type CreatorCampaignHistoryItem } from '../lib/creatorCampaignHistory';
 
-const appleEase = [0.16, 1, 0.3, 1];
+const appleEase = [0.16, 1, 0.3, 1] as const;
 
 export default function PublicProfile() {
   const { handle } = useParams();

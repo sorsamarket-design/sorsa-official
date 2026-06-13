@@ -4,7 +4,7 @@ import { ArrowLeft, ShieldCheck } from 'lucide-react';
 import { motion } from 'motion/react';
 import { supabase } from '../lib/supabase';
 
-const appleEase = [0.16, 1, 0.3, 1];
+const appleEase = [0.16, 1, 0.3, 1] as const;
 
 export default function AdminLogin() {
   const navigate = useNavigate();

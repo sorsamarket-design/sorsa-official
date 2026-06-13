@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Building2, UserCircle2, ArrowRight } from 'lucide-react';
 import { motion } from 'motion/react';
 
-const appleEase = [0.16, 1, 0.3, 1];
+const appleEase = [0.16, 1, 0.3, 1] as const;
 
 export default function Login() {
   const navigate = useNavigate();

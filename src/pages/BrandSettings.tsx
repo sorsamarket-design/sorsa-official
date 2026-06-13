@@ -9,7 +9,7 @@ import { supabase } from '../lib/supabase';
 import { useBrandProfiles } from '../hooks/useBrandProfiles';
 import { useAuth } from '../context/AuthContext';
 
-const appleEase = [0.16, 1, 0.3, 1];
+const appleEase = [0.16, 1, 0.3, 1] as const;
 
 export default function BrandSettings() {
   const navigate = useNavigate();
