@@ -277,12 +277,14 @@ const HowItWorks = () => {
 };
 
 const FeatureSection = ({ id, title, subtitle, features, reverse }: any) => {
+  const compactBrandsMobile = id === 'for-brands';
+
   return (
     <section className="py-32 relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-6">
         <motion.div
           id={id}
-          className="scroll-mt-10 mb-20 md:w-2/3 md:scroll-mt-0"
+          className={`scroll-mt-10 md:w-2/3 md:scroll-mt-0 md:mb-20 ${compactBrandsMobile ? 'mb-7' : 'mb-20'}`}
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
@@ -292,24 +294,47 @@ const FeatureSection = ({ id, title, subtitle, features, reverse }: any) => {
           <p className="text-xl text-muted">{subtitle}</p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className={`grid grid-cols-1 md:grid-cols-3 md:gap-6 ${compactBrandsMobile ? 'gap-3' : 'gap-6'}`}>
           {features.map((feature: any, idx: number) => (
             <motion.div
               key={idx}
-              className={`relative rounded-[2.5rem] p-[1px] overflow-hidden group ${idx === 0 || idx === 3 ? 'md:col-span-2' : 'md:col-span-1'}`}
+              className={`relative overflow-hidden group ${
+                compactBrandsMobile
+                  ? 'rounded-lg border border-[#1f2937] md:rounded-[2.5rem] md:border-0 md:p-[1px]'
+                  : 'rounded-[2.5rem] p-[1px]'
+              } ${idx === 0 || idx === 3 ? 'md:col-span-2' : 'md:col-span-1'}`}
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-100px" }}
               transition={{ delay: idx * 0.1, duration: 0.8, ease: appleEase }}
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="glass-panel rounded-[2.5rem] p-10 flex flex-col justify-between h-full w-full bg-black/40 backdrop-blur-3xl relative overflow-hidden">
-                <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center mb-12 border border-white/5">
-                  {feature.icon}
+              <div className={`${compactBrandsMobile ? 'hidden md:block' : ''} absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
+              <div className={`relative flex h-full w-full flex-col overflow-hidden ${
+                compactBrandsMobile
+                  ? 'gap-2 rounded-lg bg-[#0f1117] p-5 md:glass-panel md:rounded-[2.5rem] md:bg-black/40 md:p-10 md:backdrop-blur-3xl md:gap-0 md:justify-between'
+                  : 'glass-panel rounded-[2.5rem] bg-black/40 p-10 backdrop-blur-3xl justify-between'
+              }`}>
+                <div className={compactBrandsMobile ? 'flex items-center gap-2 md:block' : ''}>
+                  <div className={`flex items-center justify-center border ${
+                    compactBrandsMobile
+                      ? 'h-8 w-8 shrink-0 rounded-lg border-white/10 bg-[#090b10] [&_svg]:h-4 [&_svg]:w-4 md:mb-12 md:h-14 md:w-14 md:rounded-2xl md:border-white/5 md:bg-white/10 md:[&_svg]:h-6 md:[&_svg]:w-6'
+                      : 'w-14 h-14 rounded-2xl bg-white/10 mb-12 border-white/5'
+                  }`}>
+                    {feature.icon}
+                  </div>
+                  {compactBrandsMobile && (
+                    <span className="text-[0.65rem] font-semibold uppercase tracking-wider text-cyan md:hidden">
+                      Feature 0{idx + 1}
+                    </span>
+                  )}
                 </div>
-                <div>
-                  <h3 className="text-2xl font-semibold mb-3 text-white tracking-tight">{feature.title}</h3>
-                  <p className="text-muted leading-relaxed">{feature.desc}</p>
+                <div className={compactBrandsMobile ? 'flex flex-col gap-2 md:block' : ''}>
+                  <h3 className={`text-white tracking-tight ${compactBrandsMobile ? 'text-lg font-semibold md:mb-3 md:text-2xl' : 'text-2xl font-semibold mb-3'}`}>
+                    {feature.title}
+                  </h3>
+                  <p className={compactBrandsMobile ? 'text-sm leading-relaxed text-muted md:text-base' : 'text-muted leading-relaxed'}>
+                    {feature.desc}
+                  </p>
                 </div>
               </div>
             </motion.div>
@@ -368,55 +393,59 @@ const StatsBar = () => {
 
 const Footer = () => {
   return (
-    <footer className="bg-black py-20 border-t border-white/10">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
-          <div className="col-span-1 md:col-span-1">
-            <div className="text-2xl font-semibold text-white tracking-tight mb-6 flex items-center gap-2">
-              <img src="/SorsaMarketlogo.PNG" alt="Logo" className="w-6 h-6 object-contain" />
-              SorsaMarket
+    <footer className="border-t border-white/10 bg-black p-6 md:px-0 md:py-20">
+      <div className="mx-auto max-w-7xl md:px-6">
+        <div className="md:mb-16 md:grid md:grid-cols-4 md:gap-12">
+          <div className="flex items-center justify-between gap-4 md:block">
+            <div>
+              <div className="flex items-center gap-2 text-xl font-semibold tracking-tight text-white md:mb-6 md:text-2xl">
+                <img src="/SorsaMarketlogo.PNG" alt="Logo" className="w-6 h-6 object-contain" />
+                SorsaMarket
+              </div>
+              <p className="hidden max-w-xs text-sm leading-relaxed text-muted md:mb-8 md:block">
+                The decentralized marketplace connecting brands with creators.
+              </p>
             </div>
-            <p className="text-sm text-muted mb-8 max-w-xs leading-relaxed">
-              The decentralized marketplace connecting brands with creators.
-            </p>
-            <div className="flex space-x-5">
-              <a href="#" className="text-muted hover:text-white transition-colors"><XLogo className="w-5 h-5" /></a>
-              <a href="#" className="text-muted hover:text-white transition-colors"><Instagram className="w-5 h-5" /></a>
-              <a href="#" className="text-muted hover:text-white transition-colors"><Linkedin className="w-5 h-5" /></a>
+            <div className="flex space-x-4 md:space-x-5">
+              <a href="#" className="text-muted hover:text-white transition-colors"><XLogo className="w-4 h-4 md:w-5 md:h-5" /></a>
+              <a href="#" className="text-muted hover:text-white transition-colors"><Instagram className="w-4 h-4 md:w-5 md:h-5" /></a>
+              <a href="#" className="text-muted hover:text-white transition-colors"><Linkedin className="w-4 h-4 md:w-5 md:h-5" /></a>
             </div>
           </div>
 
-          <div>
-            <h4 className="font-semibold text-white mb-6">Platform</h4>
-            <ul className="space-y-4 text-sm text-muted">
-              <li><a href="/docs#for-brands" className="hover:text-white transition-colors">For Brands</a></li>
-              <li><a href="/docs#for-creators" className="hover:text-white transition-colors">For Creators</a></li>
-              <li><a href="/docs#how-it-works" className="hover:text-white transition-colors">How it Works</a></li>
-              <li><a href="/docs#pricing" className="hover:text-white transition-colors">Pricing</a></li>
-            </ul>
-          </div>
+          <div className="mt-4 grid grid-cols-3 gap-4 md:contents">
+            <div>
+              <h4 className="mb-2 text-xs font-bold text-white md:mb-6 md:text-base md:font-semibold">Platform</h4>
+              <ul className="space-y-2 text-xs text-[#6b7280] md:space-y-4 md:text-sm md:text-muted">
+                <li><a href="/docs#for-brands" className="hover:text-white transition-colors">For Brands</a></li>
+                <li><a href="/docs#for-creators" className="hover:text-white transition-colors">For Creators</a></li>
+                <li><a href="/docs#how-it-works" className="hover:text-white transition-colors">How it Works</a></li>
+                <li><a href="/docs#pricing" className="hover:text-white transition-colors">Pricing</a></li>
+              </ul>
+            </div>
 
-          <div>
-            <h4 className="font-semibold text-white mb-6">Company</h4>
-            <ul className="space-y-4 text-sm text-muted">
-              <li><a href="#" className="hover:text-white transition-colors">About Us</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Careers</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
-            </ul>
-          </div>
+            <div>
+              <h4 className="mb-2 text-xs font-bold text-white md:mb-6 md:text-base md:font-semibold">Company</h4>
+              <ul className="space-y-2 text-xs text-[#6b7280] md:space-y-4 md:text-sm md:text-muted">
+                <li><a href="#" className="hover:text-white transition-colors">About Us</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Careers</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
+              </ul>
+            </div>
 
-          <div>
-            <h4 className="font-semibold text-white mb-6">Legal</h4>
-            <ul className="space-y-4 text-sm text-muted">
-              <li><a href="/terms" className="hover:text-white transition-colors">Terms of Service</a></li>
-              <li><a href="/privacy" className="hover:text-white transition-colors">Privacy Policy</a></li>
-              <li><a href="/cookies" className="hover:text-white transition-colors">Cookie Policy</a></li>
-            </ul>
+            <div>
+              <h4 className="mb-2 text-xs font-bold text-white md:mb-6 md:text-base md:font-semibold">Legal</h4>
+              <ul className="space-y-2 text-xs text-[#6b7280] md:space-y-4 md:text-sm md:text-muted">
+                <li><a href="/terms" className="hover:text-white transition-colors">Terms of Service</a></li>
+                <li><a href="/privacy" className="hover:text-white transition-colors">Privacy Policy</a></li>
+                <li><a href="/cookies" className="hover:text-white transition-colors">Cookie Policy</a></li>
+              </ul>
+            </div>
           </div>
         </div>
 
-        <div className="pt-8 border-t border-white/10 text-sm text-muted flex flex-col md:flex-row justify-between items-center">
+        <div className="mt-6 flex flex-col items-center justify-between border-t border-white/10 pt-6 text-xs text-muted md:mt-0 md:flex-row md:pt-8 md:text-sm">
           <p>&copy; {new Date().getFullYear()} SorsaMarket. All rights reserved.</p>
           <div className="mt-4 md:mt-0 flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
