@@ -52,7 +52,7 @@ const Navbar = () => {
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 flex justify-center ${isScrolled ? 'py-4 px-4' : 'py-6 px-6'}`}
     >
       <div className={`transition-all duration-500 w-full max-w-7xl mx-auto flex items-center justify-between ${isScrolled ? 'bg-black/70 backdrop-blur-2xl border border-white/10 rounded-full py-3 px-6' : 'bg-transparent'}`}>
-        <a href="#top" aria-label="Back to top" className="text-xl font-semibold text-white tracking-tight flex items-center gap-3">
+        <a href="#top" aria-label="Back to top" className="-my-1.5 flex min-h-11 items-center gap-3 py-1.5 text-xl font-semibold tracking-tight text-white">
           <img src="/SorsaMarketlogo.PNG" alt="Logo" className="w-8 h-8 object-contain" />
           <div>Sorsa<span className="text-cyan">.market</span></div>
         </a>
@@ -70,7 +70,13 @@ const Navbar = () => {
           </button>
         </div>
 
-        <button className="md:hidden text-white" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+        <button
+          type="button"
+          aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+          aria-expanded={mobileMenuOpen}
+          className="-m-2.5 flex min-h-11 min-w-11 items-center justify-center p-2.5 text-white md:hidden"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        >
           {mobileMenuOpen ? <X /> : <Menu />}
         </button>
       </div>
@@ -230,7 +236,7 @@ const HowItWorks = () => {
       <div className="max-w-7xl mx-auto px-6">
         <motion.div
           id="how-it-works"
-          className="text-center mb-20"
+          className="scroll-mt-10 text-center mb-20 md:scroll-mt-0"
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
@@ -277,7 +283,7 @@ const FeatureSection = ({ id, title, subtitle, features, reverse }: any) => {
       <div className="max-w-7xl mx-auto px-6">
         <motion.div
           id={id}
-          className="mb-20 md:w-2/3"
+          className="scroll-mt-10 mb-20 md:w-2/3 md:scroll-mt-0"
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
@@ -452,7 +458,7 @@ const FAQ = () => {
       <div className="max-w-4xl mx-auto px-6">
         <motion.div
           id="faq"
-          className="text-center mb-20"
+          className="scroll-mt-10 text-center mb-20 md:scroll-mt-0"
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}

@@ -48,12 +48,6 @@ body::before {
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.landing-page > section:not(:first-of-type),
-.landing-page > footer {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 900px;
-}
-
 :where(a, button, [role="button"], summary, label[for], select) {
   cursor: pointer !important;
 }
