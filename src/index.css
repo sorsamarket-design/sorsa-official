@@ -135,6 +135,10 @@ body::before {
 }
 
 @media (min-width: 48rem) {
+  .creator-sidebar {
+    width: 16rem;
+  }
+
   .app-topbar {
     left: 13rem !important;
   }
@@ -146,6 +150,10 @@ body::before {
     background:
       radial-gradient(circle at 22% 0%, rgba(123, 47, 255, 0.035), transparent 26rem),
       #0A0A1E;
+  }
+
+  .creator-sidebar ~ main {
+    margin-left: 16rem !important;
   }
 
   .app-sidebar ~ main.creator-page-main {
@@ -468,6 +476,10 @@ body::before {
 
   .app-sidebar {
     width: min(13rem, 86vw);
+  }
+
+  .creator-sidebar {
+    width: min(16rem, 86vw);
   }
 
   .app-sidebar ~ main {

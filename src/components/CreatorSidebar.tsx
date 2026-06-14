@@ -76,7 +76,7 @@ export default function CreatorSidebar() {
       )}
 
       <aside
-        className={`app-sidebar fixed left-0 top-0 z-50 flex h-screen w-64 flex-col border-r border-white/10 bg-[#0A0A1E] transition-transform duration-300 ${
+        className={`app-sidebar creator-sidebar fixed left-0 top-0 z-50 flex h-screen w-64 flex-col border-r border-white/10 bg-[#0A0A1E] transition-transform duration-300 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         } md:translate-x-0`}
       >
@@ -104,7 +104,7 @@ export default function CreatorSidebar() {
           {navigationGroups.map((group, groupIndex) => (
             <div
               key={group[0].path}
-              className={groupIndex ? 'mt-2 border-t border-dashed border-white/[0.08] pt-2' : ''}
+              className={groupIndex ? 'mt-2 pt-2' : ''}
             >
               <div className="space-y-1">
                 {group.map((item) => (
