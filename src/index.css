@@ -484,21 +484,21 @@ body::before {
 
   .app-sidebar ~ main.creator-page-main {
     margin-top: 0 !important;
-    padding-top: 0.875rem !important;
+    padding-top: 5rem !important;
   }
 
-  .app-sidebar + .creator-page-controls {
+  .creator-page-controls {
     position: fixed;
-    top: 0.75rem;
-    right: 0.75rem;
-    left: 0.75rem;
-    width: auto;
+    top: 0;
+    right: 0;
+    left: 0;
+    width: 100%;
     margin: 0;
   }
 
   .app-sidebar + .creator-page-controls + main {
     margin-top: 0 !important;
-    padding-top: 4rem !important;
+    padding-top: 5rem !important;
   }
 
   .app-sidebar ~ main > div,

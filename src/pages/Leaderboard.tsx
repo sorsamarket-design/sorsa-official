@@ -126,60 +126,69 @@ export default function Leaderboard() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: appleEase, delay: 0.3 }}
-                className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-6 items-stretch md:items-end"
+                className="flex items-stretch gap-2 md:grid md:grid-cols-3 md:items-end md:gap-6"
               >
                 {/* 2nd Place */}
                 {top3[1] ? (
-                  <div className="order-2 md:order-1 glass-panel rounded-2xl md:rounded-[2rem] p-4 md:p-6 border border-white/10 flex flex-col items-center text-center relative overflow-hidden min-h-[205px] md:h-[280px] justify-center md:justify-end md:pb-8">
+                  <div className="order-1 flex min-w-0 flex-1 items-end md:order-1 md:block">
+                    <div className="glass-panel relative flex h-[170px] w-full flex-col items-center justify-center overflow-hidden rounded-[14px] border border-[#1f2937] px-2 py-3 text-center md:h-[280px] md:justify-end md:rounded-[2rem] md:border-white/10 md:p-6 md:pb-8">
                     <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-gray-300/10 to-transparent pointer-events-none"></div>
-                    <Medal className={`w-7 h-7 md:w-10 md:h-10 mb-2 md:mb-4 ${getMedalColor(1)}`} />
-                    <a href={`https://x.com/${top3[1].handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="relative group mb-3">
-                      <CreatorAvatar src={top3[1].avatar} name={top3[1].handle} alt={top3[1].handle} className="w-14 h-14 md:w-20 md:h-20 rounded-full border-2 border-gray-300/50 object-cover" />
+                    <span className="relative mb-1 text-[1.1rem] leading-none md:hidden" aria-label="Second place">🥈</span>
+                    <Medal className={`relative hidden w-10 h-10 mb-4 md:block ${getMedalColor(1)}`} />
+                    <a href={`https://x.com/${top3[1].handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="relative group mb-2 md:mb-3">
+                      <CreatorAvatar src={top3[1].avatar} name={top3[1].handle} alt={top3[1].handle} className="h-10 w-10 rounded-full border-2 border-gray-300/50 object-cover md:h-20 md:w-20" />
                       <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                         <ArrowUpRight className="w-5 h-5 text-white" />
                       </div>
                     </a>
-                    <h3 className="max-w-full truncate text-sm md:text-lg font-semibold text-white">{top3[1].handle}</h3>
-                    <p className="text-xl md:text-2xl font-bold text-cyan mt-1 md:mt-2">{top3[1][activeSort].toLocaleString()}</p>
-                    <p className="text-xs text-muted font-medium uppercase tracking-wider mt-1">{getSortLabel(activeSort)}</p>
+                    <h3 className="relative w-full truncate text-[0.72rem] font-semibold text-white md:text-lg">{top3[1].handle}</h3>
+                    <p className="relative mt-1 text-[0.95rem] font-bold tabular-nums text-cyan md:mt-2 md:text-2xl">{top3[1][activeSort].toLocaleString()}</p>
+                    <p className="relative mt-1 text-[0.52rem] font-medium uppercase tracking-[0.08em] text-muted md:text-xs md:tracking-wider">{getSortLabel(activeSort)}</p>
+                    </div>
                   </div>
-                ) : <div className="order-2 md:order-1 hidden md:block"></div>}
+                ) : <div className="order-1 hidden flex-1 md:block"></div>}
 
                 {/* 1st Place */}
                 {top3[0] && (
-                  <div className="order-1 md:order-2 glass-panel rounded-2xl md:rounded-[2rem] p-4 md:p-8 border border-cyan/30 flex flex-col items-center text-center relative overflow-hidden min-h-[245px] md:h-[320px] justify-center md:justify-end md:pb-10">
+                  <div className="order-2 flex min-w-0 flex-1 items-end md:block">
+                  <div className="glass-panel relative flex min-h-[210px] w-full flex-col items-center justify-center overflow-hidden rounded-[14px] border border-[#f59e0b44] px-2 py-3 text-center shadow-[0_0_24px_rgba(245,158,11,0.12)] md:h-[320px] md:justify-end md:rounded-[2rem] md:border-cyan/30 md:p-8 md:pb-10 md:shadow-none">
                     <div className="absolute top-0 inset-x-0 h-48 bg-gradient-to-b from-yellow-400/20 to-transparent pointer-events-none"></div>
-                    <Medal className={`w-9 h-9 md:w-14 md:h-14 mb-2 md:mb-4 ${getMedalColor(0)}`} />
-                    <a href={`https://x.com/${top3[0].handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="relative group mb-4">
-                      <CreatorAvatar src={top3[0].avatar} name={top3[0].handle} alt={top3[0].handle} className="w-16 h-16 md:w-24 md:h-24 rounded-full border-[3px] md:border-4 border-yellow-400/50 object-cover" />
+                    <span className="relative mb-2 text-2xl leading-none md:hidden" aria-label="First place">🥇</span>
+                    <Medal className={`relative hidden w-14 h-14 mb-4 md:block ${getMedalColor(0)}`} />
+                    <a href={`https://x.com/${top3[0].handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="relative group mb-3 md:mb-4">
+                      <CreatorAvatar src={top3[0].avatar} name={top3[0].handle} alt={top3[0].handle} className="h-14 w-14 rounded-full border-[3px] border-yellow-400/50 object-cover md:h-24 md:w-24 md:border-4" />
                       <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                         <ArrowUpRight className="w-6 h-6 text-white" />
                       </div>
                     </a>
-                    <h3 className="min-h-6 max-w-full truncate px-1 text-base font-bold leading-6 text-white md:min-h-7 md:text-xl md:leading-7">
+                    <h3 className="relative w-full truncate px-1 text-[0.78rem] font-bold leading-tight text-white md:min-h-7 md:text-xl md:leading-7">
                       {top3[0].handle}
                     </h3>
-                    <p className="text-2xl md:text-3xl font-bold text-cyan mt-1 md:mt-2">{top3[0][activeSort].toLocaleString()}</p>
-                    <p className="text-xs text-muted font-medium uppercase tracking-wider mt-1">{getSortLabel(activeSort)}</p>
+                    <p className="relative mt-1 text-[1.2rem] font-bold tabular-nums text-cyan md:mt-2 md:text-3xl">{top3[0][activeSort].toLocaleString()}</p>
+                    <p className="relative mt-1 text-[0.55rem] font-medium uppercase tracking-[0.08em] text-muted md:text-xs md:tracking-wider">{getSortLabel(activeSort)}</p>
+                  </div>
                   </div>
                 )}
 
                 {/* 3rd Place */}
                 {top3[2] ? (
-                  <div className="order-3 md:order-3 glass-panel rounded-2xl md:rounded-[2rem] p-4 md:p-6 border border-white/10 flex flex-col items-center text-center relative overflow-hidden min-h-[195px] md:h-[260px] justify-center md:justify-end md:pb-6">
+                  <div className="order-3 flex min-w-0 flex-1 items-end md:block">
+                  <div className="glass-panel relative flex h-[170px] w-full flex-col items-center justify-center overflow-hidden rounded-[14px] border border-[#1f2937] px-2 py-3 text-center md:h-[260px] md:justify-end md:rounded-[2rem] md:border-white/10 md:p-6 md:pb-6">
                     <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-amber-600/10 to-transparent pointer-events-none"></div>
-                    <Medal className={`w-7 h-7 md:w-8 md:h-8 mb-2 md:mb-4 ${getMedalColor(2)}`} />
-                    <a href={`https://x.com/${top3[2].handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="relative group mb-3">
-                      <CreatorAvatar src={top3[2].avatar} name={top3[2].handle} alt={top3[2].handle} className="w-14 h-14 md:w-16 md:h-16 rounded-full border-2 border-amber-600/50 object-cover" />
+                    <span className="relative mb-1 text-[1.1rem] leading-none md:hidden" aria-label="Third place">🥉</span>
+                    <Medal className={`relative hidden w-8 h-8 mb-4 md:block ${getMedalColor(2)}`} />
+                    <a href={`https://x.com/${top3[2].handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="relative group mb-2 md:mb-3">
+                      <CreatorAvatar src={top3[2].avatar} name={top3[2].handle} alt={top3[2].handle} className="h-10 w-10 rounded-full border-2 border-amber-600/50 object-cover md:h-16 md:w-16" />
                       <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                         <ArrowUpRight className="w-4 h-4 text-white" />
                       </div>
                     </a>
-                    <h3 className="max-w-full truncate text-sm md:text-base font-semibold text-white">{top3[2].handle}</h3>
-                    <p className="text-xl font-bold text-cyan mt-2">{top3[2][activeSort].toLocaleString()}</p>
-                    <p className="text-[10px] text-muted font-medium uppercase tracking-wider mt-1">{getSortLabel(activeSort)}</p>
+                    <h3 className="relative w-full truncate text-[0.72rem] font-semibold text-white md:text-base">{top3[2].handle}</h3>
+                    <p className="relative mt-1 text-[0.95rem] font-bold tabular-nums text-cyan md:mt-2 md:text-xl">{top3[2][activeSort].toLocaleString()}</p>
+                    <p className="relative mt-1 text-[0.52rem] font-medium uppercase tracking-[0.08em] text-muted md:text-[10px] md:tracking-wider">{getSortLabel(activeSort)}</p>
                   </div>
-                ) : <div className="order-3 md:order-3 hidden md:block"></div>}
+                  </div>
+                ) : <div className="order-3 hidden flex-1 md:block"></div>}
               </motion.div>
 
               {/* Full Ranked Table */}
