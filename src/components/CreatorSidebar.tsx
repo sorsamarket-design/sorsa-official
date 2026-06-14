@@ -104,7 +104,7 @@ export default function CreatorSidebar() {
           {navigationGroups.map((group, groupIndex) => (
             <div
               key={group[0].path}
-              className={groupIndex ? 'mt-2 pt-2' : ''}
+              className={groupIndex ? 'mt-1' : ''}
             >
               <div className="space-y-1">
                 {group.map((item) => (

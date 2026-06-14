@@ -104,7 +104,7 @@ export default function Contact() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: appleEase, delay: 0.2 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-6"
+            className="grid grid-cols-3 gap-2.5 md:gap-6"
           >
             <a 
               href="https://t.me/sorsasupport" 
