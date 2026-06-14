@@ -65,8 +65,8 @@ export default function BrandWallet() {
       <TopBar />
       <main className="flex-1 md:ml-64 mt-20 p-4 md:p-8">
         <div className="max-w-6xl mx-auto space-y-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
+          <div>
+            <div className="flex items-center justify-between gap-3">
               <motion.h1
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -75,26 +75,28 @@ export default function BrandWallet() {
               >
                 <Wallet className="w-8 h-8 text-cyan" /> Wallet
               </motion.h1>
-              <p className="text-muted mt-2">Track campaign funding and escrow confirmations.</p>
+              <div className="shrink-0">
+                <BrandConnectWalletButton compactMobile />
+              </div>
             </div>
-            <BrandConnectWalletButton />
+            <p className="text-muted mt-2">Track campaign funding and escrow confirmations.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="glass-panel rounded-[2rem] p-8 border border-white/10">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center">
-                  <CircleDollarSign className="w-5 h-5 text-green-400" />
+          <div className="grid grid-cols-3 gap-2 md:gap-6">
+            <div className="glass-panel min-w-0 rounded-[2rem] p-2.5 md:p-8 border border-white/10">
+              <div className="flex flex-col items-start gap-2 mb-2 md:flex-row md:items-center md:gap-3 md:mb-4">
+                <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-green-500/10 flex items-center justify-center">
+                  <CircleDollarSign className="w-6 h-6 md:w-5 md:h-5 text-green-400" />
                 </div>
-                <h2 className="text-lg font-medium text-white">USDC Balance</h2>
+                <div className="text-[0.6rem] leading-tight md:text-lg font-medium text-white">USDC Balance</div>
               </div>
-              <div className="text-4xl font-bold text-white tracking-tight mb-2">
+              <div className="break-words text-[0.85rem] leading-tight md:text-4xl font-bold text-white tracking-tight mb-2">
                 {usdcBalanceLoading
                   ? 'Loading...'
                   : formattedUsdcBalance ?? '—'}{' '}
-                <span className="text-xl text-muted font-medium">USDC</span>
+                <span className="block md:inline text-[0.58rem] md:text-xl text-muted font-medium">USDC</span>
               </div>
-              <p className="text-sm text-muted mt-8">
+              <p className="text-[0.58rem] leading-tight md:text-sm text-muted mt-2 md:mt-8">
                 {!isConnected
                   ? 'Connect a wallet to view its balance.'
                   : chainId !== configuredChainId
@@ -105,30 +107,36 @@ export default function BrandWallet() {
               </p>
             </div>
 
-            <div className="glass-panel rounded-[2rem] p-8 border border-white/10">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-cyan/10 flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5 text-cyan" />
+            <div className="glass-panel min-w-0 rounded-[2rem] p-2.5 md:p-8 border border-white/10">
+              <div className="flex flex-col items-start gap-2 mb-2 md:flex-row md:items-center md:gap-3 md:mb-4">
+                <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-cyan/10 flex items-center justify-center">
+                  <TrendingUp className="w-6 h-6 md:w-5 md:h-5 text-cyan" />
                 </div>
-                <h2 className="text-lg font-medium text-white">Amount Spent</h2>
+                <div className="text-[0.6rem] leading-tight md:text-lg font-medium text-white">Amount Spent</div>
               </div>
-              <div className="text-5xl font-bold text-white tracking-tight mb-2">
-                ${amountSpent.toLocaleString()} <span className="text-xl text-muted font-medium">USDC</span>
+              <div className="break-words text-[0.85rem] leading-tight md:text-5xl font-bold text-white tracking-tight mb-2">
+                ${amountSpent.toLocaleString()}{' '}
+                <span className="block md:inline text-[0.58rem] md:text-xl text-muted font-medium">USDC</span>
               </div>
-              <p className="text-sm text-cyan mt-6 font-medium">Total confirmed campaign budget</p>
+              <p className="text-[0.58rem] leading-tight md:text-sm text-cyan mt-2 md:mt-6 font-medium">
+                Total confirmed campaign budget
+              </p>
             </div>
 
-            <div className="glass-panel rounded-[2rem] p-8 border border-white/10">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
-                  <Lock className="w-5 h-5 text-purple-400" />
+            <div className="glass-panel min-w-0 rounded-[2rem] p-2.5 md:p-8 border border-white/10">
+              <div className="flex flex-col items-start gap-2 mb-2 md:flex-row md:items-center md:gap-3 md:mb-4">
+                <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
+                  <Lock className="w-6 h-6 md:w-5 md:h-5 text-purple-400" />
                 </div>
-                <h2 className="text-lg font-medium text-white">Locked in Escrow</h2>
+                <div className="text-[0.6rem] leading-tight md:text-lg font-medium text-white">Locked in Escrow</div>
               </div>
-              <div className="text-5xl font-bold text-white tracking-tight mb-2">
-                ${escrow.toLocaleString()} <span className="text-xl text-muted font-medium">USDC</span>
+              <div className="break-words text-[0.85rem] leading-tight md:text-5xl font-bold text-white tracking-tight mb-2">
+                ${escrow.toLocaleString()}{' '}
+                <span className="block md:inline text-[0.58rem] md:text-xl text-muted font-medium">USDC</span>
               </div>
-              <p className="text-sm text-muted mt-8">Funds currently tracked as locked in live campaigns.</p>
+              <p className="text-[0.58rem] leading-tight md:text-sm text-muted mt-2 md:mt-8">
+                Funds currently tracked as locked in live campaigns.
+              </p>
             </div>
           </div>
 

@@ -28,6 +28,10 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+.workspace-route-frame {
+  min-height: 100vh;
+}
+
 /* Hardware-accelerated noise layer to prevent scroll lag */
 body::before {
   content: "";
@@ -461,6 +465,10 @@ body::before {
 }
 
 @media (max-width: 47.999rem) {
+  .workspace-route-frame {
+    padding-top: 4rem;
+  }
+
   html,
   body,
   #root {
@@ -475,7 +483,7 @@ body::before {
   .app-sidebar ~ main {
     width: 100%;
     min-width: 0;
-    margin-top: 4rem !important;
+    margin-top: 0 !important;
     padding: 0.875rem !important;
     background:
       radial-gradient(circle at 40% 0%, rgba(123, 47, 255, 0.07), transparent 22rem),
@@ -484,7 +492,7 @@ body::before {
 
   .app-sidebar ~ main.creator-page-main {
     margin-top: 0 !important;
-    padding-top: 5rem !important;
+    padding-top: 0.875rem !important;
   }
 
   .creator-page-controls {
@@ -498,7 +506,7 @@ body::before {
 
   .app-sidebar + .creator-page-controls + main {
     margin-top: 0 !important;
-    padding-top: 5rem !important;
+    padding-top: 0.875rem !important;
   }
 
   .app-sidebar ~ main > div,

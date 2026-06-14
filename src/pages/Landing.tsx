@@ -260,10 +260,10 @@ const HowItWorks = () => {
               transition={{ delay: idx * 0.15, duration: 0.8, ease: appleEase }}
             >
               <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-white/5 opacity-30 transition-opacity duration-500 group-hover:opacity-100"></div>
-              <div className="glass-panel relative flex h-full w-full flex-col items-start gap-2 overflow-hidden rounded-lg p-[14px] md:gap-0 md:rounded-3xl md:bg-black/40 md:p-10 md:backdrop-blur-3xl">
-                <div className="hidden md:block absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-cyan/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-bl-full"></div>
+              <div className="glass-panel relative flex h-full w-full flex-col items-start gap-2 overflow-hidden rounded-lg bg-black/40 p-[14px] backdrop-blur-3xl md:gap-0 md:rounded-3xl md:p-10">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-cyan/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-bl-full"></div>
 
-                <div className="w-8 h-8 md:w-14 md:h-14 rounded-lg md:rounded-2xl bg-[#090b10] md:bg-white/10 flex items-center justify-center md:mb-8 border border-white/10 shrink-0">
+                <div className="w-8 h-8 md:w-14 md:h-14 rounded-lg md:rounded-2xl bg-white/10 flex items-center justify-center md:mb-8 border border-white/5 shrink-0">
                   {step.icon}
                 </div>
                 <div className="text-[0.65rem] md:text-sm font-semibold text-cyan md:mb-3 tracking-wider uppercase leading-none">
@@ -324,17 +324,17 @@ const FeatureSection = ({ id, title, subtitle, features, reverse }: any) => {
               <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-white/5 opacity-30 transition-opacity duration-500 group-hover:opacity-100"></div>
               <div className={`relative flex h-full w-full flex-col overflow-hidden ${
                 compactBrandsMobile
-                  ? 'glass-panel gap-2 rounded-[14px] p-[14px] md:rounded-[2.5rem] md:bg-black/40 md:p-10 md:backdrop-blur-3xl md:gap-0 md:justify-between'
+                  ? 'glass-panel gap-2 rounded-[14px] bg-black/40 p-[14px] backdrop-blur-3xl md:rounded-[2.5rem] md:p-10 md:gap-0 md:justify-between'
                   : compactCreatorsMobile
-                    ? 'glass-panel gap-2 rounded-[14px] p-[14px] md:rounded-[2.5rem] md:bg-black/40 md:p-10 md:backdrop-blur-3xl md:gap-0 md:justify-between'
+                    ? 'glass-panel gap-2 rounded-[14px] bg-black/40 p-[14px] backdrop-blur-3xl md:rounded-[2.5rem] md:p-10 md:gap-0 md:justify-between'
                     : 'glass-panel rounded-[2.5rem] bg-black/40 p-10 backdrop-blur-3xl justify-between'
               }`}>
                 <div className={compactBrandsMobile ? 'flex items-center gap-3 md:block' : ''}>
                   <div className={`flex items-center justify-center border ${
                     compactBrandsMobile
-                      ? 'h-8 w-8 shrink-0 rounded-lg border-[#1f2937] bg-[#1f2937] [&_svg]:h-4 [&_svg]:w-4 md:mb-12 md:h-14 md:w-14 md:rounded-2xl md:border-white/5 md:bg-white/10 md:[&_svg]:h-6 md:[&_svg]:w-6'
+                      ? 'h-8 w-8 shrink-0 rounded-lg border-white/5 bg-white/10 [&_svg]:h-4 [&_svg]:w-4 md:mb-12 md:h-14 md:w-14 md:rounded-2xl md:[&_svg]:h-6 md:[&_svg]:w-6'
                       : compactCreatorsMobile
-                        ? 'h-8 w-8 shrink-0 rounded-lg border-[#1f2937] bg-[#1f2937] [&_svg]:h-4 [&_svg]:w-4 md:mb-12 md:h-14 md:w-14 md:rounded-2xl md:border-white/5 md:bg-white/10 md:[&_svg]:h-6 md:[&_svg]:w-6'
+                        ? 'h-8 w-8 shrink-0 rounded-lg border-white/5 bg-white/10 [&_svg]:h-4 [&_svg]:w-4 md:mb-12 md:h-14 md:w-14 md:rounded-2xl md:[&_svg]:h-6 md:[&_svg]:w-6'
                       : 'w-14 h-14 rounded-2xl bg-white/10 mb-12 border-white/5'
                   }`}>
                     {feature.icon}

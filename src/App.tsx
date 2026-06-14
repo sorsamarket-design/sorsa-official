@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Navigate, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Navigate, Routes, Route, useLocation } from 'react-router-dom';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import BrandLogin from './pages/BrandLogin';
@@ -63,10 +63,14 @@ function CampaignsRedirect() {
   return <div className="min-h-screen flex items-center justify-center bg-[#0B0A0F] text-red-400">Error</div>;
 }
 
-export default function App() {
+function RouteLayout() {
+  const location = useLocation();
+  const hasWorkspaceMobileNavbar =
+    location.pathname.startsWith('/brand/') ||
+    location.pathname.startsWith('/creator/');
 
   return (
-    <BrowserRouter>
+    <div className={hasWorkspaceMobileNavbar ? 'workspace-route-frame' : undefined}>
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
@@ -127,6 +131,15 @@ export default function App() {
         {/* Catch-all 404 Route */}
         <Route path="*" element={<NotFound />} />
       </Routes>
+    </div>
+  );
+}
+
+export default function App() {
+
+  return (
+    <BrowserRouter>
+      <RouteLayout />
     </BrowserRouter>
   );
 }

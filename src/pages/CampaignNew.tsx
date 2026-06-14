@@ -171,39 +171,39 @@ export default function CampaignNew() {
               {/* Campaign Type */}
               <div className="space-y-4">
                 <label className="block text-sm font-medium text-white">Campaign Type</label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div 
-                    onClick={() => setCampaignType('general')}
-                    className={`p-6 rounded-2xl border-2 cursor-pointer transition-all duration-200 flex flex-col items-center text-center gap-3 ${
-                      campaignType === 'general' 
-                        ? 'border-cyan bg-cyan/5 shadow-[inset_0_1px_1px_rgba(0,212,255,0.2)]' 
-                        : 'border-white/10 bg-white/5 hover:border-white/20'
-                    }`}
-                  >
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${campaignType === 'general' ? 'bg-cyan/20 text-cyan' : 'bg-white/10 text-muted'}`}>
-                      <Users className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h3 className={`font-semibold ${campaignType === 'general' ? 'text-white' : 'text-muted'}`}>General Creators</h3>
-                      <p className="text-xs text-muted mt-1">Open to all verified creators on the platform.</p>
-                    </div>
-                  </div>
+                <div className="grid grid-cols-2 gap-2.5 md:gap-4">
+                   <div
+                     onClick={() => setCampaignType('general')}
+                     className={`min-w-0 p-3 md:p-6 rounded-2xl border-2 cursor-pointer transition-all duration-200 flex flex-col items-center text-center gap-3 ${
+                       campaignType === 'general'
+                         ? 'border-cyan bg-cyan/5 shadow-[inset_0_1px_1px_rgba(0,212,255,0.2)]'
+                         : 'border-white/10 bg-white/5 hover:border-white/20'
+                     }`}
+                   >
+                     <div className={`w-8 h-8 md:w-12 md:h-12 rounded-full flex items-center justify-center ${campaignType === 'general' ? 'bg-cyan/20 text-cyan' : 'bg-white/10 text-muted'}`}>
+                       <Users className="w-5 h-5 md:w-6 md:h-6" />
+                     </div>
+                     <div>
+                       <h3 className={`text-[0.8rem] md:text-base font-semibold ${campaignType === 'general' ? 'text-white' : 'text-muted'}`}>General Creators</h3>
+                       <p className="text-[0.68rem] leading-snug md:text-xs text-muted mt-1">Open to all verified creators on the platform.</p>
+                     </div>
+                   </div>
 
-                  <div 
-                    onClick={() => setCampaignType('kol')}
-                    className={`p-6 rounded-2xl border-2 cursor-pointer transition-all duration-200 flex flex-col items-center text-center gap-3 ${
-                      campaignType === 'kol' 
-                        ? 'border-purple-500 bg-purple-500/5 shadow-[inset_0_1px_1px_rgba(168,85,247,0.2)]' 
-                        : 'border-white/10 bg-white/5 hover:border-white/20'
-                    }`}
-                  >
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${campaignType === 'kol' ? 'bg-purple-500/20 text-purple-400' : 'bg-white/10 text-muted'}`}>
-                      <Star className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h3 className={`font-semibold ${campaignType === 'kol' ? 'text-white' : 'text-muted'}`}>High Quality / KOL</h3>
-                      <p className="text-xs text-muted mt-1">Target top-tier creators with proven engagement.</p>
-                    </div>
+                   <div
+                     onClick={() => setCampaignType('kol')}
+                     className={`min-w-0 p-3 md:p-6 rounded-2xl border-2 cursor-pointer transition-all duration-200 flex flex-col items-center text-center gap-3 ${
+                       campaignType === 'kol'
+                         ? 'border-purple-500 bg-purple-500/5 shadow-[inset_0_1px_1px_rgba(168,85,247,0.2)]'
+                         : 'border-white/10 bg-white/5 hover:border-white/20'
+                     }`}
+                   >
+                     <div className={`w-8 h-8 md:w-12 md:h-12 rounded-full flex items-center justify-center ${campaignType === 'kol' ? 'bg-purple-500/20 text-purple-400' : 'bg-white/10 text-muted'}`}>
+                       <Star className="w-5 h-5 md:w-6 md:h-6" />
+                     </div>
+                     <div>
+                       <h3 className={`text-[0.8rem] md:text-base font-semibold ${campaignType === 'kol' ? 'text-white' : 'text-muted'}`}>High Quality / KOL</h3>
+                       <p className="text-[0.68rem] leading-snug md:text-xs text-muted mt-1">Target top-tier creators with proven engagement.</p>
+                     </div>
                   </div>
                 </div>
 
