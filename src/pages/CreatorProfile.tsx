@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Wallet, MapPin, Star, Target, DollarSign, Sparkles, Calendar } from 'lucide-react';
-import { ConnectButton } from '@rainbow-me/rainbowkit';
-import BindWalletButton from '../components/BindWalletButton';
 import CreatorSidebar from '../components/CreatorSidebar';
 import CreatorTopBar from '../components/CreatorTopBar';
 
@@ -17,6 +15,12 @@ export default function CreatorProfile() {
   const { user } = useAuth();
   const { profile, loading } = useCreatorProfile();
   const [pastCampaigns, setPastCampaigns] = useState<CreatorCampaignHistoryItem[]>([]);
+  const sorsaScore = Math.round(profile?.sorsa_score || 0);
+  const baseReward = ((profile?.sorsa_score || 0) * 0.1).toFixed(2);
+  const walletAddress = profile?.wallet_address || '';
+  const truncatedWallet = walletAddress
+    ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
+    : 'Not bound';
 
   useEffect(() => {
     if (!user) return;
@@ -54,111 +58,67 @@ export default function CreatorProfile() {
           >
             <div className="absolute top-0 right-0 w-96 h-96 bg-cyan/5 blur-[120px] rounded-full pointer-events-none"></div>
 
-            <div className="relative z-10 flex flex-col items-start gap-6 sm:flex-row sm:items-center md:gap-8">
-              <div className="relative shrink-0 self-center group sm:self-auto">
-                <img
-                  src={normalizeAvatarUrl(profile?.avatar_url) || normalizeAvatarUrl(user?.user_metadata?.avatar_url) || getInitialsAvatarUrl(profile?.x_handle || 'Creator')}
-                  alt={profile?.full_name || profile?.x_handle || 'Creator'}
-                  className="h-32 w-32 rounded-2xl border border-white/10 object-cover sm:h-36 sm:w-36 md:h-40 md:w-40"
-                  referrerPolicy="no-referrer"
-                />
-              </div>
+            <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:gap-8">
+              <div className="flex min-w-0 flex-1 flex-col items-start gap-6 sm:flex-row sm:items-center md:gap-8">
+                <div className="relative shrink-0 self-center group sm:self-auto">
+                  <img
+                    src={normalizeAvatarUrl(profile?.avatar_url) || normalizeAvatarUrl(user?.user_metadata?.avatar_url) || getInitialsAvatarUrl(profile?.x_handle || 'Creator')}
+                    alt={profile?.full_name || profile?.x_handle || 'Creator'}
+                    className="h-32 w-32 rounded-2xl border border-white/10 object-cover sm:h-36 sm:w-36 md:h-40 md:w-40"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
 
-              <div className="flex-1 w-full">
-                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                  <div>
-                    <h1 className="text-3xl font-semibold text-white tracking-tight flex items-center gap-3">
-                      {profile?.full_name || profile?.x_handle || 'Creator Account'}
-                    </h1>
-                    <p className="text-cyan font-medium mt-1">@{profile?.x_handle || 'username'}</p>
+                <div className="flex-1 w-full">
+                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                    <div>
+                      <h1 className="text-3xl font-semibold text-white tracking-tight flex items-center gap-3">
+                        {profile?.full_name || profile?.x_handle || 'Creator Account'}
+                      </h1>
+                      <p className="text-cyan font-medium mt-1">@{profile?.x_handle || 'username'}</p>
 
-                    {profile?.country && (
-                      <div className="flex items-center gap-2 text-muted mt-2">
-                        <MapPin className="w-4 h-4" />
-                        <span className="text-sm">{profile.country}</span>
-                      </div>
-                    )}
+                      {profile?.country && (
+                        <div className="flex items-center gap-2 text-muted mt-2">
+                          <MapPin className="w-4 h-4" />
+                          <span className="text-sm">{profile.country}</span>
+                        </div>
+                      )}
+                    </div>
+
+                  </div>
+
+                  <div className="mt-6">
+                    <p className="text-muted leading-relaxed max-w-2xl">{profile?.bio || 'This creator hasn\'t added a bio yet.'}</p>
                   </div>
 
                 </div>
+              </div>
 
-                <div className="mt-6">
-                  <p className="text-muted leading-relaxed max-w-2xl">{profile?.bio || 'This creator hasn\'t added a bio yet.'}</p>
+              <div className="w-full shrink-0 border-t border-white/10 pt-5 lg:w-72 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+                <div className="flex items-stretch">
+                  <div className="flex-1">
+                    <p className="text-xs font-medium text-muted">Sorsa Score</p>
+                    <p className="mt-1 text-3xl font-semibold tracking-tight text-white">{sorsaScore}</p>
+                  </div>
+
+                  <div className="mx-5 w-px bg-white/10"></div>
+
+                  <div className="flex-1">
+                    <p className="text-xs font-medium text-muted">Base Reward</p>
+                    <p className="mt-1 text-2xl font-semibold tracking-tight text-emerald-400">${baseReward}</p>
+                  </div>
                 </div>
 
+                <div className="mt-5 flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2">
+                  <Wallet className="h-4 w-4 shrink-0 text-cyan" />
+                  <span className="min-w-0 flex-1 truncate text-xs font-medium text-white">{truncatedWallet}</span>
+                  <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-muted">Base</span>
+                </div>
               </div>
             </div>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Left Column: Score & Wallet */}
-            <div className="space-y-8">
-              {/* Sorsa Score */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, ease: appleEase, delay: 0.1 }}
-                className="glass-panel rounded-[2rem] p-8 border border-white/10 text-center relative overflow-hidden"
-              >
-                <h3 className="text-sm font-medium text-muted uppercase tracking-wider mb-6">Sorsa Score</h3>
-                <div className="relative inline-flex items-center justify-center">
-                  <svg className="w-40 h-40 transform -rotate-90">
-                    <circle cx="80" cy="80" r="72" stroke="currentColor" strokeWidth="12" fill="transparent" className="text-white/5" />
-                    <circle
-                      cx="80" cy="80" r="72"
-                      stroke="currentColor"
-                      strokeWidth="12"
-                      fill="transparent"
-                      strokeDasharray="452.39"
-                      strokeDashoffset={452.39 - (452.39 * (profile?.sorsa_score || 0)) / 1000}
-                      className="text-cyan drop-shadow-[0_0_15px_rgba(0,212,255,0.4)]"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-5xl font-bold text-white tracking-tighter">{Math.round(profile?.sorsa_score || 0)}</span>
-                    <span className="text-xs text-cyan font-medium mt-1">/ 1000</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-center gap-1 mt-6">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star key={star} className={`w-5 h-5 ${star <= 4 ? 'text-cyan fill-cyan' : 'text-white/20'}`} />
-                  ))}
-                </div>
-
-                <div className="mt-8 pt-6 border-t border-white/10 flex items-center justify-between">
-                  <div className="text-left">
-                    <div className="text-xs text-muted uppercase tracking-wider font-medium mb-1">Base Reward</div>
-                    <div className="text-xs text-muted">Based on Sorsa Score</div>
-                  </div>
-                  <div className="text-2xl font-bold text-cyan">${((profile?.sorsa_score || 0) * 0.1).toFixed(2)}</div>
-                </div>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, ease: appleEase, delay: 0.2 }}
-                className="glass-panel rounded-[2rem] p-6 border border-white/10"
-              >
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-full bg-cyan/10 flex items-center justify-center shrink-0">
-                    <Wallet className="w-5 h-5 text-cyan" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-white">Binded Wallet</h3>
-                    <p className="text-xs text-muted">Base Network</p>
-                  </div>
-                </div>
-
-                <div className="flex justify-center">
-                  <BindWalletButton />
-                </div>
-              </motion.div>
-            </div>
-
-            {/* Right Column: Stats, Campaigns, Reviews */}
-            <div className="md:col-span-2 space-y-8">
+          <div className="space-y-8">
 
               {/* Stats Row */}
               <motion.div
@@ -238,7 +198,6 @@ export default function CreatorProfile() {
                 )}
               </motion.div>
 
-            </div>
           </div>
         </div>
       </main>

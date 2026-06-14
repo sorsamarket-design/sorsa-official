@@ -253,14 +253,14 @@ const HowItWorks = () => {
           {steps.map((step, idx) => (
             <motion.div
               key={idx}
-              className="relative rounded-lg md:rounded-3xl overflow-hidden group border border-[#1f2937] md:border-0 md:p-[1px]"
+              className="relative overflow-hidden rounded-lg p-[1px] group md:rounded-3xl"
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-100px" }}
               transition={{ delay: idx * 0.15, duration: 0.8, ease: appleEase }}
             >
-              <div className="hidden md:block absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="rounded-lg md:rounded-3xl p-[14px] md:p-10 flex flex-col items-start gap-2 md:gap-0 relative overflow-hidden h-full w-full bg-[#0f1117] md:glass-panel md:bg-black/40 md:backdrop-blur-3xl">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-white/5 opacity-30 transition-opacity duration-500 group-hover:opacity-100"></div>
+              <div className="glass-panel relative flex h-full w-full flex-col items-start gap-2 overflow-hidden rounded-lg p-[14px] md:gap-0 md:rounded-3xl md:bg-black/40 md:p-10 md:backdrop-blur-3xl">
                 <div className="hidden md:block absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-cyan/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-bl-full"></div>
 
                 <div className="w-8 h-8 md:w-14 md:h-14 rounded-lg md:rounded-2xl bg-[#090b10] md:bg-white/10 flex items-center justify-center md:mb-8 border border-white/10 shrink-0">
@@ -311,23 +311,23 @@ const FeatureSection = ({ id, title, subtitle, features, reverse }: any) => {
               key={idx}
               className={`relative overflow-hidden group ${
                 compactBrandsMobile
-                  ? 'h-full rounded-[14px] border border-[#1f2937] md:rounded-[2.5rem] md:border-0 md:p-[1px]'
+                  ? 'h-full rounded-[14px] p-[1px] md:rounded-[2.5rem]'
                   : compactCreatorsMobile
-                    ? 'h-full rounded-[14px] border border-[#1f2937] md:rounded-[2.5rem] md:border-0 md:p-[1px]'
-                  : 'rounded-[2.5rem] p-[1px]'
+                    ? 'h-full rounded-[14px] p-[1px] md:rounded-[2.5rem]'
+                    : 'rounded-[2.5rem] p-[1px]'
               } ${idx === 0 || idx === 3 ? 'md:col-span-2' : 'md:col-span-1'}`}
               initial={{ opacity: 0, y: 40 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-100px" }}
               transition={{ delay: idx * 0.1, duration: 0.8, ease: appleEase }}
             >
-              <div className={`${compactBrandsMobile || compactCreatorsMobile ? 'hidden md:block' : ''} absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
+              <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-white/5 opacity-30 transition-opacity duration-500 group-hover:opacity-100"></div>
               <div className={`relative flex h-full w-full flex-col overflow-hidden ${
                 compactBrandsMobile
-                  ? 'gap-2 rounded-[14px] bg-[#0f1117] p-[14px] md:glass-panel md:rounded-[2.5rem] md:bg-black/40 md:p-10 md:backdrop-blur-3xl md:gap-0 md:justify-between'
+                  ? 'glass-panel gap-2 rounded-[14px] p-[14px] md:rounded-[2.5rem] md:bg-black/40 md:p-10 md:backdrop-blur-3xl md:gap-0 md:justify-between'
                   : compactCreatorsMobile
-                    ? 'gap-2 rounded-[14px] bg-[#0f1117] p-[14px] md:glass-panel md:rounded-[2.5rem] md:bg-black/40 md:p-10 md:backdrop-blur-3xl md:gap-0 md:justify-between'
-                  : 'glass-panel rounded-[2.5rem] bg-black/40 p-10 backdrop-blur-3xl justify-between'
+                    ? 'glass-panel gap-2 rounded-[14px] p-[14px] md:rounded-[2.5rem] md:bg-black/40 md:p-10 md:backdrop-blur-3xl md:gap-0 md:justify-between'
+                    : 'glass-panel rounded-[2.5rem] bg-black/40 p-10 backdrop-blur-3xl justify-between'
               }`}>
                 <div className={compactBrandsMobile ? 'flex items-center gap-3 md:block' : ''}>
                   <div className={`flex items-center justify-center border ${
@@ -534,7 +534,7 @@ const FAQ = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: idx * 0.1, duration: 0.8, ease: appleEase }}
-              className="rounded-[14px] border border-[#1f2937] bg-[#0f1117] p-4 md:glass-panel md:rounded-3xl md:border-white/10 md:p-8"
+              className="glass-panel rounded-[14px] p-4 md:rounded-3xl md:p-8"
             >
               <button
                 type="button"
