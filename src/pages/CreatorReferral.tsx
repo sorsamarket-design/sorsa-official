@@ -108,7 +108,7 @@ export default function CreatorReferral() {
     <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] font-sans selection:bg-cyan/30 flex">
       <CreatorSidebar />
       <main className="creator-page-main flex-1 md:ml-64 p-4 md:p-8">
-        <div className="max-w-5xl mx-auto space-y-8">
+        <div className="max-w-5xl mx-auto space-y-8 pt-6 md:pt-0">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: appleEase }} className="glass-panel rounded-[2rem] p-8 md:p-12 border border-white/10 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-96 h-96 bg-cyan/10 blur-[120px] rounded-full pointer-events-none"></div>
             <div className="absolute right-4 top-4 z-20">
@@ -124,7 +124,7 @@ export default function CreatorReferral() {
                   </p>
                 </div>
 
-                <button onClick={handleCopy} className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white text-black font-semibold hover:scale-105 transition-transform shadow-[0_0_20px_rgba(255,255,255,0.2)]">
+                <button onClick={handleCopy} className="flex w-full items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white text-black font-semibold hover:scale-105 transition-transform shadow-[0_0_20px_rgba(255,255,255,0.2)] md:w-auto">
                   {copied ? <CheckCircle2 className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
                   {copied ? 'Copied!' : 'Copy Referral Link'}
                 </button>
@@ -188,7 +188,12 @@ export default function CreatorReferral() {
                       </tr>
                     ) : filteredActivity.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="p-8 text-center text-muted">Referral activity will appear here after invited creators join and complete campaigns.</td>
+                        <td colSpan={5} className="p-0 text-muted">
+                          <div className="flex min-h-[100px] flex-col items-center justify-center gap-2">
+                            <Users className="h-8 w-8 text-muted" />
+                            <span className="text-sm font-medium">No referrals yet</span>
+                          </div>
+                        </td>
                       </tr>
                     ) : filteredActivity.map((ref) => (
                       <tr key={ref.id} className="hover:bg-white/5 transition-colors">
