@@ -38,7 +38,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
       return <Navigate to="/auth/admin" state={{ from: location }} replace />;
     }
 
-    const fallback = role === 'brand' ? '/brand/dashboard' : role === 'admin' ? '/admin/dashboard' : '/creator/dashboard';
+    const fallback = role === 'brand' ? '/brand/dashboard' : role === 'admin' ? '/admin/dashboard' : '/creator/campaigns';
     if (location.pathname === fallback) {
       return <div className="min-h-screen flex items-center justify-center bg-[#0B0A0F] text-red-400">Error</div>;
     }

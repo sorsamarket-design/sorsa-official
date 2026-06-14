@@ -110,7 +110,7 @@ const Hero = () => {
   const { session, role, signOut } = useAuth();
   const { disconnect } = useDisconnect();
 
-  const handleRoleEntry = async (targetRole: 'brand' | 'creator') => {
+  const handleRoleEntry = (targetRole: 'brand' | 'creator') => {
     if (targetRole === 'brand' && session) {
       navigate('/brand/profiles');
       return;
@@ -121,12 +121,15 @@ const Hero = () => {
       return;
     }
 
+    const authRoute = targetRole === 'brand' ? '/auth/brand' : '/auth/creator';
+    navigate(authRoute);
+
     if (session) {
       disconnect();
-      await signOut();
+      void signOut().catch((error) => {
+        console.error('Session cleanup failed while changing roles:', error);
+      });
     }
-
-    navigate(targetRole === 'brand' ? '/auth/brand' : '/auth/creator');
   };
 
   return (
@@ -162,10 +165,10 @@ const Hero = () => {
             transition={{ duration: 1, ease: appleEase, delay: 0.3 }}
             className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto"
           >
-            <button onClick={() => handleRoleEntry('brand')} className="hero-cta px-6 py-3 rounded-full bg-white text-black text-sm font-medium text-center flex items-center justify-center gap-2">
+            <button type="button" onClick={() => handleRoleEntry('brand')} className="hero-cta relative z-20 touch-manipulation px-6 py-3 rounded-full bg-white text-black text-sm font-medium text-center flex items-center justify-center gap-2">
               I'm a Brand <ArrowRight className="w-4 h-4" />
             </button>
-            <button onClick={() => handleRoleEntry('creator')} className="hero-cta px-6 py-3 rounded-full glass-panel text-white text-sm font-medium text-center hover:bg-white/10">
+            <button type="button" onClick={() => handleRoleEntry('creator')} className="hero-cta relative z-20 touch-manipulation px-6 py-3 rounded-full glass-panel text-white text-sm font-medium text-center hover:bg-white/10">
               I'm a Creator
             </button>
           </motion.div>
@@ -173,7 +176,7 @@ const Hero = () => {
 
         <motion.div
           style={{ y: y2, opacity, scale, willChange: "transform, opacity" }}
-          className="relative h-[300px] sm:h-[380px] lg:h-[500px] xl:h-[560px] w-full flex items-center justify-center"
+          className="pointer-events-none relative h-[300px] sm:h-[380px] lg:h-[500px] xl:h-[560px] w-full flex items-center justify-center"
         >
           {/* Apple-style clean visual container */}
           <div className="relative w-full max-w-lg aspect-square flex items-center justify-center">

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Wallet, MapPin, Edit2, Star, Target, DollarSign, Check, X, Sparkles, Calendar } from 'lucide-react';
+import { Wallet, MapPin, Star, Target, DollarSign, Sparkles, Calendar } from 'lucide-react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import BindWalletButton from '../components/BindWalletButton';
 import CreatorSidebar from '../components/CreatorSidebar';
@@ -11,28 +11,12 @@ const appleEase = [0.16, 1, 0.3, 1] as const;
 import { useCreatorProfile } from '../hooks/useCreatorProfile';
 import { useAuth } from '../context/AuthContext';
 import { getInitialsAvatarUrl, normalizeAvatarUrl } from '../lib/avatars';
-import { supabase } from '../lib/supabase';
 import { getCreatorPastCampaignHistory, type CreatorCampaignHistoryItem } from '../lib/creatorCampaignHistory';
 
 export default function CreatorProfile() {
   const { user } = useAuth();
-  const { profile, loading, setProfile, refreshProfile } = useCreatorProfile();
-  const [isEditing, setIsEditing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const { profile, loading } = useCreatorProfile();
   const [pastCampaigns, setPastCampaigns] = useState<CreatorCampaignHistoryItem[]>([]);
-  const [editForm, setEditForm] = useState({
-    bio: ''
-  });
-
-  // Update edit form when profile loads
-  useEffect(() => {
-    if (profile) {
-      setEditForm({
-        bio: profile.bio || ''
-      });
-    }
-  }, [profile]);
 
   useEffect(() => {
     if (!user) return;
@@ -52,42 +36,6 @@ export default function CreatorProfile() {
       </div>
     );
   }
-
-  const handleSave = async () => {
-    if (!user || !profile || isSaving) return;
-
-    const bio = editForm.bio.trim();
-
-    setIsSaving(true);
-    setSaveMessage(null);
-
-    const { error: bioError } = await supabase
-      .from('creator_profiles')
-      .update({ bio })
-      .eq('id', user.id);
-
-    if (bioError) {
-      setIsSaving(false);
-      setSaveMessage(bioError.message || 'Unable to save profile changes.');
-      return;
-    }
-
-    setIsSaving(false);
-
-    setProfile({
-      ...profile,
-      bio
-    });
-    await refreshProfile();
-    setIsEditing(false);
-  };
-
-  const handleCancel = () => {
-    setEditForm({
-      bio: profile.bio || ''
-    });
-    setIsEditing(false);
-  };
 
   return (
     <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] font-sans selection:bg-cyan/30 flex">
@@ -131,54 +79,13 @@ export default function CreatorProfile() {
                     )}
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                  <div className="flex items-center">
                     <CreatorTopBar embedded />
-                    {!isEditing ? (
-                      <button
-                        onClick={() => setIsEditing(true)}
-                        className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm font-medium hover:bg-white/10 transition-colors flex items-center gap-2"
-                      >
-                        <Edit2 className="w-4 h-4" /> Edit Profile
-                      </button>
-                    ) : (
-                      <>
-                        <button
-                          onClick={handleCancel}
-                          className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white text-sm font-medium hover:bg-white/10 transition-colors flex items-center gap-2"
-                        >
-                          <X className="w-4 h-4" /> Cancel
-                        </button>
-                        <button
-                          onClick={handleSave}
-                          disabled={isSaving}
-                          className="px-4 py-2 rounded-xl bg-cyan text-black text-sm font-semibold hover:scale-105 transition-transform flex items-center gap-2 shadow-[0_0_15px_rgba(0,212,255,0.3)] disabled:opacity-60 disabled:hover:scale-100"
-                        >
-                          <Check className="w-4 h-4" /> {isSaving ? 'Saving...' : 'Save'}
-                        </button>
-                      </>
-                    )}
                   </div>
                 </div>
 
-                {saveMessage && (
-                  <div className="mt-4 text-sm font-medium text-red-400">
-                    {saveMessage}
-                  </div>
-                )}
-
                 <div className="mt-6">
-                  {!isEditing ? (
-                    <p className="text-muted leading-relaxed max-w-2xl">{profile?.bio || 'This creator hasn\'t added a bio yet.'}</p>
-                  ) : (
-                    <div>
-                      <label className="block text-xs text-muted mb-1 uppercase tracking-wider">Bio</label>
-                      <textarea
-                        value={editForm.bio}
-                        onChange={e => setEditForm({...editForm, bio: e.target.value})}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan/50 transition-colors resize-none h-24"
-                      />
-                    </div>
-                  )}
+                  <p className="text-muted leading-relaxed max-w-2xl">{profile?.bio || 'This creator hasn\'t added a bio yet.'}</p>
                 </div>
 
               </div>

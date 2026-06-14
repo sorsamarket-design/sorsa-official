@@ -21,7 +21,6 @@ import AdminNFTSubmissions from './pages/AdminNFTSubmissions';
 import AdminApprovals from './pages/AdminApprovals';
 import AdminTickets from './pages/AdminTickets';
 import AdminLogin from './pages/AdminLogin';
-import CreatorDashboard from './pages/CreatorDashboard';
 import CreatorProfile from './pages/CreatorProfile';
 import CreatorBrowse from './pages/CreatorBrowse';
 import CreatorCampaignDetail from './pages/CreatorCampaignDetail';
@@ -109,7 +108,6 @@ export default function App() {
         <Route path="/admin/tickets" element={<ProtectedRoute requiredRole="admin"><AdminTickets /></ProtectedRoute>} />
 
         {/* Creator Routes */}
-        <Route path="/creator/dashboard" element={<ProtectedRoute requiredRole="creator"><CreatorDashboard /></ProtectedRoute>} />
         <Route path="/creator/profile" element={<ProtectedRoute requiredRole="creator"><CreatorProfile /></ProtectedRoute>} />
         <Route path="/creator/campaigns" element={<ProtectedRoute requiredRole="creator"><CreatorBrowse /></ProtectedRoute>} />
         <Route path="/creator/campaigns/:id" element={<ProtectedRoute requiredRole="creator"><CreatorCampaignDetail /></ProtectedRoute>} />

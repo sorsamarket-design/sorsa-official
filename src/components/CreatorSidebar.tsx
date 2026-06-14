@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   Gift,
-  LayoutDashboard,
   Mail,
   Megaphone,
   PlayCircle,
@@ -19,7 +18,6 @@ import { getInitialsAvatarUrl, normalizeAvatarUrl } from '../lib/avatars';
 
 const navigationGroups = [
   [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/creator/dashboard' },
     { icon: User, label: 'Profile', path: '/creator/profile' },
   ],
   [
