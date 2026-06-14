@@ -40,6 +40,7 @@ export default function CreatorProfile() {
   return (
     <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] font-sans selection:bg-cyan/30 flex">
       <CreatorSidebar />
+      <CreatorTopBar />
 
       <main className="creator-page-main flex-1 md:ml-64 p-4 md:p-8">
         <div className="max-w-4xl mx-auto space-y-8">
@@ -79,9 +80,6 @@ export default function CreatorProfile() {
                     )}
                   </div>
 
-                  <div className="flex items-center">
-                    <CreatorTopBar embedded />
-                  </div>
                 </div>
 
                 <div className="mt-6">
