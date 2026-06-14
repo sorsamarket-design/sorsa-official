@@ -31,8 +31,28 @@ export default function TopBar() {
   return (
     <header className="app-topbar h-16 fixed top-0 right-0 left-0 md:left-64 bg-[#0A0A1E]/80 backdrop-blur-xl border-b border-white/10 z-40 flex items-center justify-between gap-2 px-3 sm:px-4 md:px-6">
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-        <button onClick={toggleSidebar} aria-label="Open navigation" className="app-icon-button md:hidden flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-muted hover:text-white transition-colors"><Menu className="w-5 h-5" /></button>
-        <div className="relative min-w-0" ref={dropdownRef}>
+        <button
+          type="button"
+          onClick={toggleSidebar}
+          aria-label="Open navigation"
+          className="app-icon-button flex h-11 w-11 shrink-0 touch-manipulation items-center justify-center rounded-xl text-white transition-colors hover:bg-white/5 md:hidden"
+        >
+          <Menu className="h-6 w-6" />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => navigate('/')}
+          aria-label="Go to SorsaMarket home"
+          className="flex min-w-0 touch-manipulation items-center gap-2 rounded-xl px-1.5 py-2 text-left md:hidden"
+        >
+          <img src="/SorsaMarketlogo.PNG" alt="" className="h-8 w-8 shrink-0 object-contain" />
+          <span className="truncate text-base font-semibold tracking-tight text-white">
+            Sorsa<span className="text-cyan">Market</span>
+          </span>
+        </button>
+
+        <div className="relative hidden min-w-0 md:block" ref={dropdownRef}>
           <button onClick={() => setDropdownOpen(!dropdownOpen)} className="app-control flex min-w-0 max-w-[12rem] items-center gap-2 px-2.5 sm:px-3 md:px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
             {selectedProfile ? (
               <>
@@ -58,7 +78,7 @@ export default function TopBar() {
           )}
         </div>
       </div>
-      <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+      <div className="hidden shrink-0 items-center gap-2 sm:gap-3 md:flex">
         <div className="relative" ref={notifRef}>
           <button onClick={() => setNotificationsOpen(!notificationsOpen)} className="app-icon-button relative w-9 h-9 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-muted hover:text-white hover:bg-white/10 transition-colors">
             <Bell className="w-[18px] h-[18px]" />
