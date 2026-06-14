@@ -166,10 +166,6 @@ body::before {
     padding-top: 1.25rem !important;
   }
 
-  .app-sidebar ~ main > div {
-    max-width: 72rem;
-  }
-
   .app-sidebar ~ main h1 {
     font-size: 1.375rem !important;
     line-height: 1.75rem !important;
@@ -357,12 +353,6 @@ body::before {
   .admin-sidebar ~ main {
     margin-left: 13rem !important;
     padding: 1.25rem 1.5rem !important;
-  }
-
-  .admin-sidebar ~ main > div {
-    max-width: 72rem;
-    margin-left: auto;
-    margin-right: auto;
   }
 
   .admin-sidebar ~ main h1 {
