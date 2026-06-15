@@ -890,13 +890,37 @@ async function syncCreatorProfileFromSorsa(profile) {
   const xHandle = cleanHandle(profile.x_handle);
   if (!xHandle) return { synced: false, reason: 'missing_x_handle' };
 
-  const [scoreData, stats, about] = await Promise.all([
-    callSorsa(`/score?username=${encodeURIComponent(xHandle)}`),
-    callSorsa(`/info?username=${encodeURIComponent(xHandle)}`),
-    callSorsa(`/about?username=${encodeURIComponent(xHandle)}`).catch(() => ({ country: null }))
-  ]);
+  const startedAt = new Date();
+  const previousScore = profile.sorsa_score == null ? null : Math.round(Number(profile.sorsa_score || 0));
+  console.log('Sorsa profile sync started:', {
+    creatorId: profile.id,
+    xHandle,
+    previousScore,
+    lastProfileSyncAt: profile.last_profile_sync_at || null
+  });
+
+  let scoreData;
+  let stats;
+  let about;
+  try {
+    [scoreData, stats, about] = await Promise.all([
+      callSorsa(`/score?username=${encodeURIComponent(xHandle)}`),
+      callSorsa(`/info?username=${encodeURIComponent(xHandle)}`),
+      callSorsa(`/about?username=${encodeURIComponent(xHandle)}`).catch(() => ({ country: null }))
+    ]);
+  } catch (error) {
+    console.warn('Sorsa profile sync failed during API fetch:', {
+      creatorId: profile.id,
+      xHandle,
+      previousScore,
+      error: error.message || error
+    });
+    throw error;
+  }
+
   const score = Math.round(Number(scoreData?.score || 0));
   const finalLocation = stats?.location || about?.country || null;
+  const syncedAt = new Date().toISOString();
 
   const { error } = await supabase
     .from('creator_profiles')
@@ -907,12 +931,45 @@ async function syncCreatorProfileFromSorsa(profile) {
       bio: stats?.description ?? null,
       country: finalLocation,
       full_name: stats?.display_name ?? null,
-      last_profile_sync_at: new Date().toISOString()
+      last_profile_sync_at: syncedAt
     })
     .eq('id', profile.id);
-  if (error) throw error;
+  if (error) {
+    console.warn('Sorsa profile sync failed during profile update:', {
+      creatorId: profile.id,
+      xHandle,
+      previousScore,
+      newScore: score,
+      error: error.message || error
+    });
+    throw error;
+  }
 
-  return { synced: true };
+  const durationMs = Date.now() - startedAt.getTime();
+  const scoreDelta = previousScore == null ? null : score - previousScore;
+  if (scoreDelta != null && Math.abs(scoreDelta) >= 50) {
+    console.warn('Sorsa profile score changed sharply:', {
+      creatorId: profile.id,
+      xHandle,
+      previousScore,
+      newScore: score,
+      delta: scoreDelta,
+      syncedAt
+    });
+  }
+
+  console.log('Sorsa profile sync completed:', {
+    creatorId: profile.id,
+    xHandle,
+    previousScore,
+    newScore: score,
+    delta: scoreDelta,
+    followersCount: stats?.followers_count ?? null,
+    syncedAt,
+    durationMs
+  });
+
+  return { synced: true, previousScore, newScore: score };
 }
 
 function normalizeAvatarUrl(url) {
@@ -1029,7 +1086,7 @@ async function runWeeklySorsaProfileSync() {
     while (true) {
       const { data: profiles, error } = await supabase
         .from('creator_profiles')
-        .select('id, x_handle, last_profile_sync_at')
+        .select('id, x_handle, sorsa_score, last_profile_sync_at')
         .not('x_handle', 'is', null)
         .order('id', { ascending: true })
         .range(from, from + pageSize - 1);
@@ -2845,7 +2902,7 @@ app.post('/creator/sorsa/sync', async (req, res) => {
     const user = await authenticate(req);
     const { data: profile, error } = await supabase
       .from('creator_profiles')
-      .select('id, x_handle')
+      .select('id, x_handle, sorsa_score, last_profile_sync_at')
       .eq('id', user.id)
       .single();
     if (error || !profile) {
