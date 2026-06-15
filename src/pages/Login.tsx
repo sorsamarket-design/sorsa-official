@@ -35,15 +35,15 @@ export default function Login() {
             className="relative rounded-[2.5rem] p-[1px] overflow-hidden group cursor-pointer"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            <div className="glass-panel rounded-[2.5rem] p-10 flex flex-col items-start h-full w-full bg-black/40 backdrop-blur-3xl relative overflow-hidden">
-              <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center mb-8 border border-white/5 group-hover:bg-cyan/10 group-hover:border-cyan/30 transition-colors">
-                <Building2 className="w-7 h-7 text-white group-hover:text-cyan transition-colors" />
+            <div className="glass-panel rounded-[2.5rem] p-4 md:p-10 flex flex-col items-start h-full w-full bg-black/40 backdrop-blur-3xl relative overflow-hidden">
+              <div className="w-8 h-8 md:w-14 md:h-14 rounded-lg md:rounded-2xl bg-white/10 flex items-center justify-center mb-3 md:mb-8 border border-white/5 group-hover:bg-cyan/10 group-hover:border-cyan/30 transition-colors">
+                <Building2 className="w-4 h-4 md:w-7 md:h-7 text-white group-hover:text-cyan transition-colors" />
               </div>
-              <h2 className="text-3xl font-semibold mb-4 tracking-tight text-white">I'm a Brand</h2>
-              <p className="text-muted leading-relaxed mb-10 flex-1">
+              <h2 className="text-base md:text-3xl font-semibold mb-2 md:mb-4 tracking-tight text-white">I'm a Brand</h2>
+              <p className="text-[0.72rem] md:text-base text-muted leading-relaxed mb-4 md:mb-10 flex-1">
                 Launch campaigns, find the perfect creators, and pay only for verified results. Scale your reach authentically.
               </p>
-              <button className="w-full py-4 rounded-full bg-white text-black font-medium flex items-center justify-center gap-2 group-hover:bg-cyan group-hover:text-black transition-colors">
+              <button className="w-full px-3 py-2.5 md:py-4 rounded-full bg-white text-black text-xs md:text-base font-medium flex items-center justify-center gap-2 group-hover:bg-cyan group-hover:text-black transition-colors">
                 Continue as Brand <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -58,15 +58,15 @@ export default function Login() {
             className="relative rounded-[2.5rem] p-[1px] overflow-hidden group cursor-pointer"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            <div className="glass-panel rounded-[2.5rem] p-10 flex flex-col items-start h-full w-full bg-black/40 backdrop-blur-3xl relative overflow-hidden">
-              <div className="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center mb-8 border border-white/5 group-hover:bg-cyan/10 group-hover:border-cyan/30 transition-colors">
-                <UserCircle2 className="w-7 h-7 text-white group-hover:text-cyan transition-colors" />
+            <div className="glass-panel rounded-[2.5rem] p-4 md:p-10 flex flex-col items-start h-full w-full bg-black/40 backdrop-blur-3xl relative overflow-hidden">
+              <div className="w-8 h-8 md:w-14 md:h-14 rounded-lg md:rounded-2xl bg-white/10 flex items-center justify-center mb-3 md:mb-8 border border-white/5 group-hover:bg-cyan/10 group-hover:border-cyan/30 transition-colors">
+                <UserCircle2 className="w-4 h-4 md:w-7 md:h-7 text-white group-hover:text-cyan transition-colors" />
               </div>
-              <h2 className="text-3xl font-semibold mb-4 tracking-tight text-white">I'm a Creator</h2>
-              <p className="text-muted leading-relaxed mb-10 flex-1">
+              <h2 className="text-base md:text-3xl font-semibold mb-2 md:mb-4 tracking-tight text-white">I'm a Creator</h2>
+              <p className="text-[0.72rem] md:text-base text-muted leading-relaxed mb-4 md:mb-10 flex-1">
                 Browse premium campaigns, apply with one click, and get paid securely for your authentic engagement.
               </p>
-              <button className="w-full py-4 rounded-full bg-white text-black font-medium flex items-center justify-center gap-2 group-hover:bg-cyan group-hover:text-black transition-colors">
+              <button className="w-full px-3 py-2.5 md:py-4 rounded-full bg-white text-black text-xs md:text-base font-medium flex items-center justify-center gap-2 group-hover:bg-cyan group-hover:text-black transition-colors">
                 Continue as Creator <ArrowRight className="w-4 h-4" />
               </button>
             </div>
