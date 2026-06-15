@@ -855,6 +855,25 @@ async function notifySubmissionDecision(submission) {
   return { sent: 1, skipped: 0 };
 }
 
+async function shouldNotifySubmissionDecision(submission, previousStatus) {
+  if (!['approved', 'rejected'].includes(submission?.status)) return false;
+  if (['approved', 'rejected'].includes(previousStatus)) return false;
+  if (!submission?.participation_id || !submission?.id) return false;
+
+  const { count, error } = await supabase
+    .from('campaign_submissions')
+    .select('id', { count: 'exact', head: true })
+    .eq('participation_id', submission.participation_id)
+    .in('status', ['approved', 'rejected'])
+    .neq('id', submission.id);
+  if (error) {
+    console.warn(`Could not check previous submission decisions for ${submission.id}:`, error.message || error);
+    return false;
+  }
+
+  return Number(count || 0) === 0;
+}
+
 function getCurrentSundayMidnightUtc(now = new Date()) {
   const day = now.getUTCDay();
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - day, 0, 0, 0, 0));
@@ -941,16 +960,11 @@ async function syncCreatorIdentityFromAuth(profile) {
   return { synced: true, updates: Object.keys(updates) };
 }
 
-function calculateRewardAmount({ sorsaScore, followerCount, totalImpressions, engagementScore }) {
-  const base = Number(sorsaScore || 0) * 0.1;
-  const followerBoost = Math.min((Number(followerCount || 0) / 5000) * 0.1, 0.1);
-  const impressionBoost = Math.min((Number(totalImpressions || 0) / 10000) * 0.1, 0.1);
-  let engagementBoost = 0;
-  if (Number(engagementScore || 0) >= 1000) engagementBoost = 0.5;
-  else if (Number(engagementScore || 0) >= 250) engagementBoost = 0.25;
-  else if (Number(engagementScore || 0) >= 50) engagementBoost = 0.1;
-
-  return Number((base * (1 + followerBoost + impressionBoost + engagementBoost)).toFixed(2));
+function calculatePerformanceRewardAmount({ baseReward, approvedPosts }) {
+  const base = Number(baseReward || 0);
+  const posts = Math.max(0, Math.min(10, Number(approvedPosts || 0)));
+  const boost = base * 0.62 * (posts / 10);
+  return Number(Math.min(boost, 125).toFixed(2));
 }
 
 let weeklySorsaSyncRunning = false;
@@ -1330,8 +1344,6 @@ async function getApprovedPayoutCandidates(campaign) {
       creator_profile:creator_profiles!creator_id (
         id,
         wallet_address,
-        sorsa_score,
-        follower_count,
         telegram_chat_id,
         notify_payments,
         total_earned
@@ -1349,50 +1361,30 @@ async function getApprovedPayoutCandidates(campaign) {
       continue;
     }
 
-    let reward = Number(participant.calculated_reward || 0);
-    if (reward <= 0) {
-      const { data: submissions, error: submissionsError } = await supabase
-        .from('campaign_submissions')
-        .select('tweet_url')
-        .eq('campaign_id', campaign.id)
-        .eq('creator_id', participant.creator_id)
-        .eq('status', 'approved');
-      if (submissionsError) throw submissionsError;
-
-      for (const submission of submissions || []) {
-        try {
-          const tweetData = await callSorsa('/tweet-info', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tweet_link: submission.tweet_url })
-          });
-          const impressions = Number(tweetData?.view_count || 0);
-          const engagement =
-            Number(tweetData?.favorite_count || 0) +
-            Number(tweetData?.retweet_count || 0) +
-            Number(tweetData?.reply_count || 0);
-          reward += calculateRewardAmount({
-            sorsaScore: creator.sorsa_score,
-            followerCount: creator.follower_count,
-            totalImpressions: impressions,
-            engagementScore: engagement
-          });
-        } catch (error) {
-          console.warn(`Could not calculate tweet reward for ${participant.creator_id}:`, error.message || error);
-        }
-      }
+    const baseReward = Number(participant.base_reward || 0);
+    if (baseReward <= 0) {
+      console.warn(`Skipping payout for ${participant.creator_id}: missing reserved base reward`);
+      continue;
     }
 
-    if (reward <= 0) {
-      reward = Number(((Number(creator.sorsa_score || 0) || 0) * 0.1).toFixed(2));
-    }
-    if (reward <= 0) continue;
+    const { count: approvedPosts, error: submissionsError } = await supabase
+      .from('campaign_submissions')
+      .select('id', { count: 'exact', head: true })
+      .eq('campaign_id', campaign.id)
+      .eq('creator_id', participant.creator_id)
+      .eq('status', 'approved');
+    if (submissionsError) throw submissionsError;
+
+    const performanceReward = calculatePerformanceRewardAmount({
+      baseReward,
+      approvedPosts
+    });
 
     candidates.push({
       participant,
       creator,
       wallet: getAddress(creator.wallet_address),
-      reward
+      performanceReward
     });
   }
 
@@ -1400,16 +1392,13 @@ async function getApprovedPayoutCandidates(campaign) {
 }
 
 function fitRewardsToPool(candidates, poolAmount) {
-  const total = candidates.reduce((sum, item) => sum + item.reward, 0);
-  if (total <= 0) return [];
-  const scale = total > poolAmount ? poolAmount / total : 1;
+  const total = candidates.reduce((sum, item) => sum + item.performanceReward, 0);
+  const scale = total > poolAmount && total > 0 ? poolAmount / total : 1;
 
-  return candidates
-    .map((item) => ({
-      ...item,
-      allocatedReward: Number((item.reward * scale).toFixed(2))
-    }))
-    .filter((item) => item.allocatedReward > 0);
+  return candidates.map((item) => ({
+    ...item,
+    allocatedReward: Number((item.performanceReward * scale).toFixed(2))
+  }));
 }
 
 async function prepareCampaignPayouts(campaign) {
@@ -3289,7 +3278,7 @@ app.post('/submissions/:submissionId/status', async (req, res) => {
     }
 
     let telegram = { sent: 0, skipped: 1 };
-    if (status === 'approved' || status === 'rejected') {
+    if (await shouldNotifySubmissionDecision(submission, existingSubmission.status)) {
       telegram = await notifySubmissionDecision(submission);
     }
 

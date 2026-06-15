@@ -2,8 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
-import { calculateReward } from '../lib/rewardCalc';
-import sorsaApi from '../lib/sorsaApi';
 
 export interface Campaign {
   id: string;
@@ -322,6 +320,15 @@ export function useCampaigns(brandId?: string) {
   const submitLink = useCallback(async (participationId: string, campaignId: string, tweetUrl: string) => {
     if (!user) throw new Error('Not authenticated');
 
+    const { count, error: countError } = await supabase
+      .from('campaign_submissions')
+      .select('id', { count: 'exact', head: true })
+      .eq('participation_id', participationId);
+    if (countError) throw countError;
+    if (Number(count || 0) >= 10) {
+      throw new Error('You have reached the maximum limit of 10 submissions for this campaign.');
+    }
+
     const { data, error } = await supabase
       .from('campaign_submissions')
       .insert([
@@ -398,28 +405,7 @@ export function useCampaigns(brandId?: string) {
         return;
       }
 
-      // 2. Process each submission
-      for (const sub of submissions) {
-        try {
-          // Fetch metrics from Sorsa
-          const tweetData = await sorsaApi.fetchTweetInfo(sub.tweet_url);
-          const impressions = tweetData.view_count || 0;
-          const engagement = (tweetData.favorite_count || 0) + (tweetData.retweet_count || 0) + (tweetData.reply_count || 0);
-
-          // Calculate reward
-          const reward = calculateReward({
-            sorsaScore: sub.creator_profile?.sorsa_score || 0,
-            followerCount: sub.creator_profile?.follower_count || 0,
-            totalImpressions: impressions,
-            engagementScore: engagement
-          });
-
-        } catch (err) {
-          console.error(`Error processing submission ${sub.id}:`, err);
-        }
-      }
-
-      // 3. Mark campaign as completed
+      // Settlement metrics and rewards are handled by the trusted backend.
       await supabase
         .from('campaigns')
         .update({ status: 'completed' })

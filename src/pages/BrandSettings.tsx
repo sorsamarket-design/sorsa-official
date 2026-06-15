@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { Settings as SettingsIcon, Building2, Shield, Save, Image as ImageIcon, LogOut } from 'lucide-react';
+import { Settings as SettingsIcon, Building2, Save, Image as ImageIcon, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDisconnect } from 'wagmi';
 import BrandSidebar from '../components/BrandSidebar';
@@ -78,7 +78,6 @@ export default function BrandSettings() {
 
   const tabs = [
     { id: 'company', label: 'Company Profile', icon: Building2 },
-    { id: 'security', label: 'Security', icon: Shield },
   ];
 
   return (
@@ -157,18 +156,6 @@ export default function BrandSettings() {
                         <div>
                           <label className="block text-sm font-medium text-muted mb-2">Company Description</label>
                           <textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan/50 transition-colors resize-none h-24" />
-                        </div>
-                      </motion.div>
-                    )}
-
-                    {activeTab === 'security' && (
-                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                        <h2 className="text-xl font-semibold text-white mb-6">Security Settings</h2>
-                        <div className="space-y-4">
-                          <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-                            <h3 className="font-medium text-white mb-1">Authentication</h3>
-                            <p className="text-sm text-muted">Account security is managed through Supabase Auth for this workspace.</p>
-                          </div>
                         </div>
                       </motion.div>
                     )}
