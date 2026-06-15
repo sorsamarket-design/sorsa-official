@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { normalizeAvatarUrl } from '../lib/avatars';
 import { attachSavedReferralToCreator, buildReferralCode, ensureCreatorReferralCode } from '../lib/referrals';
+import sorsaApi from '../lib/sorsaApi';
 
 async function completeSupabaseRedirect() {
   const searchParams = new URLSearchParams(window.location.search);
@@ -84,6 +85,11 @@ export default function AuthCallback() {
           if (creatorError) throw creatorError;
 
           await attachSavedReferralToCreator(user.id);
+          try {
+            await sorsaApi.syncCreatorProfile();
+          } catch (syncError) {
+            console.warn('First-login Sorsa profile sync failed:', syncError);
+          }
         } else {
           await ensureCreatorReferralCode(user.id, xHandle);
         }
