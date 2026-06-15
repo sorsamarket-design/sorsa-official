@@ -2166,6 +2166,130 @@ app.get('/admin/raffles/:campaignId', async (req, res) => {
   }
 });
 
+app.get('/admin/nft-content-campaigns', async (req, res) => {
+  try {
+    const user = await authenticate(req);
+    await assertAdmin(user.id);
+
+    const { data: campaigns, error } = await supabase
+      .from('campaigns')
+      .select('id, title, goal, campaign_type, categories, overview, budget, min_sorsa_score, language, status, start_date, end_date, created_at')
+      .in('campaign_type', ['content', 'all'])
+      .order('created_at', { ascending: false });
+    if (error) throw Object.assign(new Error(error.message), { status: 500 });
+
+    const statsMap = await getNftCampaignStatsMap((campaigns || []).map((campaign) => campaign.id));
+    return res.json({
+      campaigns: (campaigns || []).map((campaign) => ({
+        ...withNftCampaignMetadata(campaign),
+        stats: statsMap.get(campaign.id) || {
+          joined_count: 0,
+          approved_count: 0,
+          rejected_count: 0
+        }
+      }))
+    });
+  } catch (error) {
+    const status = error.status || 500;
+    return res.status(status).json({ error: error.message || 'NFT content campaigns could not be loaded' });
+  }
+});
+
+app.get('/admin/nft-content-campaigns/:campaignId', async (req, res) => {
+  try {
+    const user = await authenticate(req);
+    await assertAdmin(user.id);
+    const campaignId = String(req.params.campaignId || '').trim();
+    if (!campaignId) throw Object.assign(new Error('Missing campaign id'), { status: 400 });
+
+    const [
+      { data: campaign, error: campaignError },
+      { data: participants, error: participantError },
+      { data: submissions, error: submissionError }
+    ] = await Promise.all([
+      supabase
+        .from('campaigns')
+        .select('id, title, goal, campaign_type, categories, overview, budget, min_sorsa_score, language, status, start_date, end_date, created_at')
+        .eq('id', campaignId)
+        .in('campaign_type', ['content', 'all'])
+        .single(),
+      supabase
+        .from('campaign_participants')
+        .select(`
+          id,
+          creator_id,
+          status,
+          joined_at,
+          creator_profile:creator_profiles!creator_id (
+            full_name,
+            x_handle,
+            wallet_address,
+            avatar_url,
+            sorsa_score
+          )
+        `)
+        .eq('campaign_id', campaignId)
+        .order('joined_at', { ascending: false }),
+      supabase
+        .from('campaign_submissions')
+        .select('id, participation_id, campaign_id, creator_id, tweet_url, status, submitted_at')
+        .eq('campaign_id', campaignId)
+        .order('submitted_at', { ascending: false })
+    ]);
+
+    if (campaignError || !campaign) throw Object.assign(new Error('NFT content campaign not found'), { status: 404 });
+    if (participantError) throw Object.assign(new Error(participantError.message), { status: 500 });
+    if (submissionError) throw Object.assign(new Error(submissionError.message), { status: 500 });
+
+    return res.json({
+      campaign: withNftCampaignMetadata(campaign),
+      participants: participants || [],
+      submissions: submissions || []
+    });
+  } catch (error) {
+    const status = error.status || 500;
+    return res.status(status).json({ error: error.message || 'NFT content campaign could not be loaded' });
+  }
+});
+
+app.get('/admin/nft-content-submissions', async (req, res) => {
+  try {
+    const user = await authenticate(req);
+    await assertAdmin(user.id);
+
+    const { data: submissions, error } = await supabase
+      .from('campaign_submissions')
+      .select(`
+        id,
+        participation_id,
+        campaign_id,
+        creator_id,
+        tweet_url,
+        status,
+        submitted_at,
+        campaign:campaigns!inner (
+          id,
+          title,
+          campaign_type,
+          budget
+        ),
+        creator_profile:creator_profiles!creator_id (
+          x_handle,
+          full_name,
+          avatar_url
+        )
+      `)
+      .in('campaign.campaign_type', ['content', 'all'])
+      .order('submitted_at', { ascending: false });
+    if (error) throw Object.assign(new Error(error.message), { status: 500 });
+
+    return res.json({ submissions: submissions || [] });
+  } catch (error) {
+    const status = error.status || 500;
+    return res.status(status).json({ error: error.message || 'NFT content submissions could not be loaded' });
+  }
+});
+
 app.post('/admin/raffles/:campaignId/finalize', async (req, res) => {
   try {
     const user = await authenticate(req);
@@ -2264,13 +2388,15 @@ app.post('/admin/raffles/:campaignId/finalize', async (req, res) => {
 
 app.get('/nft-campaigns', async (req, res) => {
   try {
-    await authenticate(req);
-    const { data, error } = await supabase
-      .from('campaigns')
-    .select('id, title, goal, campaign_type, categories, overview, budget, min_sorsa_score, language, status, start_date, end_date, created_at')
-      .in('status', ['draft', 'completed'])
-      .in('campaign_type', ['raffle', 'content', 'fcfs', 'all'])
-      .order('created_at', { ascending: false });
+    const [, { data, error }] = await Promise.all([
+      authenticate(req),
+      supabase
+        .from('campaigns')
+        .select('id, title, goal, campaign_type, categories, overview, budget, min_sorsa_score, language, status, start_date, end_date, created_at')
+        .in('status', ['draft', 'completed'])
+        .in('campaign_type', ['raffle', 'content', 'fcfs', 'all'])
+        .order('created_at', { ascending: false })
+    ]);
     if (error) throw Object.assign(new Error(error.message), { status: 500 });
     const statsMap = await getNftCampaignStatsMap((data || []).map((campaign) => campaign.id));
 

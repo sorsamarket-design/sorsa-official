@@ -42,6 +42,100 @@ async function requestNftCampaigns(path: string, options: RequestInit = {}) {
   return body;
 }
 
+function parseCampaignMetadata(campaign: any) {
+  try {
+    return campaign?.language ? JSON.parse(campaign.language) : {};
+  } catch {
+    return {};
+  }
+}
+
+function withNftCampaignMetadata(campaign: any) {
+  const metadata = parseCampaignMetadata(campaign);
+  return {
+    ...campaign,
+    image_url: metadata.image_url || null,
+    background_image_url: metadata.background_image_url || null,
+    max_creators: metadata.max_creators ?? null,
+    max_content_submissions: metadata.max_content_submissions ?? null,
+    follow_accounts: Array.isArray(metadata.follow_accounts) ? metadata.follow_accounts : [],
+    retweet_links: Array.isArray(metadata.retweet_links) ? metadata.retweet_links : [],
+    raffle_results: Array.isArray(metadata.raffle_results) ? metadata.raffle_results : [],
+    raffle_finalized_at: metadata.raffle_finalized_at || null
+  };
+}
+
+function getCampaignEndTime(endDate?: string | null) {
+  if (!endDate) return null;
+  const time = new Date(endDate).getTime();
+  return Number.isNaN(time) ? null : time;
+}
+
+function emptyStats() {
+  return {
+    joined_count: 0,
+    approved_count: 0,
+    rejected_count: 0
+  };
+}
+
+async function getCurrentUserId() {
+  const supabase = requireSupabase();
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data.user) throw new Error('Not authenticated');
+  return data.user.id;
+}
+
+async function getNftCampaignStatsMap(campaignIds: string[]) {
+  const supabase = requireSupabase();
+  const ids = Array.from(new Set((campaignIds || []).filter(Boolean)));
+  const statsMap = new Map<string, ReturnType<typeof emptyStats>>();
+  ids.forEach((id) => statsMap.set(id, emptyStats()));
+  if (!ids.length) return statsMap;
+
+  const { data: rpcStats, error: rpcError } = await supabase.rpc('get_nft_campaign_stats', {
+    campaign_ids: ids
+  });
+  if (!rpcError) {
+    for (const stat of rpcStats || []) {
+      statsMap.set(stat.campaign_id, {
+        joined_count: Number(stat.joined_count || 0),
+        approved_count: Number(stat.approved_count || 0),
+        rejected_count: Number(stat.rejected_count || 0)
+      });
+    }
+    return statsMap;
+  }
+
+  console.warn('NFT stats RPC unavailable, falling back to direct participant read:', rpcError.message);
+  const { data, error } = await supabase
+    .from('campaign_participants')
+    .select('campaign_id, status')
+    .in('campaign_id', ids);
+  if (error) throw error;
+
+  for (const participant of data || []) {
+    const stats = statsMap.get(participant.campaign_id) || emptyStats();
+    stats.joined_count += 1;
+    if (participant.status === 'approved') stats.approved_count += 1;
+    if (participant.status === 'rejected') stats.rejected_count += 1;
+    statsMap.set(participant.campaign_id, stats);
+  }
+
+  return statsMap;
+}
+
+async function withBackendReadFallback<T>(read: () => Promise<T>, fallbackPath: string): Promise<T> {
+  try {
+    return await read();
+  } catch (error) {
+    console.warn(`Direct Supabase NFT read failed for ${fallbackPath}, falling back to backend:`, error);
+    return requestNftCampaigns(fallbackPath);
+  }
+}
+
+const nftCampaignSelect = 'id, title, goal, campaign_type, categories, overview, budget, min_sorsa_score, language, status, start_date, end_date, created_at';
+
 export type NftCampaignType = 'raffle' | 'content';
 
 export type NftCampaignPayload = {
@@ -91,19 +185,264 @@ export async function createNftCampaign(campaign: NftCampaignPayload) {
 }
 
 export async function listNftCampaigns() {
-  return requestNftCampaigns('/nft-campaigns');
+  return withBackendReadFallback(async () => {
+    const supabase = requireSupabase();
+    const { data, error } = await supabase
+      .from('campaigns')
+      .select(nftCampaignSelect)
+      .in('status', ['draft', 'completed'])
+      .in('campaign_type', ['raffle', 'content', 'fcfs', 'all'])
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+
+    const statsMap = await getNftCampaignStatsMap((data || []).map((campaign: any) => campaign.id));
+    return {
+      campaigns: (data || []).map((campaign: any) => ({
+        ...withNftCampaignMetadata(campaign),
+        stats: statsMap.get(campaign.id) || emptyStats()
+      }))
+    };
+  }, '/nft-campaigns');
 }
 
 export async function listCreatorNftParticipations() {
-  return requestNftCampaigns('/nft-campaigns/mine');
+  return withBackendReadFallback(async () => {
+    const supabase = requireSupabase();
+    const userId = await getCurrentUserId();
+    const { data, error } = await supabase
+      .from('campaign_participants')
+      .select(`
+        id,
+        campaign_id,
+        creator_id,
+        status,
+        joined_at,
+        approved_at,
+        campaign:campaigns (
+          id,
+          title,
+          goal,
+          campaign_type,
+          categories,
+          overview,
+          budget,
+          min_sorsa_score,
+          language,
+          status,
+          start_date,
+          end_date,
+          created_at
+        )
+      `)
+      .eq('creator_id', userId)
+      .neq('status', 'rejected')
+      .order('joined_at', { ascending: false });
+    if (error) throw error;
+
+    const now = Date.now();
+    const campaignIds = (data || []).map((item: any) => item.campaign?.id).filter(Boolean);
+    const statsMap = await getNftCampaignStatsMap(campaignIds);
+    const nftParticipations = (data || [])
+      .filter((item: any) => item.campaign && ['raffle', 'content', 'fcfs', 'all'].includes(item.campaign.campaign_type))
+      .map((item: any) => ({
+        ...item,
+        campaign: {
+          ...withNftCampaignMetadata(item.campaign),
+          stats: statsMap.get(item.campaign.id) || emptyStats()
+        }
+      }));
+
+    const isPastNftCampaign = (campaign: any) => {
+      if (campaign.status === 'completed') return true;
+      const endTime = getCampaignEndTime(campaign.end_date);
+      return Boolean(endTime && endTime <= now);
+    };
+
+    return {
+      active: nftParticipations.filter((item: any) => !isPastNftCampaign(item.campaign)),
+      past: nftParticipations.filter((item: any) => isPastNftCampaign(item.campaign))
+    };
+  }, '/nft-campaigns/mine');
 }
 
 export async function listAdminRaffles() {
-  return requestNftCampaigns('/admin/raffles');
+  return withBackendReadFallback(async () => {
+    const supabase = requireSupabase();
+    const { data, error } = await supabase
+      .from('campaigns')
+      .select(nftCampaignSelect)
+      .in('campaign_type', ['raffle', 'fcfs'])
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+
+    const statsMap = await getNftCampaignStatsMap((data || []).map((campaign: any) => campaign.id));
+    return {
+      campaigns: (data || []).map((campaign: any) => ({
+        ...withNftCampaignMetadata(campaign),
+        stats: statsMap.get(campaign.id) || emptyStats()
+      }))
+    };
+  }, '/admin/raffles');
+}
+
+export async function listAdminNftContentCampaigns() {
+  return withBackendReadFallback(async () => {
+    const supabase = requireSupabase();
+    const { data, error } = await supabase
+      .from('campaigns')
+      .select(nftCampaignSelect)
+      .in('campaign_type', ['content', 'all'])
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+
+    const statsMap = await getNftCampaignStatsMap((data || []).map((campaign: any) => campaign.id));
+    return {
+      campaigns: (data || []).map((campaign: any) => ({
+        ...withNftCampaignMetadata(campaign),
+        stats: statsMap.get(campaign.id) || emptyStats()
+      }))
+    };
+  }, '/admin/nft-content-campaigns');
+}
+
+export async function getAdminNftContentCampaign(id: string) {
+  const path = `/admin/nft-content-campaigns/${encodeURIComponent(id)}`;
+  return withBackendReadFallback(async () => {
+    const supabase = requireSupabase();
+    const [
+      { data: campaign, error: campaignError },
+      { data: participants, error: participantError },
+      { data: submissions, error: submissionError }
+    ] = await Promise.all([
+      supabase
+        .from('campaigns')
+        .select(nftCampaignSelect)
+        .eq('id', id)
+        .in('campaign_type', ['content', 'all'])
+        .single(),
+      supabase
+        .from('campaign_participants')
+        .select(`
+          id,
+          creator_id,
+          status,
+          joined_at,
+          creator_profile:creator_profiles!creator_id (
+            full_name,
+            x_handle,
+            wallet_address,
+            avatar_url,
+            sorsa_score
+          )
+        `)
+        .eq('campaign_id', id)
+        .order('joined_at', { ascending: false }),
+      supabase
+        .from('campaign_submissions')
+        .select('id, participation_id, campaign_id, creator_id, tweet_url, status, submitted_at')
+        .eq('campaign_id', id)
+        .order('submitted_at', { ascending: false })
+    ]);
+    if (campaignError || !campaign) throw campaignError || new Error('NFT content campaign not found');
+    if (participantError) throw participantError;
+    if (submissionError) throw submissionError;
+
+    return {
+      campaign: withNftCampaignMetadata(campaign),
+      participants: participants || [],
+      submissions: submissions || []
+    };
+  }, path);
+}
+
+export async function listAdminNftContentSubmissions() {
+  return withBackendReadFallback(async () => {
+    const supabase = requireSupabase();
+    const { data, error } = await supabase
+      .from('campaign_submissions')
+      .select(`
+        id,
+        participation_id,
+        campaign_id,
+        creator_id,
+        tweet_url,
+        status,
+        submitted_at,
+        campaign:campaigns!inner (
+          id,
+          title,
+          campaign_type,
+          budget
+        ),
+        creator_profile:creator_profiles!creator_id (
+          x_handle,
+          full_name,
+          avatar_url
+        )
+      `)
+      .in('campaign.campaign_type', ['content', 'all'])
+      .order('submitted_at', { ascending: false });
+    if (error) throw error;
+    return { submissions: data || [] };
+  }, '/admin/nft-content-submissions');
+}
+
+export async function updateAdminNftSubmissionStatus(id: string, status: 'approved' | 'rejected', feedback = '') {
+  return requestNftCampaigns(`/submissions/${encodeURIComponent(id)}/status`, {
+    method: 'POST',
+    body: JSON.stringify({ status, feedback })
+  });
 }
 
 export async function getAdminRaffle(id: string) {
-  return requestNftCampaigns(`/admin/raffles/${encodeURIComponent(id)}`);
+  const path = `/admin/raffles/${encodeURIComponent(id)}`;
+  return withBackendReadFallback(async () => {
+    const supabase = requireSupabase();
+    const [{ data: campaign, error }, { data: participants, error: participantError }] = await Promise.all([
+      supabase
+        .from('campaigns')
+        .select(nftCampaignSelect)
+        .eq('id', id)
+        .in('campaign_type', ['raffle', 'fcfs'])
+        .single(),
+      supabase
+        .from('campaign_participants')
+        .select(`
+          id,
+          creator_id,
+          status,
+          joined_at,
+          approved_at,
+          base_reward,
+          creator_profile:creator_profiles!creator_id (
+            id,
+            x_handle,
+            full_name,
+            avatar_url,
+            sorsa_score,
+            follower_count,
+            wallet_address
+          )
+        `)
+        .eq('campaign_id', id)
+        .order('joined_at', { ascending: false })
+    ]);
+    if (error || !campaign) throw error || new Error('Raffle campaign not found');
+    if (participantError) throw participantError;
+
+    const rows = participants || [];
+    const stats = {
+      joined_count: rows.length,
+      approved_count: rows.filter((participant: any) => participant.status === 'approved').length,
+      rejected_count: rows.filter((participant: any) => participant.status === 'rejected').length
+    };
+
+    return {
+      campaign: withNftCampaignMetadata(campaign),
+      participants: rows,
+      stats
+    };
+  }, path);
 }
 
 export async function finalizeAdminRaffle(id: string) {
@@ -113,7 +452,37 @@ export async function finalizeAdminRaffle(id: string) {
 }
 
 export async function getNftCampaign(id: string) {
-  return requestNftCampaigns(`/nft-campaigns/${encodeURIComponent(id)}`);
+  const path = `/nft-campaigns/${encodeURIComponent(id)}`;
+  return withBackendReadFallback(async () => {
+    const supabase = requireSupabase();
+    const userId = await getCurrentUserId();
+    const [{ data: campaign, error }, { data: participation, error: participationError }] = await Promise.all([
+      supabase
+        .from('campaigns')
+        .select(nftCampaignSelect)
+        .eq('id', id)
+        .in('status', ['draft', 'completed'])
+        .in('campaign_type', ['raffle', 'content', 'fcfs', 'all'])
+        .single(),
+      supabase
+        .from('campaign_participants')
+        .select('id, status, joined_at')
+        .eq('campaign_id', id)
+        .eq('creator_id', userId)
+        .maybeSingle()
+    ]);
+    if (error || !campaign) throw error || new Error('NFT campaign not found');
+    if (participationError) throw participationError;
+
+    const statsMap = await getNftCampaignStatsMap([campaign.id]);
+    return {
+      campaign: {
+        ...withNftCampaignMetadata(campaign),
+        stats: statsMap.get(campaign.id) || emptyStats()
+      },
+      participation: participation || null
+    };
+  }, path);
 }
 
 export async function joinNftCampaign(id: string) {

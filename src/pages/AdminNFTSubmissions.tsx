@@ -3,8 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowLeft, Calendar, ExternalLink, FileText, Loader2, Search, Sparkles, Users, Wallet } from 'lucide-react';
 import AdminSidebar from '../components/AdminSidebar';
-import { useCampaigns } from '../hooks/useCampaigns';
-import { listNftCampaigns, type NftCampaign } from '../lib/nftCampaigns';
+import { getAdminNftContentCampaign, listAdminNftContentCampaigns, type NftCampaign } from '../lib/nftCampaigns';
 import { formatCampaignTimeLeft, getCampaignEndTime } from '../lib/campaignTime';
 
 const appleEase = [0.16, 1, 0.3, 1] as const;
@@ -24,16 +23,6 @@ type CampaignParticipant = {
   joined_at: string | null;
   creator_profile?: CreatorProfile | null;
 };
-
-function isNftContentCampaign(campaign: NftCampaign) {
-  return String(campaign.campaign_type || '').toLowerCase() === 'content';
-}
-
-function isNftContentSubmission(submission: any) {
-  const campaign = submission?.campaign;
-  if (!campaign) return false;
-  return String(campaign.campaign_type || '').toLowerCase() === 'content';
-}
 
 function isPastCampaign(campaign: NftCampaign) {
   if (campaign?.status === 'completed') return true;
@@ -63,7 +52,6 @@ function getStatusBadge(status?: string | null) {
 export default function AdminNFTSubmissions() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getAllSubmissions, getCampaignParticipants } = useCampaigns();
   const [campaigns, setCampaigns] = useState<NftCampaign[]>([]);
   const [campaign, setCampaign] = useState<NftCampaign | null>(null);
   const [participants, setParticipants] = useState<CampaignParticipant[]>([]);
@@ -77,21 +65,14 @@ export default function AdminNFTSubmissions() {
     setIsLoading(true);
     setError('');
     try {
-      const result = await listNftCampaigns();
-      const contentCampaigns = (result.campaigns || []).filter(isNftContentCampaign);
-      setCampaigns(contentCampaigns);
-
       if (id) {
-        const selectedCampaign = contentCampaigns.find((item: NftCampaign) => item.id === id) || null;
-        setCampaign(selectedCampaign);
-
-        const [participantRows, submissionRows] = await Promise.all([
-          getCampaignParticipants(id),
-          getAllSubmissions()
-        ]);
-
-        setParticipants(participantRows || []);
-        setSubmissions((submissionRows || []).filter(isNftContentSubmission).filter((submission: any) => submission.campaign_id === id));
+        const result = await getAdminNftContentCampaign(id);
+        setCampaign(result.campaign || null);
+        setParticipants((result.participants || []) as CampaignParticipant[]);
+        setSubmissions(result.submissions || []);
+      } else {
+        const result = await listAdminNftContentCampaigns();
+        setCampaigns(result.campaigns || []);
       }
     } catch (err: any) {
       console.error('Failed to load NFT submissions:', err);

@@ -11,26 +11,9 @@ import {
   XCircle
 } from 'lucide-react';
 import AdminSidebar from '../components/AdminSidebar';
-import { useCampaigns } from '../hooks/useCampaigns';
+import { listAdminNftContentSubmissions, updateAdminNftSubmissionStatus } from '../lib/nftCampaigns';
 
 const appleEase = [0.16, 1, 0.3, 1] as const;
-
-function isNftContentSubmission(submission: any) {
-  const campaign = submission?.campaign;
-  if (!campaign) return false;
-  const campaignType = String(campaign.campaign_type || '').toLowerCase();
-  const categories = Array.isArray(campaign.categories) ? campaign.categories : [];
-  const hasNftCategory = categories.some((category: string) => String(category).toLowerCase() === 'nft');
-
-  let hasNftMetadata = false;
-  try {
-    hasNftMetadata = Boolean(campaign.language && JSON.parse(campaign.language)?.nft);
-  } catch {
-    hasNftMetadata = false;
-  }
-
-  return ['content', 'all'].includes(campaignType) && (hasNftCategory || hasNftMetadata);
-}
 
 function getStatusBadge(status: string) {
   switch (status) {
@@ -46,7 +29,6 @@ function getStatusBadge(status: string) {
 }
 
 export default function AdminNFTApprovals() {
-  const { getAllSubmissions, updateSubmissionStatus } = useCampaigns();
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -56,8 +38,8 @@ export default function AdminNFTApprovals() {
   const fetchSubmissions = async () => {
     setIsLoading(true);
     try {
-      const data = await getAllSubmissions();
-      setSubmissions((data || []).filter(isNftContentSubmission));
+      const result = await listAdminNftContentSubmissions();
+      setSubmissions(result.submissions || []);
     } catch (err) {
       console.error('Failed to load NFT submissions:', err);
       setSubmissions([]);
@@ -77,7 +59,7 @@ export default function AdminNFTApprovals() {
 
     setProcessingId(id);
     try {
-      await updateSubmissionStatus(id, status, feedback);
+      await updateAdminNftSubmissionStatus(id, status, feedback);
       await fetchSubmissions();
     } catch (err) {
       console.error('Error updating NFT submission:', err);
