@@ -442,7 +442,7 @@ const Footer = () => {
     <footer className="border-t border-white/10 bg-black p-6 md:px-0 md:py-20">
       <div className="mx-auto max-w-7xl md:px-6">
         <div className="md:mb-16 md:grid md:grid-cols-4 md:gap-12">
-          <div className="flex items-center justify-between gap-4 md:block">
+          <div>
             <div>
               <div className="flex items-center gap-2 text-xl font-semibold tracking-tight text-white md:mb-6 md:text-2xl">
                 <img src="/SorsaMarketlogo.PNG" alt="Logo" className="w-6 h-6 object-contain" />
@@ -451,9 +451,6 @@ const Footer = () => {
               <p className="hidden max-w-xs text-sm leading-relaxed text-muted md:mb-8 md:block">
                 The decentralized marketplace connecting brands with creators.
               </p>
-            </div>
-            <div className="flex">
-              <a href="https://x.com/sorsamarket" target="_blank" rel="noopener noreferrer" className="text-muted hover:text-white transition-colors"><XLogo className="w-4 h-4 md:w-5 md:h-5" /></a>
             </div>
           </div>
 
