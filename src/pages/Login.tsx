@@ -32,7 +32,7 @@ export default function Login() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: appleEase, delay: 0.1 }}
             onClick={() => navigate('/auth/brand')}
-            className="relative rounded-[2.5rem] p-[1px] overflow-hidden group cursor-pointer"
+            className="relative aspect-square md:aspect-auto rounded-[2.5rem] p-[1px] overflow-hidden group cursor-pointer"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             <div className="glass-panel rounded-[2.5rem] p-10 flex flex-col items-start h-full w-full bg-black/40 backdrop-blur-3xl relative overflow-hidden">
@@ -55,7 +55,7 @@ export default function Login() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: appleEase, delay: 0.2 }}
             onClick={() => navigate('/auth/creator')}
-            className="relative rounded-[2.5rem] p-[1px] overflow-hidden group cursor-pointer"
+            className="relative aspect-square md:aspect-auto rounded-[2.5rem] p-[1px] overflow-hidden group cursor-pointer"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             <div className="glass-panel rounded-[2.5rem] p-10 flex flex-col items-start h-full w-full bg-black/40 backdrop-blur-3xl relative overflow-hidden">
