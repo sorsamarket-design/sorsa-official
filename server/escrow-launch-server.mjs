@@ -30,14 +30,20 @@ const env = {
   SORSA_API_BASE: process.env.SORSA_API_BASE || process.env.VITE_SORSA_API_BASE || 'https://api.sorsa.io/v3',
   SORSA_API_KEY: process.env.SORSA_API_KEY || process.env.VITE_SORSA_API_KEY,
   SORSA_WEEKLY_SYNC_ENABLED: process.env.SORSA_WEEKLY_SYNC_ENABLED !== 'false',
+  CREATOR_IDENTITY_SYNC_ENABLED: process.env.CREATOR_IDENTITY_SYNC_ENABLED !== 'false',
+  CREATOR_IDENTITY_SYNC_INTERVAL_DAYS: process.env.CREATOR_IDENTITY_SYNC_INTERVAL_DAYS || '4',
   TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN,
   TELEGRAM_BOT_USERNAME: process.env.TELEGRAM_BOT_USERNAME,
   TELEGRAM_WEBHOOK_SECRET: process.env.TELEGRAM_WEBHOOK_SECRET,
+  TELEGRAM_RAFFLE_GROUP_CHAT_ID: process.env.TELEGRAM_RAFFLE_GROUP_CHAT_ID,
+  TELEGRAM_RAFFLE_GROUP_THREAD_ID: process.env.TELEGRAM_RAFFLE_GROUP_THREAD_ID,
   TELEGRAM_CONNECT_CODE_TTL_MINUTES: process.env.TELEGRAM_CONNECT_CODE_TTL_MINUTES || '30',
   FRONTEND_URL: process.env.FRONTEND_URL || process.env.VITE_FRONTEND_URL,
   PAYOUT_AUTOMATION_ENABLED: process.env.PAYOUT_AUTOMATION_ENABLED !== 'false',
   PAYOUT_POLL_INTERVAL_SECONDS: process.env.PAYOUT_POLL_INTERVAL_SECONDS || '300',
-  PAYOUT_MAX_PAYMENTS_PER_TX: process.env.PAYOUT_MAX_PAYMENTS_PER_TX || '50'
+  PAYOUT_MAX_PAYMENTS_PER_TX: process.env.PAYOUT_MAX_PAYMENTS_PER_TX || '50',
+  SUBMISSION_WINDOW_NOTIFICATIONS_ENABLED: process.env.SUBMISSION_WINDOW_NOTIFICATIONS_ENABLED !== 'false',
+  SUBMISSION_WINDOW_POLL_INTERVAL_SECONDS: process.env.SUBMISSION_WINDOW_POLL_INTERVAL_SECONDS || '300'
 };
 
 const requiredEnv = [
@@ -705,20 +711,43 @@ async function telegramRequest(method, payload) {
   return body?.result;
 }
 
-async function sendTelegramMessage(chatId, text) {
+async function sendTelegramMessage(chatId, text, options = {}) {
   return telegramRequest('sendMessage', {
     chat_id: chatId,
     text,
     parse_mode: 'HTML',
-    disable_web_page_preview: true
+    disable_web_page_preview: true,
+    ...options
   });
 }
 
-async function sendTelegramPhoto(chatId, imageUrl, caption, buttonUrl = null) {
-  const imageBuffer = await readFile(imageUrl);
+async function appendTelegramPhoto(form, imageSource, filename = 'notification.jpg') {
+  const source = typeof imageSource === 'string' ? imageSource : String(imageSource || '');
+  if (/^https?:\/\//i.test(source)) {
+    form.append('photo', source);
+    return;
+  }
+
+  const dataUrlMatch = source.match(/^data:([^;,]+);base64,(.+)$/);
+  if (dataUrlMatch) {
+    const [, mimeType, base64Data] = dataUrlMatch;
+    const extension = mimeType.split('/')[1] || 'jpg';
+    const buffer = Buffer.from(base64Data, 'base64');
+    form.append('photo', new Blob([buffer], { type: mimeType }), filename.replace(/\.[^.]+$/, `.${extension}`));
+    return;
+  }
+
+  const imageBuffer = await readFile(imageSource);
+  form.append('photo', new Blob([imageBuffer], { type: 'image/jpeg' }), filename);
+}
+
+async function sendTelegramPhoto(chatId, imageUrl, caption, buttonUrl = null, options = {}) {
   const form = new FormData();
   form.append('chat_id', chatId);
-  form.append('photo', new Blob([imageBuffer], { type: 'image/jpeg' }), 'CampaignNotificationImage.JPG');
+  if (options.message_thread_id) {
+    form.append('message_thread_id', String(options.message_thread_id));
+  }
+  await appendTelegramPhoto(form, imageUrl, 'CampaignNotificationImage.JPG');
   form.append('caption', caption);
   form.append('parse_mode', 'HTML');
   if (buttonUrl) {
@@ -734,9 +763,25 @@ function getCampaignNotificationImageUrl() {
   return new URL('../public/CampaignNotificationImage.JPG', import.meta.url);
 }
 
+function getSubmissionWindowNotificationImageUrl() {
+  return new URL('../public/SubmissionWindowExpired.JPG', import.meta.url);
+}
+
+function getSubmissionWindowReminderImageUrl() {
+  return new URL('../public/SubmissionWindowReminder.JPG', import.meta.url);
+}
+
 function getCampaignUrl(campaign) {
   if (!env.FRONTEND_URL || !campaign?.id) return null;
   return `${env.FRONTEND_URL.replace(/\/$/, '')}/creator/campaigns/${encodeURIComponent(campaign.id)}`;
+}
+
+function getCreatorCampaignUrl(campaign) {
+  if (!env.FRONTEND_URL || !campaign?.id) return null;
+  const metadata = parseCampaignMetadata(campaign);
+  const isNftCampaign = metadata.is_nft_campaign || campaign.campaign_type === 'raffle' || campaign.campaign_type === 'content';
+  const path = isNftCampaign ? 'creator/nft-campaigns' : 'creator/campaigns';
+  return `${env.FRONTEND_URL.replace(/\/$/, '')}/${path}/${encodeURIComponent(campaign.id)}`;
 }
 
 function buildCampaignNotification(campaign, label = 'New campaign') {
@@ -751,7 +796,7 @@ function buildCampaignNotification(campaign, label = 'New campaign') {
     ? `\n\n<a href="${escapeTelegramHtml(campaignUrl)}">View Campaign</a>`
     : '\n\nOpen SorsaMarket to view details.';
 
-  return `<b>${escapeTelegramHtml(label).toUpperCase()}</b>\n\nA new creator opportunity is now live on SorsaMarket.\n\nCampaign: ${title}\nBrand: ${brand}\nReward Pool: ${budget} USDC${categories}\n\nOpen the campaign page to read the brief, review the requirements, and join if it fits your profile.${action}`;
+  return `<b>${escapeTelegramHtml(label).toUpperCase()}</b>\n\nA new creator opportunity is now live on SorsaMarket.\n\nCampaign: <b>${title}</b>\nBrand: ${brand}\nReward Pool: ${budget} USDC${categories}\n\nOpen the campaign page to read the brief, review the requirements, and join if it fits your profile.${action}`;
 }
 
 async function sendNewCampaignNotification(chatId, campaign) {
@@ -799,6 +844,49 @@ async function notifyTelegramCreators(kind, campaign, text) {
     }
   }
   return { sent, failed };
+}
+
+function formatRaffleWinnerMention(winner, index) {
+  const telegramUsername = String(winner.telegram_username || '').replace(/^@/, '').trim();
+  if (telegramUsername) return `${index + 1}. @${escapeTelegramHtml(telegramUsername)}`;
+
+  const label = winner.x_account
+    ? `@${winner.x_account}`
+    : winner.name || `Winner ${index + 1}`;
+  return `${index + 1}. ${escapeTelegramHtml(label)}`;
+}
+
+function buildRaffleWinnersAnnouncement(campaign, winners) {
+  const title = escapeTelegramHtml(campaign?.title || 'NFT raffle');
+  const winnerLines = (winners || []).map(formatRaffleWinnerMention).join('\n');
+  const fallbackWinnerLines = winnerLines || 'No winners selected.';
+
+  return `<b>The draw is done</b>\n\n<b>${title}</b> has been finalized.\n\nToday's raffle winners:\n${fallbackWinnerLines}\n\nBig congratulations to the names selected.`;
+}
+
+async function notifyRaffleWinnersGroup(campaign, winners) {
+  if (!env.TELEGRAM_RAFFLE_GROUP_CHAT_ID) {
+    return { sent: 0, skipped: 1, reason: 'missing_group_chat_id' };
+  }
+
+  const caption = buildRaffleWinnersAnnouncement(campaign, winners);
+  const imageUrl = campaign?.background_image_url || campaign?.image_url || null;
+  const parsedThreadId = env.TELEGRAM_RAFFLE_GROUP_THREAD_ID
+    ? Number(env.TELEGRAM_RAFFLE_GROUP_THREAD_ID)
+    : null;
+  const threadId = Number.isFinite(parsedThreadId) && parsedThreadId > 0 ? parsedThreadId : null;
+  const topicOptions = threadId ? { message_thread_id: threadId } : {};
+  if (imageUrl) {
+    try {
+      await sendTelegramPhoto(env.TELEGRAM_RAFFLE_GROUP_CHAT_ID, imageUrl, caption, null, topicOptions);
+      return { sent: 1, skipped: 0, usedImage: true, threadId };
+    } catch (error) {
+      console.warn('Telegram raffle winners image failed, sending text fallback:', error.message || error);
+    }
+  }
+
+  await sendTelegramMessage(env.TELEGRAM_RAFFLE_GROUP_CHAT_ID, caption, topicOptions);
+  return { sent: 1, skipped: 0, threadId };
 }
 
 async function notifySubmissionDecision(submission) {
@@ -872,6 +960,43 @@ function normalizeAvatarUrl(url) {
     .replace('_mini.', '_400x400.');
 }
 
+function getCreatorIdentityFromAuthUser(authUser) {
+  const metadata = authUser?.user_metadata || {};
+  return {
+    x_handle: metadata.user_name || metadata.preferred_username || authUser?.email?.split('@')[0] || null,
+    full_name: metadata.full_name || metadata.name || authUser?.email?.split('@')[0] || null,
+    avatar_url: normalizeAvatarUrl(metadata.avatar_url || metadata.picture),
+    x_provider_id: metadata.provider_id || metadata.sub || null
+  };
+}
+
+async function syncCreatorIdentityFromAuth(profile) {
+  const { data, error } = await supabase.auth.admin.getUserById(profile.id);
+  if (error) throw error;
+
+  const identity = getCreatorIdentityFromAuthUser(data?.user);
+  if (!identity.x_handle) return { synced: false, reason: 'missing_x_handle' };
+
+  const updates = {};
+  for (const key of ['x_handle', 'full_name', 'avatar_url', 'x_provider_id']) {
+    const current = profile[key] || null;
+    const next = identity[key] || null;
+    if (current !== next) updates[key] = next;
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return { synced: false, reason: 'unchanged' };
+  }
+
+  const { error: updateError } = await supabase
+    .from('creator_profiles')
+    .update(updates)
+    .eq('id', profile.id);
+  if (updateError) throw updateError;
+
+  return { synced: true, updates: Object.keys(updates) };
+}
+
 function calculateRewardAmount({ sorsaScore, followerCount, totalImpressions, engagementScore }) {
   const base = Number(sorsaScore || 0) * 0.1;
   const followerBoost = Math.min((Number(followerCount || 0) / 5000) * 0.1, 0.1);
@@ -885,6 +1010,50 @@ function calculateRewardAmount({ sorsaScore, followerCount, totalImpressions, en
 }
 
 let weeklySorsaSyncRunning = false;
+let creatorIdentitySyncRunning = false;
+
+async function runCreatorIdentitySync() {
+  if (creatorIdentitySyncRunning) return { skipped: true, reason: 'already_running' };
+  creatorIdentitySyncRunning = true;
+
+  const pageSize = 100;
+  let from = 0;
+  let checked = 0;
+  let synced = 0;
+  let skipped = 0;
+  let failed = 0;
+
+  try {
+    while (true) {
+      const { data: profiles, error } = await supabase
+        .from('creator_profiles')
+        .select('id, x_handle, full_name, avatar_url, x_provider_id')
+        .order('id', { ascending: true })
+        .range(from, from + pageSize - 1);
+      if (error) throw error;
+      if (!profiles?.length) break;
+
+      for (const profile of profiles) {
+        checked += 1;
+        try {
+          const result = await syncCreatorIdentityFromAuth(profile);
+          if (result.synced) synced += 1;
+          else skipped += 1;
+        } catch (error) {
+          failed += 1;
+          console.warn(`Creator identity sync failed for ${profile.id}:`, error.message || error);
+        }
+      }
+
+      if (profiles.length < pageSize) break;
+      from += pageSize;
+    }
+
+    return { checked, synced, skipped, failed };
+  } finally {
+    creatorIdentitySyncRunning = false;
+  }
+}
 
 async function runWeeklySorsaProfileSync() {
   if (weeklySorsaSyncRunning) return { skipped: true, reason: 'already_running' };
@@ -963,6 +1132,28 @@ function scheduleWeeklySorsaProfileSync() {
   scheduleNextRun();
 }
 
+function scheduleCreatorIdentitySync() {
+  if (!env.CREATOR_IDENTITY_SYNC_ENABLED) {
+    console.log('Creator identity sync is disabled.');
+    return;
+  }
+
+  const intervalDays = Math.max(1, Number(env.CREATOR_IDENTITY_SYNC_INTERVAL_DAYS || '4'));
+  const intervalMs = intervalDays * 24 * 60 * 60 * 1000;
+  const run = async () => {
+    try {
+      const result = await runCreatorIdentitySync();
+      console.log('Creator identity sync finished:', result);
+    } catch (error) {
+      console.error('Creator identity sync failed:', error);
+    }
+  };
+
+  setTimeout(run, 30_000);
+  setInterval(run, intervalMs);
+  console.log(`Creator identity sync scheduled every ${intervalDays} day(s).`);
+}
+
 let payoutAutomationRunning = false;
 
 async function getEscrowCampaignState(campaign) {
@@ -982,6 +1173,180 @@ async function getEscrowCampaignState(campaign) {
       });
     }
     throw error;
+  }
+}
+
+function getSubmissionWindowEndTime(joinedAt) {
+  const joinedTime = joinedAt ? new Date(joinedAt).getTime() : null;
+  return joinedTime && !Number.isNaN(joinedTime) ? joinedTime + 24 * 60 * 60 * 1000 : null;
+}
+
+function buildMissedSubmissionNotification(campaign, windowEndsAt) {
+  const title = escapeTelegramHtml(campaign?.title || 'SorsaMarket campaign');
+  const deadline = windowEndsAt
+    ? new Date(windowEndsAt).toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+      })
+    : 'your 24 hour submission window';
+  const campaignUrl = getCreatorCampaignUrl(campaign);
+  const action = campaignUrl
+    ? `\n\n<a href="${escapeTelegramHtml(campaignUrl)}">View Campaign</a>`
+    : '\n\nOpen SorsaMarket to review campaign details.';
+
+  return `<b>Submission window closed</b>\n\nThe 24 hour creator submission window for <b>${title}</b> has ended.\n\nNo eligible content submission was recorded from your account before the window closed.\n\nWindow ended: ${escapeTelegramHtml(deadline)}${action}`;
+}
+
+function buildJoinSubmissionReminder(campaign, windowEndsAt) {
+  const title = escapeTelegramHtml(campaign?.title || 'SorsaMarket campaign');
+  const deadline = windowEndsAt
+    ? new Date(windowEndsAt).toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+      })
+    : '24 hours from now';
+  const campaignUrl = getCreatorCampaignUrl(campaign);
+  const action = campaignUrl
+    ? `\n\n<a href="${escapeTelegramHtml(campaignUrl)}">View Campaign</a>`
+    : '\n\nOpen SorsaMarket to view the campaign.';
+
+  return `<b>Campaign joined</b>\n\nCongrats, you've successfully joined <b>${title}</b>.\n\nYou now have 24 hours to submit your content for this campaign.\n\nSubmission window ends: ${escapeTelegramHtml(deadline)}${action}`;
+}
+
+async function notifyCampaignJoinReminder(creator, campaign, participation) {
+  if (!creator?.telegram_chat_id || !creator.notify_campaign_updates) {
+    return { sent: 0, skipped: 1 };
+  }
+
+  const windowEndsAt = getSubmissionWindowEndTime(participation?.joined_at);
+  const caption = buildJoinSubmissionReminder(campaign, windowEndsAt);
+  const campaignUrl = getCreatorCampaignUrl(campaign);
+  try {
+    await sendTelegramPhoto(creator.telegram_chat_id, getSubmissionWindowReminderImageUrl(), caption, campaignUrl);
+  } catch (error) {
+    console.warn('Telegram join reminder photo failed, sending text fallback:', error.message || error);
+    await sendTelegramMessage(creator.telegram_chat_id, caption);
+  }
+  return { sent: 1, skipped: 0 };
+}
+
+async function sendMissedSubmissionNotification(chatId, campaign, windowEndsAt) {
+  const caption = buildMissedSubmissionNotification(campaign, windowEndsAt);
+  const campaignUrl = getCreatorCampaignUrl(campaign);
+  try {
+    return await sendTelegramPhoto(chatId, getSubmissionWindowNotificationImageUrl(), caption, campaignUrl);
+  } catch (error) {
+    console.warn('Telegram submission window photo failed, sending text fallback:', error.message || error);
+    return sendTelegramMessage(chatId, caption);
+  }
+}
+
+async function markSubmissionWindowNotified(participantId) {
+  const { error } = await supabase
+    .from('campaign_participants')
+    .update({ submission_window_notified_at: new Date().toISOString() })
+    .eq('id', participantId);
+  if (error) throw error;
+}
+
+async function hasParticipantSubmission(participant) {
+  const { count, error } = await supabase
+    .from('campaign_submissions')
+    .select('id', { count: 'exact', head: true })
+    .eq('participation_id', participant.id);
+  if (error) throw error;
+  return Number(count || 0) > 0;
+}
+
+let submissionWindowNotificationsRunning = false;
+
+async function runSubmissionWindowNotifications() {
+  if (submissionWindowNotificationsRunning) {
+    return { checked: 0, sent: 0, skipped: 0, failed: 0, marked: 0, alreadyRunning: true };
+  }
+
+  submissionWindowNotificationsRunning = true;
+  const summary = { checked: 0, sent: 0, skipped: 0, failed: 0, marked: 0 };
+  try {
+    const { data: participants, error } = await supabase
+      .from('campaign_participants')
+      .select(`
+        id,
+        creator_id,
+        campaign_id,
+        status,
+        joined_at,
+        submission_window_notified_at,
+        creator_profile:creator_profiles!creator_id (
+          id,
+          telegram_chat_id,
+          notify_campaign_updates
+        ),
+        campaign:campaigns!campaign_id (
+          id,
+          title,
+          end_date,
+          campaign_type,
+          language
+        )
+      `)
+      .eq('status', 'active')
+      .is('submission_window_notified_at', null)
+      .limit(100);
+    if (error) throw error;
+
+    const now = Date.now();
+    for (const participant of participants || []) {
+      summary.checked += 1;
+      const campaign = participant.campaign;
+      const windowEndsAt = getSubmissionWindowEndTime(participant.joined_at);
+      if (!campaign || !windowEndsAt || now < windowEndsAt) {
+        summary.skipped += 1;
+        continue;
+      }
+
+      if (campaign.campaign_type === 'raffle') {
+        await markSubmissionWindowNotified(participant.id);
+        summary.skipped += 1;
+        summary.marked += 1;
+        continue;
+      }
+
+      if (await hasParticipantSubmission(participant)) {
+        await markSubmissionWindowNotified(participant.id);
+        summary.skipped += 1;
+        summary.marked += 1;
+        continue;
+      }
+
+      const creator = participant.creator_profile;
+      if (!creator?.telegram_chat_id || !creator.notify_campaign_updates) {
+        await markSubmissionWindowNotified(participant.id);
+        summary.skipped += 1;
+        summary.marked += 1;
+        continue;
+      }
+
+      try {
+        await sendMissedSubmissionNotification(creator.telegram_chat_id, campaign, windowEndsAt);
+        await markSubmissionWindowNotified(participant.id);
+        summary.sent += 1;
+        summary.marked += 1;
+      } catch (error) {
+        summary.failed += 1;
+        console.warn(`Submission window notification failed for participant ${participant.id}:`, error.message || error);
+      }
+    }
+
+    return summary;
+  } finally {
+    submissionWindowNotificationsRunning = false;
   }
 }
 
@@ -1420,6 +1785,27 @@ function schedulePayoutAutomation() {
   console.log(`Payout automation scheduled every ${intervalMs / 1000}s.`);
 }
 
+function scheduleSubmissionWindowNotifications() {
+  if (!env.SUBMISSION_WINDOW_NOTIFICATIONS_ENABLED) {
+    console.log('Submission window notifications are disabled.');
+    return;
+  }
+
+  const intervalMs = Math.max(60, Number(env.SUBMISSION_WINDOW_POLL_INTERVAL_SECONDS || '300')) * 1000;
+  const run = async () => {
+    try {
+      const result = await runSubmissionWindowNotifications();
+      console.log('Submission window notifications finished:', result);
+    } catch (error) {
+      console.error('Submission window notifications failed:', error);
+    }
+  };
+
+  setTimeout(run, 20_000);
+  setInterval(run, intervalMs);
+  console.log(`Submission window notifications scheduled every ${intervalMs / 1000}s.`);
+}
+
 app.get('/campaigns/launch/ready', async (_req, res) => {
   try {
     await assertCampaignSchemaReady();
@@ -1805,7 +2191,8 @@ app.post('/admin/raffles/:campaignId/finalize', async (req, res) => {
             id,
             x_handle,
             full_name,
-            wallet_address
+            wallet_address,
+            telegram_username
           )
         `)
         .eq('campaign_id', campaignId)
@@ -1815,6 +2202,7 @@ app.post('/admin/raffles/:campaignId/finalize', async (req, res) => {
     if (participantError) throw Object.assign(new Error(participantError.message), { status: 500 });
 
     const metadata = parseCampaignMetadata(campaign);
+    const raffleCampaign = withNftCampaignMetadata(campaign);
     if (Array.isArray(metadata.raffle_results) && metadata.raffle_results.length > 0) {
       return res.json({
         winners: metadata.raffle_results,
@@ -1838,7 +2226,8 @@ app.post('/admin/raffles/:campaignId/finalize', async (req, res) => {
       creator_id: participant.creator_id,
       name: participant.creator_profile?.full_name || participant.creator_profile?.x_handle || 'Creator',
       x_account: participant.creator_profile?.x_handle || '',
-      wallet_address: participant.creator_profile?.wallet_address || ''
+      wallet_address: participant.creator_profile?.wallet_address || '',
+      telegram_username: participant.creator_profile?.telegram_username || ''
     }));
     const finalizedAt = new Date().toISOString();
 
@@ -1855,10 +2244,16 @@ app.post('/admin/raffles/:campaignId/finalize', async (req, res) => {
       .eq('id', campaignId);
     if (updateError) throw Object.assign(new Error(updateError.message), { status: 500 });
 
+    const telegram = await notifyRaffleWinnersGroup(raffleCampaign, winners).catch((error) => {
+      console.warn(`Raffle winners Telegram group announcement failed for campaign ${campaignId}:`, error.message || error);
+      return { sent: 0, skipped: 0, failed: 1 };
+    });
+
     return res.json({
       winners,
       finalized_at: finalizedAt,
-      alreadyFinalized: false
+      alreadyFinalized: false,
+      telegram
     });
   } catch (error) {
     const status = error.status || 500;
@@ -2017,12 +2412,12 @@ app.post('/nft-campaigns/:campaignId/verify-task', async (req, res) => {
     const [{ data: creator, error: creatorError }, { data: campaign, error: campaignError }] = await Promise.all([
       supabase
         .from('creator_profiles')
-        .select('id, x_handle, sorsa_score, wallet_address')
+        .select('id, x_handle, sorsa_score, wallet_address, telegram_chat_id, notify_campaign_updates')
         .eq('id', user.id)
         .single(),
       supabase
         .from('campaigns')
-        .select('id, campaign_type, min_sorsa_score, language, status')
+        .select('id, title, campaign_type, min_sorsa_score, language, status')
         .eq('id', campaignId)
         .eq('status', 'draft')
         .in('campaign_type', ['raffle', 'content', 'fcfs', 'all'])
@@ -2235,7 +2630,12 @@ app.post('/nft-campaigns/:campaignId/join', async (req, res) => {
     const mutation = existing
       ? supabase
           .from('campaign_participants')
-          .update({ status: 'active', base_reward: 0 })
+          .update({
+            status: 'active',
+            base_reward: 0,
+            joined_at: new Date().toISOString(),
+            submission_window_notified_at: null
+          })
           .eq('id', existing.id)
           .select()
           .single()
@@ -2258,7 +2658,14 @@ app.post('/nft-campaigns/:campaignId/join', async (req, res) => {
       throw Object.assign(new Error(mutationError.message), { status: 500 });
     }
 
-    return res.status(existing ? 200 : 201).json({ participation, alreadyJoined: false });
+    const telegram = isNftContentType(campaign.campaign_type)
+      ? await notifyCampaignJoinReminder(creator, withNftCampaignMetadata(campaign), participation).catch((error) => {
+          console.warn(`NFT join reminder Telegram notification failed for ${participation.id}:`, error.message || error);
+          return { sent: 0, skipped: 0, failed: 1 };
+        })
+      : { sent: 0, skipped: 1 };
+
+    return res.status(existing ? 200 : 201).json({ participation, alreadyJoined: false, telegram });
   } catch (error) {
     const status = error.status || 500;
     return res.status(status).json({ error: error.message || 'Could not join NFT campaign' });
@@ -2462,12 +2869,12 @@ app.post('/campaigns/:campaignId/join', async (req, res) => {
     const [{ data: creator, error: creatorError }, { data: campaign, error: campaignError }] = await Promise.all([
       supabase
         .from('creator_profiles')
-        .select('id, sorsa_score, wallet_address')
+        .select('id, sorsa_score, wallet_address, telegram_chat_id, notify_campaign_updates')
         .eq('id', user.id)
         .single(),
       supabase
         .from('campaigns')
-        .select('id, status, min_sorsa_score, escrow_campaign_id, escrow_contract_address, escrow_tx_hash, metadata_hash, brand_wallet')
+        .select('id, title, status, min_sorsa_score, escrow_campaign_id, escrow_contract_address, escrow_tx_hash, metadata_hash, brand_wallet')
         .eq('id', campaignId)
         .single()
     ]);
@@ -2530,6 +2937,8 @@ app.post('/campaigns/:campaignId/join', async (req, res) => {
           .update({
             status: 'active',
             base_reward: baseReward,
+            joined_at: new Date().toISOString(),
+            submission_window_notified_at: null,
             approved_at: null,
             paid_at: null,
             payout_tx_hash: null
@@ -2556,7 +2965,12 @@ app.post('/campaigns/:campaignId/join', async (req, res) => {
       throw mutationError;
     }
 
-    return res.status(existing ? 200 : 201).json({ participation, alreadyJoined: false });
+    const telegram = await notifyCampaignJoinReminder(creator, campaign, participation).catch((error) => {
+      console.warn(`Campaign join reminder Telegram notification failed for ${participation.id}:`, error.message || error);
+      return { sent: 0, skipped: 0, failed: 1 };
+    });
+
+    return res.status(existing ? 200 : 201).json({ participation, alreadyJoined: false, telegram });
   } catch (error) {
     const status = error.status || 500;
     return res.status(status).json({ error: error.message || 'Could not join campaign' });
@@ -2873,5 +3287,7 @@ const port = Number(process.env.PORT || 8787);
 app.listen(port, () => {
   console.log(`Escrow launch server listening on http://localhost:${port}`);
   scheduleWeeklySorsaProfileSync();
+  scheduleCreatorIdentitySync();
   schedulePayoutAutomation();
+  scheduleSubmissionWindowNotifications();
 });

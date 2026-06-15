@@ -53,6 +53,7 @@ export default function AuthCallback() {
         const fullName = metadata.full_name || metadata.name || user.email?.split('@')[0];
         const xHandle = metadata.user_name || metadata.preferred_username || user.email?.split('@')[0];
         const avatarUrl = normalizeAvatarUrl(metadata.avatar_url);
+        const xProviderId = metadata.provider_id || metadata.sub || null;
 
         const { data: existingProfile, error: existingProfileError } = await supabase
           .from('creator_profiles')
@@ -75,6 +76,9 @@ export default function AuthCallback() {
           const { error: creatorError } = await supabase.from('creator_profiles').insert({
             id: user.id,
             x_handle: xHandle,
+            full_name: fullName,
+            avatar_url: avatarUrl,
+            x_provider_id: xProviderId,
             referral_code: referralCode,
           });
           if (creatorError) throw creatorError;
