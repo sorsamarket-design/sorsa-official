@@ -69,7 +69,7 @@ export default function BrandCampaigns() {
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`shrink-0 px-3 sm:px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                  className={`shrink-0 px-3 sm:px-4 py-2 text-sm font-medium rounded-xl md:rounded-lg transition-all duration-200 ${
                     activeTab === tab ? 'bg-white/10 text-white shadow-sm' : 'text-muted hover:text-white'
                   }`}
                 >
