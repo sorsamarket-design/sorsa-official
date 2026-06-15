@@ -64,12 +64,12 @@ export default function BrandCampaigns() {
             transition={{ duration: 0.8, ease: appleEase, delay: 0.2 }}
             className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6"
           >
-            <div className="flex w-full items-center gap-1 overflow-x-auto rounded-xl border border-white/10 bg-white/5 p-1 md:w-fit md:gap-2">
+            <div className="grid w-full grid-cols-4 items-center gap-1 rounded-xl border border-white/10 bg-white/5 p-1 md:flex md:w-fit md:gap-2">
               {['All', 'Active', 'Draft', 'Completed'].map(tab => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`shrink-0 px-3 sm:px-4 py-2 text-sm font-medium rounded-xl md:rounded-lg transition-all duration-200 ${
+                  className={`min-w-0 px-2 sm:px-4 py-2 text-sm font-medium rounded-xl md:rounded-lg transition-all duration-200 ${
                     activeTab === tab ? 'bg-white/10 text-white shadow-sm' : 'text-muted hover:text-white'
                   }`}
                 >
