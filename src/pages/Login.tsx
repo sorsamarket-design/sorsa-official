@@ -25,7 +25,7 @@ export default function Login() {
           <p className="text-lg text-muted">Choose how you want to use the platform.</p>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-2.5 md:gap-6">
           {/* Brand Card */}
           <motion.div 
             initial={{ opacity: 0, y: 40 }}

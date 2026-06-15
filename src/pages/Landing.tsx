@@ -133,12 +133,12 @@ const Hero = () => {
   };
 
   return (
-    <section id="top" className="relative min-h-[100svh] flex items-center pt-24 pb-8 md:pt-28 md:pb-10 overflow-hidden">
+    <section id="top" className="relative min-h-[calc(100svh+300px)] md:min-h-[100svh] flex items-start md:items-center pt-24 pb-8 md:pt-28 md:pb-10 overflow-hidden">
       {/* Subtle Apple-style Ambient Glow */}
       <motion.div style={{ y: y1, opacity: glowOpacity, willChange: "transform, opacity" }} className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[400px] md:w-[800px] h-[200px] md:h-[400px] bg-cyan/20 blur-[80px] md:blur-[120px] rounded-full pointer-events-none"></motion.div>
       <motion.div style={{ y: y2, opacity: glowOpacity, willChange: "transform, opacity" }} className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[300px] md:w-[600px] h-[150px] md:h-[300px] bg-purple/20 blur-[80px] md:blur-[120px] rounded-full pointer-events-none"></motion.div>
 
-      <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-8 lg:gap-10 items-center z-10 w-full">
+      <div className="max-w-7xl mx-auto min-h-[calc(100svh-8rem)] md:min-h-0 px-6 grid lg:grid-cols-2 gap-8 lg:gap-10 items-center z-10 w-full">
         <motion.div
           style={{ y: y1, opacity, scale, willChange: "transform, opacity" }}
           className="flex flex-col items-start"
@@ -176,7 +176,7 @@ const Hero = () => {
 
         <motion.div
           style={{ y: y2, opacity, scale, willChange: "transform, opacity" }}
-          className="pointer-events-none relative h-[300px] sm:h-[380px] lg:h-[500px] xl:h-[560px] w-full flex items-center justify-center"
+          className="pointer-events-none relative hidden h-[300px] sm:h-[380px] md:flex lg:h-[500px] xl:h-[560px] w-full items-center justify-center"
         >
           {/* Apple-style clean visual container */}
           <div className="relative w-full max-w-lg aspect-square flex items-center justify-center">
@@ -211,6 +211,23 @@ const Hero = () => {
             </div>
           </div>
         </motion.div>
+      </div>
+
+      <div className="pointer-events-none absolute top-[100svh] left-0 right-0 flex h-[300px] items-center justify-center px-6 md:hidden">
+        <div className="relative flex aspect-square w-full max-w-[280px] items-center justify-center">
+          <div className="absolute inset-0 rounded-full border border-white/10" />
+          <div className="absolute inset-8 rounded-full border border-white/5" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="h-32 w-32 rounded-full bg-gradient-to-br from-cyan/30 to-purple/30 opacity-60 blur-2xl" />
+            <div className="absolute flex h-24 w-24 items-center justify-center rounded-full glass-panel">
+              <img
+                src="/SorsaMarketlogo.PNG"
+                alt="SorsaMarket Logo"
+                className="h-[280px] w-[280px] max-w-none object-contain drop-shadow-2xl"
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );
