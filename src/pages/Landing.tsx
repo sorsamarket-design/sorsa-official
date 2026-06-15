@@ -10,8 +10,6 @@ import {
   Megaphone,
   Search,
   Star,
-  Instagram,
-  Linkedin,
   Mail,
   Menu,
   Send,
@@ -454,10 +452,8 @@ const Footer = () => {
                 The decentralized marketplace connecting brands with creators.
               </p>
             </div>
-            <div className="flex space-x-4 md:space-x-5">
+            <div className="flex">
               <a href="https://x.com/sorsamarket" target="_blank" rel="noopener noreferrer" className="text-muted hover:text-white transition-colors"><XLogo className="w-4 h-4 md:w-5 md:h-5" /></a>
-              <a href="#" className="text-muted hover:text-white transition-colors"><Instagram className="w-4 h-4 md:w-5 md:h-5" /></a>
-              <a href="#" className="text-muted hover:text-white transition-colors"><Linkedin className="w-4 h-4 md:w-5 md:h-5" /></a>
             </div>
           </div>
 
@@ -487,7 +483,7 @@ const Footer = () => {
                 <li>
                   <a href="https://x.com/sorsamarket" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 hover:text-white transition-colors">
                     <XLogo className="h-3.5 w-3.5 shrink-0" />
-                    <span>X</span>
+                    <span>X (Twitter)</span>
                   </a>
                 </li>
                 <li>
