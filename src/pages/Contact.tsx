@@ -135,14 +135,14 @@ export default function Contact() {
             </a>
 
             <a 
-              href="mailto:support@sorsa.market" 
+              href="mailto:contact@sorsamarket.com"
               className="glass-panel rounded-2xl p-6 border border-white/10 hover:border-cyan/50 hover:bg-white/5 transition-all group flex flex-col items-center text-center"
             >
               <div className="w-12 h-12 rounded-full bg-cyan/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <Mail className="w-6 h-6 text-cyan" />
               </div>
               <h3 className="text-lg font-medium text-white mb-1">Email</h3>
-              <p className="text-sm text-muted">support@sorsa.market</p>
+              <p className="text-sm text-muted">contact@sorsamarket.com</p>
             </a>
           </motion.div>
 

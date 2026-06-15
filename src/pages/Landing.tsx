@@ -12,7 +12,9 @@ import {
   Star,
   Instagram,
   Linkedin,
+  Mail,
   Menu,
+  Send,
   X,
   Target,
   ArrowRight,
@@ -453,7 +455,7 @@ const Footer = () => {
               </p>
             </div>
             <div className="flex space-x-4 md:space-x-5">
-              <a href="#" className="text-muted hover:text-white transition-colors"><XLogo className="w-4 h-4 md:w-5 md:h-5" /></a>
+              <a href="https://x.com/sorsamarket" target="_blank" rel="noopener noreferrer" className="text-muted hover:text-white transition-colors"><XLogo className="w-4 h-4 md:w-5 md:h-5" /></a>
               <a href="#" className="text-muted hover:text-white transition-colors"><Instagram className="w-4 h-4 md:w-5 md:h-5" /></a>
               <a href="#" className="text-muted hover:text-white transition-colors"><Linkedin className="w-4 h-4 md:w-5 md:h-5" /></a>
             </div>
@@ -471,21 +473,35 @@ const Footer = () => {
             </div>
 
             <div>
-              <h4 className="mb-2 text-xs font-bold text-white md:mb-6 md:text-base md:font-semibold">Company</h4>
-              <ul className="space-y-2 text-xs text-[#6b7280] md:space-y-4 md:text-sm md:text-muted">
-                <li><a href="#" className="hover:text-white transition-colors">About Us</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Careers</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
-              </ul>
-            </div>
-
-            <div>
               <h4 className="mb-2 text-xs font-bold text-white md:mb-6 md:text-base md:font-semibold">Legal</h4>
               <ul className="space-y-2 text-xs text-[#6b7280] md:space-y-4 md:text-sm md:text-muted">
                 <li><a href="/terms" className="hover:text-white transition-colors">Terms of Service</a></li>
                 <li><a href="/privacy" className="hover:text-white transition-colors">Privacy Policy</a></li>
                 <li><a href="/cookies" className="hover:text-white transition-colors">Cookie Policy</a></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="mb-2 text-xs font-bold text-white md:mb-6 md:text-base md:font-semibold">Contact Us</h4>
+              <ul className="space-y-2 text-xs text-[#6b7280] md:space-y-4 md:text-sm md:text-muted">
+                <li>
+                  <a href="https://x.com/sorsamarket" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 hover:text-white transition-colors">
+                    <XLogo className="h-3.5 w-3.5 shrink-0" />
+                    <span>X</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="https://t.me/Jahwey" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 hover:text-white transition-colors">
+                    <Send className="h-3.5 w-3.5 shrink-0" />
+                    <span>Telegram</span>
+                  </a>
+                </li>
+                <li>
+                  <a href="mailto:contact@sorsamarket.com" className="inline-flex items-center gap-2 hover:text-white transition-colors">
+                    <Mail className="h-3.5 w-3.5 shrink-0" />
+                    <span>Email</span>
+                  </a>
+                </li>
               </ul>
             </div>
           </div>
