@@ -200,7 +200,10 @@ export function useCampaigns(brandId?: string) {
       if (campaignRes.error) throw campaignRes.error;
       
       const campaign = withBrandSnapshot(campaignRes.data as Campaign) as Campaign;
-      if (!isEscrowConfirmedCampaign(campaign)) return null;
+      const isOwnedBrandDraft = location.pathname.startsWith('/brand') &&
+        campaign.status === 'draft' &&
+        campaign.owner_id === user?.id;
+      if (!isEscrowConfirmedCampaign(campaign) && !isOwnedBrandDraft) return null;
       if (statsRes.data) {
         campaign.campaign_stats = [statsRes.data];
       }
@@ -210,7 +213,7 @@ export function useCampaigns(brandId?: string) {
       console.error('Error getting campaign:', err);
       return null;
     }
-  }, []);
+  }, [location.pathname, user?.id]);
 
   const joinCampaign = useCallback(async (campaignId: string) => {
     if (!user) throw new Error('Not authenticated');
@@ -409,19 +412,6 @@ export function useCampaigns(brandId?: string) {
             followerCount: sub.creator_profile?.follower_count || 0,
             totalImpressions: impressions,
             engagementScore: engagement
-          });
-
-          // Award Points
-          await supabase.from('points_log').insert([{
-            creator_id: sub.creator_id,
-            amount: 10, // 10 points per approved tweet
-            event_type: 'tweet_rewarded',
-            description: `Rewarded for tweet in campaign: ${campaignId}`
-          }]);
-
-          await supabase.rpc('increment_creator_stats', {
-            creator_id_param: sub.creator_id,
-            points_to_add: 10
           });
 
         } catch (err) {

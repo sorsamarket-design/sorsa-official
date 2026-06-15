@@ -351,7 +351,7 @@ export default function CampaignNew() {
                   minLength={overviewMinLength}
                   maxLength={overviewMaxLength}
                   placeholder="Describe your campaign in detail. What should creators focus on? What are the key selling points?"
-                  className="w-full min-h-80 px-4 py-3 rounded-xl bg-black/50 border border-white/10 text-white placeholder:text-white/20 focus:outline-none focus:border-cyan focus:ring-1 focus:ring-cyan transition-all resize-none"
+                  className="w-full min-h-80 px-4 py-3 rounded-xl bg-black/50 border border-white/10 text-base text-white placeholder:text-white/20 focus:outline-none focus:border-cyan focus:ring-1 focus:ring-cyan transition-all resize-none"
                 ></textarea>
                 <div className="flex items-center justify-between text-xs text-muted">
                   <span>Minimum {overviewMinLength} characters</span>

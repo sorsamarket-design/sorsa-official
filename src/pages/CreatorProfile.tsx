@@ -139,7 +139,7 @@ export default function CreatorProfile() {
                 </div>
                 <div className="glass-panel rounded-2xl p-5 border border-white/10">
                   <Star className="w-5 h-5 text-muted mb-3" />
-                  <div className="text-2xl font-semibold text-white mb-1">{profile?.sorsa_points?.toLocaleString() || 0}</div>
+                  <div className="text-2xl font-semibold text-white mb-1">{profile?.activity_points?.toLocaleString() || 0}</div>
                   <div className="text-xs text-muted font-medium">Points</div>
                 </div>
                 <div className="glass-panel rounded-2xl p-5 border border-white/10">

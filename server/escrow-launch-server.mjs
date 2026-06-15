@@ -529,7 +529,21 @@ function referralPointsForScore(score) {
   return 10;
 }
 
-async function qualifyReferralForCreator(creatorId, campaignId) {
+async function awardActivityPoints(creatorId, points, event) {
+  const { data, error } = await supabase.rpc('award_creator_activity_points', {
+    p_creator_id: creatorId,
+    p_points: points,
+    p_event: event
+  });
+  if (error) {
+    console.warn(`Could not award activity points for ${creatorId}:`, error.message || error);
+    return { awarded: false, reason: 'award_failed' };
+  }
+
+  return { awarded: Boolean(data), points: Boolean(data) ? points : 0 };
+}
+
+async function qualifyReferralForCreator(creatorId) {
   const { data: referral, error: referralError } = await supabase
     .from('referrals')
     .select(`
@@ -573,33 +587,8 @@ async function qualifyReferralForCreator(creatorId, campaignId) {
     return { qualified: false, reason: 'update_failed' };
   }
 
-  const { data: referrer } = await supabase
-    .from('creator_profiles')
-    .select('activity_points')
-    .eq('id', referral.referrer_id)
-    .maybeSingle();
-
-  const currentPoints = Number(referrer?.activity_points || 0);
-  const { error: profileError } = await supabase
-    .from('creator_profiles')
-    .update({ activity_points: currentPoints + points })
-    .eq('id', referral.referrer_id);
-  if (profileError) {
-    console.warn(`Could not update referral points for ${referral.referrer_id}:`, profileError.message || profileError);
-  }
-
-  const referredHandle = referral.referred_profile?.x_handle || 'creator';
-  const { error: logError } = await supabase.from('points_log').insert({
-    creator_id: referral.referrer_id,
-    amount: points,
-    event_type: 'referral',
-    description: `Referral qualified by ${referredHandle} on campaign ${campaignId}`
-  });
-  if (logError) {
-    console.warn(`Could not write referral points log for ${referral.referrer_id}:`, logError.message || logError);
-  }
-
-  return { qualified: true, referralId: referral.id, points };
+  const award = await awardActivityPoints(referral.referrer_id, points, `referral_qualified:${referral.id}`);
+  return { qualified: true, referralId: referral.id, points: award.awarded ? points : 0, award };
 }
 
 async function awardSubmissionActivityPoints(submission) {
@@ -607,52 +596,7 @@ async function awardSubmissionActivityPoints(submission) {
   const submissionId = submission?.id;
   if (!creatorId || !submissionId) return { awarded: false, reason: 'missing_submission' };
 
-  const description = `Rewarded for approved submission ${submissionId}`;
-  const { data: existing, error: existingError } = await supabase
-    .from('points_log')
-    .select('id')
-    .eq('creator_id', creatorId)
-    .eq('event_type', 'tweet_rewarded')
-    .eq('description', description)
-    .maybeSingle();
-  if (existingError) {
-    console.warn(`Could not check activity points for submission ${submissionId}:`, existingError.message || existingError);
-    return { awarded: false, reason: 'lookup_failed' };
-  }
-  if (existing) return { awarded: false, reason: 'already_awarded' };
-
-  const points = 10;
-  const { data: creator, error: creatorError } = await supabase
-    .from('creator_profiles')
-    .select('activity_points')
-    .eq('id', creatorId)
-    .maybeSingle();
-  if (creatorError) {
-    console.warn(`Could not load creator activity points for ${creatorId}:`, creatorError.message || creatorError);
-    return { awarded: false, reason: 'creator_lookup_failed' };
-  }
-
-  const currentPoints = Number(creator?.activity_points || 0);
-  const { error: profileError } = await supabase
-    .from('creator_profiles')
-    .update({ activity_points: currentPoints + points })
-    .eq('id', creatorId);
-  if (profileError) {
-    console.warn(`Could not update activity points for ${creatorId}:`, profileError.message || profileError);
-    return { awarded: false, reason: 'profile_update_failed' };
-  }
-
-  const { error: logError } = await supabase.from('points_log').insert({
-    creator_id: creatorId,
-    amount: points,
-    event_type: 'tweet_rewarded',
-    description
-  });
-  if (logError) {
-    console.warn(`Could not write activity points log for ${creatorId}:`, logError.message || logError);
-  }
-
-  return { awarded: true, points };
+  return awardActivityPoints(creatorId, 10, `submission_approved:${submissionId}`);
 }
 
 async function callSorsa(path, options = {}) {
@@ -3341,7 +3285,7 @@ app.post('/submissions/:submissionId/status', async (req, res) => {
     let referral = { qualified: false };
     if (status === 'approved' && submission.creator_id) {
       activityPoints = await awardSubmissionActivityPoints(submission);
-      referral = await qualifyReferralForCreator(submission.creator_id, submission.campaign_id);
+      referral = await qualifyReferralForCreator(submission.creator_id);
     }
 
     let telegram = { sent: 0, skipped: 1 };

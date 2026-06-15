@@ -17,12 +17,14 @@ CREATE TABLE IF NOT EXISTS campaign_participants (
 -- Create table for backend Activity Points ledger
 CREATE TABLE IF NOT EXISTS points_log (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  amount INTEGER NOT NULL,
-  event_type TEXT NOT NULL, -- e.g., 'campaign_completion', 'referral', etc.
-  description TEXT,
+  creator_id UUID REFERENCES creator_profiles(id) ON DELETE CASCADE,
+  points INTEGER NOT NULL,
+  event TEXT NOT NULL, -- Unique award event, e.g. 'submission_approved:<submission-id>'
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS points_log_creator_event_key
+  ON points_log (creator_id, event);
 
 -- Add activity_points to profiles/creator_profiles if not exists
 -- (Assuming your main profiles table is called 'profiles' or we use 'creator_profiles')
