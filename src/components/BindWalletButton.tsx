@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount, useDisconnect } from 'wagmi';
 import { useCreatorProfile } from '../hooks/useCreatorProfile';
@@ -97,8 +98,8 @@ export default function BindWalletButton() {
               })()}
 
               {/* Warning Popup Modal */}
-              {showWarningPopup && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+              {showWarningPopup && createPortal(
+                <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
                   <div className="bg-[#0A0A1E] border border-white/10 p-6 rounded-2xl max-w-sm w-full relative shadow-2xl">
                     <button 
                       onClick={() => setShowWarningPopup(false)}
@@ -113,7 +114,7 @@ export default function BindWalletButton() {
                       </div>
                       <h3 className="text-xl font-bold text-white mb-2">Permanent Binding</h3>
                       <p className="text-sm text-muted mb-6">
-                        Are you sure you want to bind this wallet? <strong>This action cannot be undone.</strong> You will not be able to disconnect or change this wallet once bound.
+                        You will not be able to disconnect or change this wallet once bound
                       </p>
                       
                       <div className="flex w-full gap-3">
@@ -136,7 +137,8 @@ export default function BindWalletButton() {
                       </div>
                     </div>
                   </div>
-                </div>
+                </div>,
+                document.body
               )}
             </div>
           );
