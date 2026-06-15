@@ -133,8 +133,7 @@ export default function Leaderboard() {
                   <div className="order-1 flex min-w-0 flex-1 items-end md:order-1 md:block">
                     <div className="glass-panel relative flex h-[170px] w-full flex-col items-center justify-center overflow-hidden rounded-[14px] border border-[#1f2937] px-2 py-3 text-center md:h-[280px] md:justify-end md:rounded-[2rem] md:border-white/10 md:p-6 md:pb-8">
                     <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-gray-300/10 to-transparent pointer-events-none"></div>
-                    <span className="relative mb-1 text-[1.1rem] leading-none md:hidden" aria-label="Second place">🥈</span>
-                    <Medal className={`relative hidden w-10 h-10 mb-4 md:block ${getMedalColor(1)}`} />
+                    <Medal aria-label="Second place" className={`relative mb-1 h-[1.1rem] w-[1.1rem] md:mb-4 md:h-10 md:w-10 ${getMedalColor(1)}`} />
                     <a href={`https://x.com/${top3[1].handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="relative group mb-2 md:mb-3">
                       <CreatorAvatar src={top3[1].avatar} name={top3[1].handle} alt={top3[1].handle} className="h-10 w-10 rounded-full border-2 border-gray-300/50 object-cover md:h-20 md:w-20" />
                       <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
@@ -153,8 +152,7 @@ export default function Leaderboard() {
                   <div className="order-2 flex min-w-0 flex-1 items-end md:block">
                   <div className="glass-panel relative flex min-h-[210px] w-full flex-col items-center justify-center overflow-hidden rounded-[14px] border border-[#f59e0b44] px-2 py-3 text-center shadow-[0_0_24px_rgba(245,158,11,0.12)] md:h-[320px] md:justify-end md:rounded-[2rem] md:border-cyan/30 md:p-8 md:pb-10 md:shadow-none">
                     <div className="absolute top-0 inset-x-0 h-48 bg-gradient-to-b from-yellow-400/20 to-transparent pointer-events-none"></div>
-                    <span className="relative mb-2 text-2xl leading-none md:hidden" aria-label="First place">🥇</span>
-                    <Medal className={`relative hidden w-14 h-14 mb-4 md:block ${getMedalColor(0)}`} />
+                    <Medal aria-label="First place" className={`relative mb-2 h-6 w-6 md:mb-4 md:h-14 md:w-14 ${getMedalColor(0)}`} />
                     <a href={`https://x.com/${top3[0].handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="relative group mb-3 md:mb-4">
                       <CreatorAvatar src={top3[0].avatar} name={top3[0].handle} alt={top3[0].handle} className="h-14 w-14 rounded-full border-[3px] border-yellow-400/50 object-cover md:h-24 md:w-24 md:border-4" />
                       <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
@@ -175,8 +173,7 @@ export default function Leaderboard() {
                   <div className="order-3 flex min-w-0 flex-1 items-end md:block">
                   <div className="glass-panel relative flex h-[170px] w-full flex-col items-center justify-center overflow-hidden rounded-[14px] border border-[#1f2937] px-2 py-3 text-center md:h-[260px] md:justify-end md:rounded-[2rem] md:border-white/10 md:p-6 md:pb-6">
                     <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-amber-600/10 to-transparent pointer-events-none"></div>
-                    <span className="relative mb-1 text-[1.1rem] leading-none md:hidden" aria-label="Third place">🥉</span>
-                    <Medal className={`relative hidden w-8 h-8 mb-4 md:block ${getMedalColor(2)}`} />
+                    <Medal aria-label="Third place" className={`relative mb-1 h-[1.1rem] w-[1.1rem] md:mb-4 md:h-8 md:w-8 ${getMedalColor(2)}`} />
                     <a href={`https://x.com/${top3[2].handle.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="relative group mb-2 md:mb-3">
                       <CreatorAvatar src={top3[2].avatar} name={top3[2].handle} alt={top3[2].handle} className="h-10 w-10 rounded-full border-2 border-amber-600/50 object-cover md:h-16 md:w-16" />
                       <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
