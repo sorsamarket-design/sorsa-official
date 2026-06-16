@@ -77,5 +77,103 @@ export default function CreatorWallet() {
     txHash: p.payout_tx_hash,
     txUrl: getTxUrl(p.payout_tx_hash)
   }));
-  return <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] font-sans selection:bg-cyan/30 flex"><CreatorSidebar /><main className="creator-page-main flex-1 md:ml-64 p-4 md:p-8"><div className="max-w-6xl mx-auto space-y-8"><div className="flex flex-col md:flex-row md:items-start justify-between gap-6"><div><motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: appleEase }} className="text-3xl font-semibold tracking-tight text-white flex items-center gap-3"><Wallet className="w-8 h-8 text-cyan" /> Wallet</motion.h1><p className="text-muted mt-2">Track confirmed onchain campaign payouts.</p></div><div className="flex items-start gap-3"><CreatorTopBar embedded /><div className="glass-panel rounded-2xl p-4 border border-white/10 flex flex-col gap-2 items-center"><div className="flex items-center gap-3 mb-2"><div className="w-10 h-10 rounded-full bg-cyan/10 flex items-center justify-center shrink-0"><Wallet className="w-5 h-5 text-cyan" /></div><div><h3 className="text-sm font-medium text-white">Bound Wallet</h3><p className="text-xs text-muted">Permanent Address</p></div></div><BindWalletButton /></div></div></div><div className="grid grid-cols-1 gap-6"><div className="glass-panel rounded-[2rem] p-8 border border-white/10"><div className="flex items-center gap-3 mb-4"><div className="w-10 h-10 rounded-xl bg-cyan/10 flex items-center justify-center"><DollarSign className="w-5 h-5 text-cyan" /></div><h2 className="text-lg font-medium text-white">Total Earned</h2></div><div className="text-5xl font-bold text-white tracking-tight mb-2">${totalEarned.toLocaleString()} <span className="text-xl text-muted font-medium">USDC</span></div><p className="text-sm text-muted mt-8">Total confirmed USDC paid from campaigns.</p></div></div><div className="glass-panel rounded-[2rem] border border-white/10 overflow-hidden"><div className="p-6 border-b border-white/10"><h2 className="text-xl font-semibold text-white">Transaction History</h2></div>{loading ? <div className="p-8 text-muted text-center">Loading transactions...</div> : transactions.length === 0 ? <div className="p-8 text-muted text-center">No confirmed creator payout transactions yet.</div> : <div className="overflow-x-auto"><table className="w-full text-left border-collapse"><thead><tr className="border-b border-white/10 bg-white/5"><th className="py-4 px-6 text-xs font-semibold text-muted uppercase tracking-wider">Date</th><th className="py-4 px-6 text-xs font-semibold text-muted uppercase tracking-wider">Campaign</th><th className="py-4 px-6 text-xs font-semibold text-muted uppercase tracking-wider">Transaction Hash</th><th className="py-4 px-6 text-xs font-semibold text-muted uppercase tracking-wider text-right">Amount</th><th className="py-4 px-6 text-xs font-semibold text-muted uppercase tracking-wider text-right">Status</th></tr></thead><tbody className="divide-y divide-white/5">{transactions.map(tx => <tr key={tx.id} className="hover:bg-white/5"><td className="py-4 px-6 text-sm text-muted">{new Date(tx.date).toLocaleDateString()}</td><td className="py-4 px-6 font-medium text-white">{tx.campaign}</td><td className="py-4 px-6 text-sm font-mono text-cyan">{tx.txUrl ? <a href={tx.txUrl} target="_blank" rel="noreferrer" className="hover:text-white hover:underline underline-offset-4" title={tx.txHash}>{formatTxHash(tx.txHash)}</a> : formatTxHash(tx.txHash)}</td><td className="py-4 px-6 text-right font-semibold text-cyan">+${tx.amount.toLocaleString()}</td><td className="py-4 px-6 text-right"><span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-medium bg-green-500/10 border-green-500/20 text-green-400"><CheckCircle2 className="w-3.5 h-3.5" />{tx.status}</span></td></tr>)}</tbody></table></div>}</div></div></main></div>;
+  return (
+    <div className="flex min-h-screen bg-[#0A0A1E] font-sans text-[#F5F5F7] selection:bg-cyan/30">
+      <CreatorSidebar />
+      <CreatorTopBar embedded />
+
+      <main className="creator-page-main flex-1 p-4 md:ml-64 md:p-8">
+        <div className="mx-auto max-w-6xl space-y-8">
+          <div>
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: appleEase }}
+              className="flex items-center gap-3 text-3xl font-semibold tracking-tight text-white"
+            >
+              <Wallet className="h-8 w-8 text-cyan" /> Wallet
+            </motion.h1>
+            <p className="mt-2 text-muted">Track confirmed onchain campaign payouts.</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 md:gap-6">
+            <div className="glass-panel flex min-w-0 flex-col items-center rounded-2xl border border-white/10 p-4 text-center md:items-start md:rounded-[2rem] md:p-8 md:text-left">
+              <div className="mb-3 flex flex-col items-center gap-2 md:mb-4 md:flex-row md:gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cyan/10 md:h-10 md:w-10">
+                  <Wallet className="h-4 w-4 text-cyan md:h-5 md:w-5" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-medium text-white md:text-lg">Bound Wallet</h2>
+                  <p className="text-[0.68rem] text-muted md:text-xs">Permanent Address</p>
+                </div>
+              </div>
+              <BindWalletButton />
+            </div>
+
+            <div className="glass-panel min-w-0 rounded-2xl border border-white/10 p-4 md:rounded-[2rem] md:p-8">
+              <div className="mb-3 flex flex-col items-start gap-2 md:mb-4 md:flex-row md:items-center md:gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-cyan/10 md:h-10 md:w-10">
+                  <DollarSign className="h-4 w-4 text-cyan md:h-5 md:w-5" />
+                </div>
+                <h2 className="text-sm font-medium text-white md:text-lg">Total Earned</h2>
+              </div>
+              <div className="mb-2 break-words text-2xl font-bold tracking-tight text-white md:text-5xl">
+                ${totalEarned.toLocaleString()} <span className="text-xs font-medium text-muted md:text-xl">USDC</span>
+              </div>
+              <p className="mt-4 text-xs text-muted md:mt-8 md:text-sm">Total confirmed USDC paid from campaigns.</p>
+            </div>
+          </div>
+
+          <div className="glass-panel overflow-hidden rounded-[2rem] border border-white/10">
+            <div className="border-b border-white/10 p-6">
+              <h2 className="text-xl font-semibold text-white">Transaction History</h2>
+            </div>
+            {loading ? (
+              <div className="p-8 text-center text-muted">Loading transactions...</div>
+            ) : transactions.length === 0 ? (
+              <div className="p-8 text-center text-muted">No confirmed creator payout transactions yet.</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-left">
+                  <thead>
+                    <tr className="border-b border-white/10 bg-white/5">
+                      <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-muted">Date</th>
+                      <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-muted">Campaign</th>
+                      <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-muted">Transaction Hash</th>
+                      <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-muted">Amount</th>
+                      <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-muted">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {transactions.map(tx => (
+                      <tr key={tx.id} className="hover:bg-white/5">
+                        <td className="px-6 py-4 text-sm text-muted">{new Date(tx.date).toLocaleDateString()}</td>
+                        <td className="px-6 py-4 font-medium text-white">{tx.campaign}</td>
+                        <td className="px-6 py-4 font-mono text-sm text-cyan">
+                          {tx.txUrl ? (
+                            <a href={tx.txUrl} target="_blank" rel="noreferrer" className="underline-offset-4 hover:text-white hover:underline" title={tx.txHash}>
+                              {formatTxHash(tx.txHash)}
+                            </a>
+                          ) : (
+                            formatTxHash(tx.txHash)
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-right font-semibold text-cyan">+${tx.amount.toLocaleString()}</td>
+                        <td className="px-6 py-4 text-right">
+                          <span className="inline-flex items-center gap-1.5 rounded-md border border-green-500/20 bg-green-500/10 px-2.5 py-1 text-xs font-medium text-green-400">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            {tx.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+    </div>
+  );
 }
