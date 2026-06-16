@@ -5,12 +5,6 @@ import { normalizeAvatarUrl } from '../lib/avatars';
 import { attachSavedReferralToCreator, buildReferralCode, ensureCreatorReferralCode } from '../lib/referrals';
 import sorsaApi from '../lib/sorsaApi';
 
-function getAuthErrorMessage(error: unknown) {
-  if (error instanceof Error) return error.message;
-  if (typeof error === 'string') return error;
-  return 'Unknown authentication error';
-}
-
 async function completeSupabaseRedirect() {
   const searchParams = new URLSearchParams(window.location.search);
   const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
@@ -40,7 +34,6 @@ async function completeSupabaseRedirect() {
 export default function AuthCallback() {
   const navigate = useNavigate();
   const [errorVisible, setErrorVisible] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
   const started = useRef(false);
 
   useEffect(() => {
@@ -106,7 +99,6 @@ export default function AuthCallback() {
         setTimeout(() => navigate('/campaigns'), 500);
       } catch (err) {
         console.error('Auth callback error:', err);
-        setErrorMessage(getAuthErrorMessage(err));
         setErrorVisible(true);
       }
     };
@@ -118,11 +110,6 @@ export default function AuthCallback() {
     return (
       <div className="min-h-screen bg-black flex flex-col gap-4 items-center justify-center text-red-400">
         <p>Authentication could not be completed.</p>
-        {errorMessage && (
-          <p className="max-w-sm rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-center text-sm leading-relaxed text-red-300">
-            {errorMessage}
-          </p>
-        )}
         <button className="text-white underline" onClick={() => navigate('/auth/creator')}>
           Try again
         </button>

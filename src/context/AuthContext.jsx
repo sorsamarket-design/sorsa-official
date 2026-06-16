@@ -24,11 +24,13 @@ export const AuthProvider = ({ children }) => {
 
     async function fetchUserRole(userId) {
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', userId)
-          .single();
+          .maybeSingle();
+
+        if (error) throw error;
 
         if (data) {
           setRole(data.role);
@@ -38,6 +40,8 @@ export const AuthProvider = ({ children }) => {
         }
       } catch (err) {
         console.error('Error fetching role:', err);
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        setRole(currentUser?.user_metadata?.role ?? null);
       } finally {
         setLoading(false);
       }
@@ -77,6 +81,8 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
       } else if (event === 'USER_UPDATED') {
         setUser(nextUser);
+        setLoading(true);
+        fetchUserRole(nextUser.id);
       }
     });
 
