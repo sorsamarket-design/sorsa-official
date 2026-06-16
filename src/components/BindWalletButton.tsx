@@ -18,15 +18,15 @@ export default function BindWalletButton() {
 
   const handleStartBinding = () => {
     setWalletError('');
-    if (!isAddress(normalizedWallet)) {
-      setWalletError('Enter a valid wallet address.');
-      return;
-    }
     setShowWarningPopup(true);
   };
 
   const bindToDatabase = async () => {
-    if (!user || !supabase || !isAddress(normalizedWallet) || profile?.wallet_address) return;
+    if (!user || !supabase || profile?.wallet_address) return;
+    if (!isAddress(normalizedWallet)) {
+      setWalletError('Enter a valid wallet address.');
+      return;
+    }
 
     setIsBinding(true);
     setWalletError('');
@@ -71,17 +71,6 @@ export default function BindWalletButton() {
   return (
     <>
       <div className="flex flex-col items-center gap-2">
-        <input
-          value={walletInput}
-          onChange={(event) => {
-            setWalletInput(event.target.value);
-            setWalletError('');
-          }}
-          placeholder="0x..."
-          disabled={isBinding}
-          className="w-full max-w-[320px] px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm font-mono placeholder:text-muted focus:outline-none focus:border-cyan/50 focus:bg-white/10 transition-all disabled:opacity-50"
-        />
-        {walletError && <p className="text-[10px] text-red-400 text-center max-w-[240px]">{walletError}</p>}
         <button
           onClick={handleStartBinding}
           disabled={isBinding}
@@ -114,6 +103,20 @@ export default function BindWalletButton() {
               <p className="text-sm text-muted mb-6">
                 You will not be able to disconnect or change this wallet once bound
               </p>
+
+              <div className="w-full mb-4">
+                <input
+                  value={walletInput}
+                  onChange={(event) => {
+                    setWalletInput(event.target.value);
+                    setWalletError('');
+                  }}
+                  placeholder="0x..."
+                  disabled={isBinding}
+                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm font-mono placeholder:text-muted focus:outline-none focus:border-cyan/50 focus:bg-white/10 transition-all disabled:opacity-50"
+                />
+                {walletError && <p className="mt-2 text-xs text-red-400 text-center">{walletError}</p>}
+              </div>
 
               <div className="flex w-full gap-3">
                 <button
