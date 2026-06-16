@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
-import { Settings as SettingsIcon, Bell, Shield, Wallet, Twitter, LogOut, Send, CheckCircle2, Copy } from 'lucide-react';
+import { Settings as SettingsIcon, Bell, Shield, Wallet, Twitter, LogOut, Send, Copy, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAccount, useDisconnect } from 'wagmi';
 import CreatorSidebar from '../components/CreatorSidebar';
@@ -88,22 +89,11 @@ export default function CreatorSettings() {
   }, [connectLink?.connectCode, loadPreferences, telegramStatus?.connected]);
 
   const handleConnectTelegram = async () => {
-    const telegramWindow = window.open('', '_blank', 'noopener,noreferrer');
     try {
       setTelegramMessage(null);
       const link = await createConnectLink();
       setConnectLink(link);
-      if (link.telegramLink) {
-        if (telegramWindow) {
-          telegramWindow.location.href = link.telegramLink;
-        } else {
-          window.location.href = link.telegramLink;
-        }
-      } else if (telegramWindow) {
-        telegramWindow.close();
-      }
     } catch (error: any) {
-      if (telegramWindow) telegramWindow.close();
       setTelegramMessage(error.message || 'Telegram link could not be created.');
     }
   };
@@ -127,6 +117,11 @@ export default function CreatorSettings() {
     } catch (error: any) {
       setTelegramMessage('Code could not be copied.');
     }
+  };
+
+  const handleOpenTelegram = () => {
+    if (!connectLink?.telegramLink) return;
+    window.open(connectLink.telegramLink, '_blank', 'noopener,noreferrer');
   };
 
   const handlePreferenceChange = async (key: keyof TelegramPreferences, value: boolean) => {
@@ -219,18 +214,6 @@ export default function CreatorSettings() {
                             </button>
                           )}
                         </div>
-                        {connectLink?.connectCode && !telegramStatus?.connected && (
-                          <div className="p-4 rounded-xl bg-cyan/10 border border-cyan/20 text-sm text-cyan flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <CheckCircle2 className="w-4 h-4 shrink-0" />
-                              <span className="min-w-0">Open Telegram and send this code to the bot: <span className="font-mono break-all">{connectLink.connectCode}</span></span>
-                            </div>
-                            <button onClick={handleCopyTelegramCode} className="shrink-0 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-cyan text-black text-xs font-semibold hover:bg-cyan/90 transition-colors">
-                              <Copy className="w-3.5 h-3.5" />
-                              {copiedCode ? 'Copied' : 'Copy'}
-                            </button>
-                          </div>
-                        )}
                         {(telegramMessage || telegramError) && (
                           <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-sm text-red-400">
                             {telegramMessage || telegramError}
@@ -314,6 +297,50 @@ export default function CreatorSettings() {
           </motion.div>
         </div>
       </main>
+      {connectLink?.connectCode && !telegramStatus?.connected && createPortal(
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-[#0A0A1E] border border-white/10 p-6 rounded-2xl max-w-sm w-full relative shadow-2xl">
+            <button
+              onClick={() => setConnectLink(null)}
+              className="absolute top-4 right-4 text-muted hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex flex-col items-center text-center mt-2">
+              <div className="w-12 h-12 rounded-full bg-cyan/10 flex items-center justify-center mb-4">
+                <Send className="w-6 h-6 text-cyan" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">Connect Telegram</h3>
+              <p className="text-sm text-muted mb-4">
+                Send this code to the SorsaMarket bot to connect Telegram notifications.
+              </p>
+
+              <div className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 mb-6">
+                <p className="font-mono text-sm text-white break-all">{connectLink.connectCode}</p>
+              </div>
+
+              <div className="flex w-full gap-3">
+                <button
+                  onClick={handleCopyTelegramCode}
+                  className="flex-1 py-3 px-4 rounded-xl border border-white/10 text-white font-medium hover:bg-white/5 transition-colors inline-flex items-center justify-center gap-2"
+                >
+                  <Copy className="w-4 h-4" />
+                  {copiedCode ? 'Copied' : 'Copy Code'}
+                </button>
+                <button
+                  onClick={handleOpenTelegram}
+                  className="flex-1 py-3 px-4 rounded-xl bg-cyan text-black font-bold hover:bg-cyan/90 transition-colors shadow-[0_0_15px_rgba(0,212,255,0.3)] inline-flex items-center justify-center gap-2"
+                >
+                  <Send className="w-4 h-4" />
+                  Open Telegram
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
