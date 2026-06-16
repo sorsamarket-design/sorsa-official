@@ -58,39 +58,42 @@ export default function CreatorProfile() {
           >
             <div className="absolute top-0 right-0 w-96 h-96 bg-cyan/5 blur-[120px] rounded-full pointer-events-none"></div>
 
-            <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:gap-8">
-              <div className="flex min-w-0 flex-1 flex-col items-start gap-6 sm:flex-row sm:items-center md:gap-8">
-                <div className="relative shrink-0 self-center group sm:self-auto">
+            <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
+              <div className="flex min-w-0 flex-1 flex-row items-start gap-4 md:gap-8">
+                <div className="relative shrink-0 group">
                   <img
                     src={normalizeAvatarUrl(profile?.avatar_url) || normalizeAvatarUrl(user?.user_metadata?.avatar_url) || getInitialsAvatarUrl(profile?.x_handle || 'Creator')}
                     alt={profile?.full_name || profile?.x_handle || 'Creator'}
-                    className="h-32 w-32 rounded-2xl border border-white/10 object-cover sm:h-36 sm:w-36 md:h-40 md:w-40"
+                    className="h-24 w-24 rounded-2xl border border-white/10 object-cover sm:h-32 sm:w-32 md:h-40 md:w-40"
                     referrerPolicy="no-referrer"
                   />
                 </div>
 
-                <div className="flex-1 w-full">
+                <div className="flex-1 min-w-0">
                   <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                    <div>
-                      <h1 className="text-3xl font-semibold text-white tracking-tight flex items-center gap-3">
-                        {profile?.full_name || profile?.x_handle || 'Creator Account'}
-                      </h1>
-                      <p className="text-cyan font-medium mt-1">@{profile?.x_handle || 'username'}</p>
+                    <div className="w-full">
+                      <div className="flex items-start justify-between w-full">
+                        <h1 className="text-xl sm:text-3xl font-semibold text-white tracking-tight truncate">
+                          {profile?.full_name || profile?.x_handle || 'Creator Account'}
+                        </h1>
+                        <button className="text-muted hover:text-white p-1 -mt-1 -mr-1">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+                        </button>
+                      </div>
+                      <p className="text-cyan text-sm sm:text-base font-medium mt-1 truncate">@{profile?.x_handle || 'username'}</p>
 
                       {profile?.country && (
-                        <div className="flex items-center gap-2 text-muted mt-2">
-                          <MapPin className="w-4 h-4" />
-                          <span className="text-sm">{profile.country}</span>
+                        <div className="flex items-center gap-1.5 text-muted mt-2">
+                          <MapPin className="w-3.5 h-3.5" />
+                          <span className="text-xs sm:text-sm">{profile.country}</span>
                         </div>
                       )}
                     </div>
-
                   </div>
 
-                  <div className="mt-6">
-                    <p className="text-muted leading-relaxed max-w-2xl">{profile?.bio || 'This creator hasn\'t added a bio yet.'}</p>
+                  <div className="mt-3 sm:mt-6">
+                    <p className="text-muted text-sm sm:text-base leading-relaxed line-clamp-2 sm:line-clamp-none">{profile?.bio || 'This creator hasn\'t added a bio yet.'}</p>
                   </div>
-
                 </div>
               </div>
 
@@ -98,18 +101,18 @@ export default function CreatorProfile() {
                 <div className="flex items-stretch">
                   <div className="flex-1">
                     <p className="text-xs font-medium text-muted">Sorsa Score</p>
-                    <p className="mt-1 text-3xl font-semibold tracking-tight text-white">{sorsaScore}</p>
+                    <p className="mt-1 text-2xl sm:text-3xl font-semibold tracking-tight text-white">{sorsaScore}</p>
                   </div>
 
                   <div className="mx-5 w-px bg-white/10"></div>
 
                   <div className="flex-1">
                     <p className="text-xs font-medium text-muted">Base Reward</p>
-                    <p className="mt-1 text-2xl font-semibold tracking-tight text-emerald-400">${baseReward}</p>
+                    <p className="mt-1 text-xl sm:text-2xl font-semibold tracking-tight text-emerald-400">${baseReward}</p>
                   </div>
                 </div>
 
-                <div className="mt-5 flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2">
+                <div className="mt-5 flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
                   <Wallet className="h-4 w-4 shrink-0 text-cyan" />
                   <span className="min-w-0 flex-1 truncate text-xs font-medium text-white">{truncatedWallet}</span>
                   <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-muted">Base</span>
