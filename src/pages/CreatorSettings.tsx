@@ -88,14 +88,22 @@ export default function CreatorSettings() {
   }, [connectLink?.connectCode, loadPreferences, telegramStatus?.connected]);
 
   const handleConnectTelegram = async () => {
+    const telegramWindow = window.open('', '_blank', 'noopener,noreferrer');
     try {
       setTelegramMessage(null);
       const link = await createConnectLink();
       setConnectLink(link);
       if (link.telegramLink) {
-        window.open(link.telegramLink, '_blank', 'noopener,noreferrer');
+        if (telegramWindow) {
+          telegramWindow.location.href = link.telegramLink;
+        } else {
+          window.location.href = link.telegramLink;
+        }
+      } else if (telegramWindow) {
+        telegramWindow.close();
       }
     } catch (error: any) {
+      if (telegramWindow) telegramWindow.close();
       setTelegramMessage(error.message || 'Telegram link could not be created.');
     }
   };

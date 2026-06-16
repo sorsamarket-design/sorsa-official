@@ -136,6 +136,7 @@ export default function CreatorCampaignDetail() {
 
   const timeline = formatCampaignTimeline(campaign.end_date, campaign.release_at);
   const displayStatus = timeline.phase === 'payment' || timeline.phase === 'ready' ? 'ended' : campaign.status;
+  const campaignEnded = displayStatus === 'ended' || campaign.status === 'completed';
 
   const getCleanHandle = (handle: string | undefined) => {
     if (!handle) return '';
@@ -386,16 +387,21 @@ export default function CreatorCampaignDetail() {
                   return (
                     <div className="space-y-3">
                       <button
-                        onClick={() => meetsScoreRequirement && hasWalletAddress && setIsJoinModalOpen(true)}
-                        disabled={!meetsScoreRequirement || !hasWalletAddress}
+                        onClick={() => meetsScoreRequirement && hasWalletAddress && !campaignEnded && setIsJoinModalOpen(true)}
+                        disabled={!meetsScoreRequirement || !hasWalletAddress || campaignEnded}
                         className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all duration-300 ${
-                          meetsScoreRequirement && hasWalletAddress
+                          meetsScoreRequirement && hasWalletAddress && !campaignEnded
                             ? 'bg-cyan text-black hover:scale-[1.02] shadow-[0_0_20px_rgba(0,212,255,0.3)] hover:shadow-[0_0_30px_rgba(0,212,255,0.5)]'
                             : 'bg-white/5 text-muted border border-white/10 cursor-not-allowed'
                         }`}
                       >
-                        Join Campaign <ChevronRight className="w-5 h-5" />
+                        {campaignEnded ? 'Campaign Ended' : 'Join Campaign'} <ChevronRight className="w-5 h-5" />
                       </button>
+                      {campaignEnded && (
+                        <p className="text-yellow-400 text-xs text-center font-medium">
+                          This campaign has ended.
+                        </p>
+                      )}
                       {!meetsScoreRequirement && (
                         <p className="text-red-400 text-xs text-center font-medium">
                           You don't have enough Sorsa score to join this campaign.
@@ -483,9 +489,9 @@ export default function CreatorCampaignDetail() {
 
                   <button
                     onClick={handleVerifyAndJoin}
-                    disabled={isVerifying}
+                    disabled={isVerifying || campaignEnded}
                     className={`w-full py-3.5 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${
-                      isVerifying
+                      isVerifying || campaignEnded
                         ? 'bg-white/10 text-muted cursor-not-allowed'
                         : 'bg-cyan text-black hover:scale-[1.02] shadow-[0_0_15px_rgba(0,212,255,0.2)]'
                     }`}
@@ -495,7 +501,7 @@ export default function CreatorCampaignDetail() {
                         <Loader2 className="w-5 h-5 animate-spin" /> Verifying...
                       </>
                     ) : (
-                      'Verify & Join'
+                      campaignEnded ? 'Campaign Ended' : 'Verify & Join'
                     )}
                   </button>
                 </div>

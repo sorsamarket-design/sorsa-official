@@ -98,6 +98,7 @@ export default function CreatorNFTCampaignDetail() {
 
   const handleVerifyTask = async (type: 'follow' | 'retweet', value: string) => {
     if (!id) return;
+    if (campaignEnded) return;
     const key = taskKey(type, value);
     setVerifyingTask(key);
     setTaskErrors((current) => ({ ...current, [key]: '' }));
@@ -135,6 +136,7 @@ export default function CreatorNFTCampaignDetail() {
   const isContent = isContentCampaign(campaign.campaign_type);
   const campaignEndTime = getCampaignEndTime(campaign.end_date);
   const campaignEnded = campaign.status === 'completed' || Boolean(campaignEndTime && campaignEndTime <= Date.now());
+  const canVerifyTasks = !campaignEnded;
   const hasWalletAddress = Boolean(creatorProfile?.wallet_address);
 
   const handleSubmitContent = async (event: React.FormEvent) => {
@@ -312,15 +314,17 @@ export default function CreatorNFTCampaignDetail() {
                               </a>
                               <button
                                 onClick={() => handleVerifyTask('follow', account)}
-                                disabled={isVerifying || isVerified}
+                                disabled={isVerifying || isVerified || !canVerifyTasks}
                                 className={`px-4 py-2 rounded-full text-sm font-semibold inline-flex items-center gap-2 transition-colors ${
                                   isVerified
                                     ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                                    : !canVerifyTasks
+                                      ? 'bg-white/5 text-muted border border-white/10 cursor-not-allowed'
                                     : 'bg-cyan text-black hover:bg-cyan/90'
                                 } disabled:opacity-80`}
                               >
                                 {isVerifying ? <Loader2 className="w-4 h-4 animate-spin" /> : isVerified ? <CheckCircle2 className="w-4 h-4" /> : null}
-                                {isVerifying ? 'Verifying...' : isVerified ? 'Verified' : 'Verify'}
+                                {isVerifying ? 'Verifying...' : isVerified ? 'Verified' : campaignEnded ? 'Ended' : 'Verify'}
                               </button>
                             </div>
                           </div>
@@ -385,15 +389,17 @@ export default function CreatorNFTCampaignDetail() {
                               </a>
                               <button
                                 onClick={() => handleVerifyTask('follow', account)}
-                                disabled={isVerifying || isVerified}
+                                disabled={isVerifying || isVerified || !canVerifyTasks}
                                 className={`px-4 py-2 rounded-full text-sm font-semibold inline-flex items-center gap-2 transition-colors ${
                                   isVerified
                                     ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                                    : !canVerifyTasks
+                                      ? 'bg-white/5 text-muted border border-white/10 cursor-not-allowed'
                                     : 'bg-cyan text-black hover:bg-cyan/90'
                                 } disabled:opacity-80`}
                               >
                                 {isVerifying ? <Loader2 className="w-4 h-4 animate-spin" /> : isVerified ? <CheckCircle2 className="w-4 h-4" /> : null}
-                                {isVerifying ? 'Verifying...' : isVerified ? 'Verified' : 'Verify'}
+                                {isVerifying ? 'Verifying...' : isVerified ? 'Verified' : campaignEnded ? 'Ended' : 'Verify'}
                               </button>
                             </div>
                           </div>
@@ -436,15 +442,17 @@ export default function CreatorNFTCampaignDetail() {
                               </a>
                               <button
                                 onClick={() => handleVerifyTask('retweet', link)}
-                                disabled={isVerifying || isVerified}
+                                disabled={isVerifying || isVerified || !canVerifyTasks}
                                 className={`px-4 py-2 rounded-full text-sm font-semibold inline-flex items-center gap-2 transition-colors ${
                                   isVerified
                                     ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                                    : !canVerifyTasks
+                                      ? 'bg-white/5 text-muted border border-white/10 cursor-not-allowed'
                                     : 'bg-cyan text-black hover:bg-cyan/90'
                                 } disabled:opacity-80`}
                               >
                                 {isVerifying ? <Loader2 className="w-4 h-4 animate-spin" /> : isVerified ? <CheckCircle2 className="w-4 h-4" /> : null}
-                                {isVerifying ? 'Verifying...' : isVerified ? 'Verified' : 'Verify'}
+                                {isVerifying ? 'Verifying...' : isVerified ? 'Verified' : campaignEnded ? 'Ended' : 'Verify'}
                               </button>
                             </div>
                           </div>

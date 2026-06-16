@@ -625,9 +625,11 @@ function getBackendBaseUrl(req) {
   return `${proto}://${req.get('host')}`;
 }
 
-function getTelegramBotLink() {
+function getTelegramBotLink(connectCode = '') {
   if (!env.TELEGRAM_BOT_USERNAME) return null;
-  return `https://t.me/${env.TELEGRAM_BOT_USERNAME.replace('@', '')}`;
+  const username = env.TELEGRAM_BOT_USERNAME.replace('@', '');
+  const startParam = connectCode ? `?start=${encodeURIComponent(connectCode)}` : '';
+  return `https://t.me/${username}${startParam}`;
 }
 
 function escapeTelegramHtml(value) {
