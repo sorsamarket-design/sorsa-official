@@ -120,8 +120,12 @@ export default function CreatorSettings() {
   };
 
   const handleOpenTelegram = () => {
-    if (!connectLink?.telegramLink) return;
-    window.open(connectLink.telegramLink, '_blank', 'noopener,noreferrer');
+    const botLink =
+      connectLink?.telegramBotLink ||
+      (connectLink?.botUsername ? `https://t.me/${String(connectLink.botUsername).replace('@', '')}` : null) ||
+      (connectLink?.telegramLink ? String(connectLink.telegramLink).split('?')[0] : null);
+    if (!botLink) return;
+    window.open(botLink, '_blank', 'noopener,noreferrer');
   };
 
   const handlePreferenceChange = async (key: keyof TelegramPreferences, value: boolean) => {

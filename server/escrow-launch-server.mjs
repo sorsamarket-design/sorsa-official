@@ -1927,6 +1927,7 @@ app.post('/telegram/connect-code', async (req, res) => {
       connectCode,
       expiresAt,
       botUsername: env.TELEGRAM_BOT_USERNAME || null,
+      telegramBotLink: getTelegramBotLink(),
       telegramLink: getTelegramBotLink(connectCode)
     });
   } catch (error) {
