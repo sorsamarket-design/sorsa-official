@@ -391,52 +391,6 @@ const FeatureSection = ({ id, title, subtitle, features, reverse }: any) => {
   );
 };
 
-const StatsBar = () => {
-  return (
-    <section className="relative overflow-hidden px-5 py-10 md:px-0 md:py-32">
-      <div className="absolute inset-0 flex items-center justify-center opacity-30 pointer-events-none">
-        <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent absolute top-0"></div>
-        <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent absolute bottom-0"></div>
-      </div>
-
-      <div className="relative z-10 mx-auto max-w-7xl md:px-6">
-        <div className="grid grid-cols-3 items-center text-center divide-x divide-[#1f2937] md:gap-12 md:divide-white/10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8, ease: appleEase }}
-            className="px-2 md:px-0"
-          >
-            <div className="mb-2 text-2xl font-extrabold text-white md:mb-4 md:text-7xl md:font-semibold md:tracking-tighter">10k+</div>
-            <div className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-[#6b7280] md:text-sm md:tracking-widest md:text-muted">Creators</div>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8, ease: appleEase, delay: 0.1 }}
-            className="px-2 md:px-0"
-          >
-            <div className="mb-2 text-2xl font-extrabold text-white md:mb-4 md:text-7xl md:font-semibold md:tracking-tighter">500+</div>
-            <div className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-[#6b7280] md:text-sm md:tracking-widest md:text-muted">Brands</div>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8, ease: appleEase, delay: 0.2 }}
-            className="px-2 md:px-0"
-          >
-            <div className="mb-2 text-2xl font-extrabold text-white md:mb-4 md:text-7xl md:font-semibold md:tracking-tighter">$2M+</div>
-            <div className="text-[0.65rem] font-medium uppercase tracking-[0.08em] text-[#6b7280] md:text-sm md:tracking-widest md:text-muted">In Rewards</div>
-          </motion.div>
-        </div>
-      </div>
-    </section>
-  );
-};
-
 const Footer = () => {
   return (
     <footer className="border-t border-white/10 bg-black p-6 md:px-0 md:py-20">
@@ -720,7 +674,6 @@ export default function Landing() {
         subtitle="Monetize your audience on your terms."
         features={creatorFeatures}
       />
-      <StatsBar />
       <FAQ />
       <TeamSection />
       <Footer />
