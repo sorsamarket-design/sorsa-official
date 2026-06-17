@@ -85,8 +85,7 @@ function RouteLayout() {
         <Route path="/terms" element={<LegalPage type="terms" />} />
         <Route path="/privacy" element={<LegalPage type="privacy" />} />
         <Route path="/cookies" element={<LegalPage type="cookies" />} />
-        <Route path="/ref/:code" element={<ReferralLanding />} />
-        <Route path="/ref/:code/:name" element={<ReferralLanding />} />
+        <Route path="/join" element={<ReferralLanding />} />
         
         {/* Brand Routes */}
         <Route path="/brand/dashboard" element={<ProtectedRoute requiredRole="brand"><BrandDashboard /></ProtectedRoute>} />

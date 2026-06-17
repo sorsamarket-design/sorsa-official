@@ -10,15 +10,6 @@ import { buildReferralCode, ensureCreatorReferralCode } from '../lib/referrals';
 
 const appleEase = [0.16, 1, 0.3, 1] as const;
 
-function slugifyReferralName(value: string | null | undefined) {
-  return String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/^@/, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
 export default function CreatorReferral() {
   const [copied, setCopied] = useState(false);
   const [showPointScale, setShowPointScale] = useState(false);
@@ -28,8 +19,7 @@ export default function CreatorReferral() {
   const { user } = useAuth();
   const { profile, refreshProfile } = useCreatorProfile();
   const referralCode = profile?.referral_code || buildReferralCode(profile?.x_handle, user?.id);
-  const referrerName = slugifyReferralName(profile?.x_handle || profile?.full_name || user?.email?.split('@')[0]);
-  const referralLink = `${window.location.origin}/ref/${referralCode}${referrerName ? `/${referrerName}` : ''}`;
+  const referralLink = `https://sorsamarket.com/join?ref=${encodeURIComponent(referralCode)}`;
   const filteredActivity = useMemo(() => {
     const query = search.trim().toLowerCase();
     if (!query) return referralActivity;

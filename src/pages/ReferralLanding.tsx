@@ -1,13 +1,14 @@
 import React, { useEffect } from 'react';
-import { Navigate, useParams } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { saveReferralCode } from '../lib/referrals';
 
 export default function ReferralLanding() {
-  const { code } = useParams();
+  const [searchParams] = useSearchParams();
+  const ref = searchParams.get('ref');
 
   useEffect(() => {
-    if (code) saveReferralCode(code);
-  }, [code]);
+    if (ref) saveReferralCode(ref);
+  }, [ref]);
 
   return <Navigate to="/auth/creator" replace />;
 }
