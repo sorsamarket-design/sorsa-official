@@ -8,6 +8,13 @@ export type TelegramPreferences = {
   payments: boolean;
 };
 
+export type TelegramStatus = {
+  connected?: boolean;
+  telegramUsername?: string | null;
+  connectedAt?: string | null;
+  preferences?: TelegramPreferences;
+};
+
 function getBackendBase() {
   if (!launchEndpoint) {
     throw new Error('Telegram notifications are not configured.');
@@ -45,10 +52,23 @@ async function request(path: string, options: RequestInit = {}) {
   return body;
 }
 
+async function createStatusEventSource() {
+  const supabase = requireSupabase();
+  const { data, error } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (error || !token) {
+    throw new Error('Please sign in again.');
+  }
+
+  return new EventSource(`${getBackendBase()}/telegram/status/stream?token=${encodeURIComponent(token)}`);
+}
+
 const telegramNotifications = {
   getPreferences() {
     return request('/telegram/preferences');
   },
+
+  createStatusEventSource,
 
   createConnectLink() {
     return request('/telegram/connect-code', { method: 'POST' });

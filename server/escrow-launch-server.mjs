@@ -103,6 +103,70 @@ async function authenticate(req) {
   return data.user;
 }
 
+async function authenticateToken(token) {
+  if (!token) throw Object.assign(new Error('Missing bearer token'), { status: 401 });
+  const { data, error } = await supabase.auth.getUser(token);
+  if (error || !data.user) throw Object.assign(new Error('Invalid session'), { status: 401 });
+  return data.user;
+}
+
+const telegramStatusStreams = new Map();
+
+function writeTelegramStatusEvent(res, status) {
+  res.write(`data: ${JSON.stringify(status)}\n\n`);
+}
+
+function addTelegramStatusClient(userId, res) {
+  const clients = telegramStatusStreams.get(userId) || new Set();
+  clients.add(res);
+  telegramStatusStreams.set(userId, clients);
+}
+
+function removeTelegramStatusClient(userId, res) {
+  const clients = telegramStatusStreams.get(userId);
+  if (!clients) return;
+  clients.delete(res);
+  if (clients.size === 0) {
+    telegramStatusStreams.delete(userId);
+  }
+}
+
+function pushTelegramStatus(userId, status) {
+  const clients = telegramStatusStreams.get(userId);
+  if (!clients) return;
+
+  for (const client of [...clients]) {
+    try {
+      writeTelegramStatusEvent(client, status);
+    } catch (error) {
+      removeTelegramStatusClient(userId, client);
+    }
+  }
+}
+
+function mapTelegramPreferences(data) {
+  return {
+    connected: Boolean(data?.telegram_chat_id),
+    telegramUsername: data?.telegram_username || null,
+    connectedAt: data?.telegram_connected_at || null,
+    preferences: {
+      newCampaigns: Boolean(data?.notify_new_campaigns),
+      campaignUpdates: Boolean(data?.notify_campaign_updates),
+      payments: Boolean(data?.notify_payments)
+    }
+  };
+}
+
+async function getTelegramStatus(userId) {
+  const { data, error } = await supabase
+    .from('creator_profiles')
+    .select('telegram_chat_id, telegram_username, telegram_connected_at, notify_new_campaigns, notify_campaign_updates, notify_payments')
+    .eq('id', userId)
+    .single();
+  if (error) throw error;
+  return mapTelegramPreferences(data);
+}
+
 function assertHex32(value, label) {
   if (typeof value !== 'string' || !/^0x[0-9a-fA-F]{64}$/.test(value)) {
     throw Object.assign(new Error(`Invalid ${label}`), { status: 400 });
@@ -1873,6 +1937,8 @@ app.post('/telegram/webhook/:secret', async (req, res) => {
       .eq('id', profile.id);
     if (updateError) throw updateError;
 
+    pushTelegramStatus(profile.id, await getTelegramStatus(profile.id));
+
     await sendTelegramMessage(chatId, 'Telegram notifications are connected for SorsaMarket. You can manage notification types from Creator Settings.');
     return res.json({ ok: true });
   } catch (error) {
@@ -1881,26 +1947,45 @@ app.post('/telegram/webhook/:secret', async (req, res) => {
   }
 });
 
+app.get('/telegram/status/stream', async (req, res) => {
+  let userId = null;
+  let heartbeat = null;
+  try {
+    const token = typeof req.query.token === 'string' ? req.query.token : null;
+    const user = await authenticateToken(token);
+    userId = user.id;
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('Connection', 'keep-alive');
+    if (typeof res.flushHeaders === 'function') res.flushHeaders();
+
+    addTelegramStatusClient(userId, res);
+    writeTelegramStatusEvent(res, await getTelegramStatus(userId));
+
+    heartbeat = setInterval(() => {
+      res.write(': keepalive\n\n');
+    }, 25_000);
+
+    req.on('close', () => {
+      if (heartbeat) clearInterval(heartbeat);
+      removeTelegramStatusClient(userId, res);
+    });
+  } catch (error) {
+    if (heartbeat) clearInterval(heartbeat);
+    if (userId) removeTelegramStatusClient(userId, res);
+    if (!res.headersSent) {
+      const status = error.status || 500;
+      return res.status(status).json({ error: error.message || 'Could not open Telegram status stream' });
+    }
+    res.end();
+  }
+});
+
 app.get('/telegram/preferences', async (req, res) => {
   try {
     const user = await authenticate(req);
-    const { data, error } = await supabase
-      .from('creator_profiles')
-      .select('telegram_chat_id, telegram_username, telegram_connected_at, notify_new_campaigns, notify_campaign_updates, notify_payments')
-      .eq('id', user.id)
-      .single();
-    if (error) throw error;
-
-    return res.json({
-      connected: Boolean(data.telegram_chat_id),
-      telegramUsername: data.telegram_username,
-      connectedAt: data.telegram_connected_at,
-      preferences: {
-        newCampaigns: data.notify_new_campaigns,
-        campaignUpdates: data.notify_campaign_updates,
-        payments: data.notify_payments
-      }
-    });
+    return res.json(await getTelegramStatus(user.id));
   } catch (error) {
     const status = error.status || 500;
     return res.status(status).json({ error: error.message || 'Could not load Telegram preferences' });
@@ -1950,6 +2035,7 @@ app.post('/telegram/disconnect', async (req, res) => {
       })
       .eq('id', user.id);
     if (error) throw error;
+    pushTelegramStatus(user.id, await getTelegramStatus(user.id));
     return res.json({ connected: false });
   } catch (error) {
     const status = error.status || 500;

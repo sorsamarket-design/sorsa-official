@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
 import { Settings as SettingsIcon, Bell, Shield, Wallet, Twitter, LogOut, Send, Copy, X } from 'lucide-react';
@@ -12,8 +12,6 @@ import { useTelegramPreferences } from '../hooks/useTelegramPreferences';
 import { type TelegramPreferences } from '../lib/telegramNotifications';
 
 const appleEase = [0.16, 1, 0.3, 1] as const;
-const TELEGRAM_CONNECT_POLL_MS = 4000;
-const TELEGRAM_CONNECT_POLL_MAX_MS = 30 * 60 * 1000;
 
 const shortenAddress = (value?: string) => value ? `${value.slice(0, 6)}...${value.slice(-4)}` : 'Not bound';
 
@@ -34,7 +32,6 @@ export default function CreatorSettings() {
   const [connectLink, setConnectLink] = useState<any>(null);
   const [telegramMessage, setTelegramMessage] = useState<string | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
-  const telegramPollStartedAt = useRef<number | null>(null);
   const navigate = useNavigate();
   const { disconnect } = useDisconnect();
   const { address } = useAccount();
@@ -62,31 +59,11 @@ export default function CreatorSettings() {
   }, []);
 
   useEffect(() => {
-    if (!connectLink?.connectCode || telegramStatus?.connected) {
-      telegramPollStartedAt.current = null;
-      return;
+    if (connectLink?.connectCode && telegramStatus?.connected) {
+      setConnectLink(null);
+      setTelegramMessage(null);
     }
-
-    telegramPollStartedAt.current = Date.now();
-    const poll = window.setInterval(async () => {
-      const startedAt = telegramPollStartedAt.current;
-      if (!startedAt || Date.now() - startedAt > TELEGRAM_CONNECT_POLL_MAX_MS) {
-        window.clearInterval(poll);
-        telegramPollStartedAt.current = null;
-        return;
-      }
-
-      const nextStatus = await loadPreferences({ force: true });
-      if (nextStatus?.connected) {
-        setConnectLink(null);
-        setTelegramMessage(null);
-        window.clearInterval(poll);
-        telegramPollStartedAt.current = null;
-      }
-    }, TELEGRAM_CONNECT_POLL_MS);
-
-    return () => window.clearInterval(poll);
-  }, [connectLink?.connectCode, loadPreferences, telegramStatus?.connected]);
+  }, [connectLink?.connectCode, telegramStatus?.connected]);
 
   const handleConnectTelegram = async () => {
     try {

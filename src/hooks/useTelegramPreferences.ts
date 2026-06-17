@@ -1,15 +1,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import telegramNotifications, { type TelegramPreferences } from '../lib/telegramNotifications';
+import telegramNotifications, { type TelegramPreferences, type TelegramStatus } from '../lib/telegramNotifications';
 import { useAuth } from '../context/AuthContext';
 
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-
-type TelegramStatus = {
-  connected?: boolean;
-  telegramUsername?: string | null;
-  connectedAt?: string | null;
-  preferences?: TelegramPreferences;
-};
 
 type TelegramPreferencesContextValue = {
   status: TelegramStatus | null;
@@ -34,6 +27,7 @@ export function TelegramPreferencesProvider({ children }: { children: React.Reac
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const cachedUserId = useRef<string | null>(null);
+  const statusStreamRef = useRef<EventSource | null>(null);
 
   const resetCache = useCallback(() => {
     setStatus(null);
@@ -53,6 +47,51 @@ export function TelegramPreferencesProvider({ children }: { children: React.Reac
       resetCache();
     }
   }, [authLoading, resetCache, user?.id]);
+
+  useEffect(() => {
+    if (authLoading || !user) return;
+
+    let cancelled = false;
+    let source: EventSource | null = null;
+
+    telegramNotifications.createStatusEventSource()
+      .then((eventSource) => {
+        if (cancelled) {
+          eventSource.close();
+          return;
+        }
+
+        source = eventSource;
+        statusStreamRef.current = eventSource;
+        eventSource.onmessage = (event) => {
+          try {
+            const nextStatus = JSON.parse(event.data) as TelegramStatus;
+            setStatus(nextStatus);
+            setLoaded(true);
+            setLastFetchedAt(Date.now());
+            setError(null);
+          } catch (err) {
+            console.warn('Could not parse Telegram status stream event:', err);
+          }
+        };
+        eventSource.onerror = () => {
+          setError('Telegram connection status stream was interrupted.');
+        };
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err.message || 'Telegram connection status stream could not be opened.');
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      if (source) source.close();
+      if (statusStreamRef.current === source) {
+        statusStreamRef.current = null;
+      }
+    };
+  }, [authLoading, user?.id]);
 
   const loadPreferences = useCallback(async (options: { force?: boolean } = {}) => {
     if (authLoading) return null;
