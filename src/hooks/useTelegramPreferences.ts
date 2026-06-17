@@ -28,6 +28,7 @@ export function TelegramPreferencesProvider({ children }: { children: React.Reac
   const [error, setError] = useState<string | null>(null);
   const cachedUserId = useRef<string | null>(null);
   const statusStreamRef = useRef<EventSource | null>(null);
+  const streamLoadedRef = useRef(false);
 
   const resetCache = useCallback(() => {
     setStatus(null);
@@ -36,6 +37,7 @@ export function TelegramPreferencesProvider({ children }: { children: React.Reac
     setSaving(false);
     setLoaded(false);
     setError(null);
+    streamLoadedRef.current = false;
   }, []);
 
   useEffect(() => {
@@ -63,9 +65,15 @@ export function TelegramPreferencesProvider({ children }: { children: React.Reac
 
         source = eventSource;
         statusStreamRef.current = eventSource;
+        eventSource.onopen = () => {
+          if (streamLoadedRef.current) {
+            setError(null);
+          }
+        };
         eventSource.onmessage = (event) => {
           try {
             const nextStatus = JSON.parse(event.data) as TelegramStatus;
+            streamLoadedRef.current = true;
             setStatus(nextStatus);
             setLoaded(true);
             setLastFetchedAt(Date.now());
@@ -75,7 +83,21 @@ export function TelegramPreferencesProvider({ children }: { children: React.Reac
           }
         };
         eventSource.onerror = () => {
-          setError('Telegram connection status stream was interrupted.');
+          if (streamLoadedRef.current) {
+            return;
+          }
+
+          telegramNotifications.getPreferences()
+            .then((nextStatus) => {
+              streamLoadedRef.current = true;
+              setStatus(nextStatus);
+              setLoaded(true);
+              setLastFetchedAt(Date.now());
+              setError(null);
+            })
+            .catch(() => {
+              setError('Telegram connection status could not be loaded.');
+            });
         };
       })
       .catch((err) => {

@@ -65,6 +65,28 @@ export default function CreatorSettings() {
     }
   }, [connectLink?.connectCode, telegramStatus?.connected]);
 
+  useEffect(() => {
+    if (!connectLink?.connectCode || telegramStatus?.connected) return;
+
+    let cancelled = false;
+    const refreshStatus = async () => {
+      const nextStatus = await loadPreferences({ force: true });
+      if (!cancelled && nextStatus?.connected) {
+        setConnectLink(null);
+        setTelegramMessage(null);
+      }
+    };
+
+    const refreshTimeout = window.setTimeout(refreshStatus, 2000);
+    const refreshInterval = window.setInterval(refreshStatus, 4000);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(refreshTimeout);
+      window.clearInterval(refreshInterval);
+    };
+  }, [connectLink?.connectCode, loadPreferences, telegramStatus?.connected]);
+
   const handleConnectTelegram = async () => {
     try {
       setTelegramMessage(null);
@@ -90,6 +112,7 @@ export default function CreatorSettings() {
     try {
       await navigator.clipboard.writeText(connectLink.connectCode);
       setCopiedCode(true);
+      void loadPreferences({ force: true });
       window.setTimeout(() => setCopiedCode(false), 2000);
     } catch (error: any) {
       setTelegramMessage('Code could not be copied.');
@@ -103,6 +126,7 @@ export default function CreatorSettings() {
       (connectLink?.telegramLink ? String(connectLink.telegramLink).split('?')[0] : null);
     if (!botLink) return;
     window.open(botLink, '_blank', 'noopener,noreferrer');
+    void loadPreferences({ force: true });
   };
 
   const handlePreferenceChange = async (key: keyof TelegramPreferences, value: boolean) => {
