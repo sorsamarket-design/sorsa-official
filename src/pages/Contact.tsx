@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Mail, MessageCircle, Bug, ChevronDown, ChevronUp, Send } from 'lucide-react';
+import { Mail, Bug, ChevronDown, ChevronUp, Send } from 'lucide-react';
 import CreatorSidebar from '../components/CreatorSidebar';
 import CreatorTopBar from '../components/CreatorTopBar';
+import { TelegramLogo } from '../components/TelegramLogo';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
@@ -107,13 +108,13 @@ export default function Contact() {
             className="grid grid-cols-3 gap-2.5 md:gap-6"
           >
             <a 
-              href="https://t.me/sorsasupport" 
+              href="https://t.me/SorsaMarket" 
               target="_blank" 
               rel="noopener noreferrer"
               className="glass-panel rounded-2xl p-6 border border-white/10 hover:border-cyan/50 hover:bg-white/5 transition-all group flex flex-col items-center text-center"
             >
               <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <MessageCircle className="w-6 h-6 text-blue-400" />
+                <TelegramLogo className="w-6 h-6 text-blue-400" />
               </div>
               <h3 className="text-lg font-medium text-white mb-1">Telegram</h3>
               <p className="text-sm text-muted">Fastest response time</p>

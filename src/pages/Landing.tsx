@@ -12,13 +12,13 @@ import {
   Star,
   Mail,
   Menu,
-  Send,
   X,
   Target,
   ArrowRight,
   ChevronRight
 } from 'lucide-react';
 import { XLogo } from '../components/XLogo';
+import { TelegramLogo } from '../components/TelegramLogo';
 import { useAuth } from '../context/AuthContext';
 
 const appleEase = [0.16, 1, 0.3, 1] as const;
@@ -438,8 +438,8 @@ const Footer = () => {
                   </a>
                 </li>
                 <li>
-                  <a href="https://t.me/Jahwey" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 hover:text-white transition-colors">
-                    <Send className="h-3.5 w-3.5 shrink-0" />
+                  <a href="https://t.me/SorsaMarket" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 hover:text-white transition-colors">
+                    <TelegramLogo className="h-3.5 w-3.5 shrink-0" />
                     <span>Telegram</span>
                   </a>
                 </li>
