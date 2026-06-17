@@ -1,36 +1,14 @@
 import { requireSupabase } from './supabase';
-
-const launchEndpoint = import.meta.env.VITE_ESCROW_LAUNCH_ENDPOINT;
-
-function getBackendBase() {
-  if (!launchEndpoint) {
-    throw new Error('Backend endpoint is not configured');
-  }
-
-  return launchEndpoint.replace(/\/campaigns\/launch\/?$/, '');
-}
-
-async function getAuthHeaders() {
-  const supabase = requireSupabase();
-  const { data, error } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-
-  if (error || !token) {
-    throw new Error('Not authenticated');
-  }
-
-  return {
-    Authorization: `Bearer ${token}`,
-    'Content-Type': 'application/json'
-  };
-}
+import { getBackendBase } from './appSession';
 
 async function requestNftCampaigns(path: string, options: RequestInit = {}) {
+  requireSupabase();
   const response = await fetch(`${getBackendBase()}${path}`, {
     ...options,
+    credentials: 'include',
     headers: {
       ...(options.headers || {}),
-      ...(await getAuthHeaders())
+      'Content-Type': 'application/json'
     }
   });
   const body = await response.json().catch(() => null);

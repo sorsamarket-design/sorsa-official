@@ -1,6 +1,5 @@
 import { requireSupabase } from './supabase';
-
-const launchEndpoint = import.meta.env.VITE_ESCROW_LAUNCH_ENDPOINT;
+import { getBackendBase } from './appSession';
 
 export type TelegramPreferences = {
   newCampaigns: boolean;
@@ -15,34 +14,13 @@ export type TelegramStatus = {
   preferences?: TelegramPreferences;
 };
 
-function getBackendBase() {
-  if (!launchEndpoint) {
-    throw new Error('Telegram notifications are not configured.');
-  }
-
-  return launchEndpoint.replace(/\/campaigns\/launch\/?$/, '');
-}
-
-async function authHeaders() {
-  const supabase = requireSupabase();
-  const { data, error } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  if (error || !token) {
-    throw new Error('Please sign in again.');
-  }
-
-  return {
-    Authorization: `Bearer ${token}`
-  };
-}
-
 async function request(path: string, options: RequestInit = {}) {
-  const headers = await authHeaders();
+  requireSupabase();
   const response = await fetch(`${getBackendBase()}${path}`, {
     ...options,
+    credentials: 'include',
     headers: {
-      ...(options.headers || {}),
-      ...headers
+      ...(options.headers || {})
     }
   });
   const body = await response.json().catch(() => null);
@@ -53,14 +31,8 @@ async function request(path: string, options: RequestInit = {}) {
 }
 
 async function createStatusEventSource() {
-  const supabase = requireSupabase();
-  const { data, error } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  if (error || !token) {
-    throw new Error('Please sign in again.');
-  }
-
-  return new EventSource(`${getBackendBase()}/telegram/status/stream?token=${encodeURIComponent(token)}`);
+  requireSupabase();
+  return new EventSource(`${getBackendBase()}/telegram/status/stream`, { withCredentials: true });
 }
 
 const telegramNotifications = {

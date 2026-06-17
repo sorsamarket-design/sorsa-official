@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { normalizeAvatarUrl } from '../lib/avatars';
+import { createAppSession } from '../lib/appSession';
 
 async function completeSupabaseRedirect() {
   const searchParams = new URLSearchParams(window.location.search);
@@ -46,6 +47,7 @@ export default function BrandAuthCallback() {
 
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         if (sessionError || !session) throw new Error(sessionError?.message || 'No session found after redirect');
+        await createAppSession(session.access_token);
 
         const user = session.user;
         const metadata = user.user_metadata;

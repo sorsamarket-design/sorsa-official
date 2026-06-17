@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase, hasSupabaseConfig } from '../lib/supabase';
+import { destroyAppSession } from '../lib/appSession';
 
 const AuthContext = createContext({
   user: null,
@@ -90,6 +91,11 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const signOut = useCallback(async () => {
+    try {
+      await destroyAppSession();
+    } catch (err) {
+      console.warn('App session logout failed:', err);
+    }
     await supabase.auth.signOut();
   }, []);
 

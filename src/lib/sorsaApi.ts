@@ -1,36 +1,13 @@
 import { requireSupabase } from './supabase';
-
-const launchEndpoint = import.meta.env.VITE_ESCROW_LAUNCH_ENDPOINT;
-
-function getBackendBase() {
-  if (!launchEndpoint) {
-    throw new Error('Unable to verify');
-  }
-
-  return launchEndpoint.replace(/\/campaigns\/launch\/?$/, '');
-}
-
-async function getAuthHeaders() {
-  const supabase = requireSupabase();
-  const { data, error } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-
-  if (error || !token) {
-    throw new Error('Unable to verify');
-  }
-
-  return {
-    Authorization: `Bearer ${token}`
-  };
-}
+import { getBackendBase } from './appSession';
 
 async function proxySorsa(path: string, options: RequestInit = {}) {
-  const authHeaders = await getAuthHeaders();
+  requireSupabase();
   const response = await fetch(`${getBackendBase()}${path}`, {
     ...options,
+    credentials: 'include',
     headers: {
-      ...(options.headers || {}),
-      ...authHeaders
+      ...(options.headers || {})
     }
   });
   const body = await response.json().catch(() => null);

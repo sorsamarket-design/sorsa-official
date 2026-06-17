@@ -261,7 +261,7 @@ export async function authorizeEscrowLaunch({
 
 export async function launchCampaignThroughEscrow(
   request: EscrowLaunchRequest,
-  accessToken?: string
+  _accessToken?: string
 ): Promise<EscrowLaunchResult> {
   if (!launchEndpoint) {
     throw new Error('Missing VITE_ESCROW_LAUNCH_ENDPOINT. Configure the trusted backend endpoint that locks escrow before inserting campaigns.');
@@ -269,9 +269,9 @@ export async function launchCampaignThroughEscrow(
 
   const response = await fetch(launchEndpoint, {
     method: 'POST',
+    credentials: 'include',
     headers: {
-      'Content-Type': 'application/json',
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
+      'Content-Type': 'application/json'
     },
     body: JSON.stringify(request)
   });
@@ -303,7 +303,7 @@ export async function launchCampaignThroughEscrow(
 
 export async function saveCampaignDraftThroughBackend(
   campaign: Record<string, unknown>,
-  accessToken?: string,
+  _accessToken?: string,
   draftCampaignId?: string | null
 ): Promise<{ campaignId: string; status: 'draft' }> {
   const draftEndpoint = getDraftEndpoint();
@@ -313,9 +313,9 @@ export async function saveCampaignDraftThroughBackend(
 
   const response = await fetch(draftEndpoint, {
     method: 'POST',
+    credentials: 'include',
     headers: {
-      'Content-Type': 'application/json',
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
+      'Content-Type': 'application/json'
     },
     body: JSON.stringify({ campaign, draftCampaignId })
   });

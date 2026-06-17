@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { createClient } from '@supabase/supabase-js';
 import {
@@ -73,6 +73,7 @@ app.use((req, res, next) => {
   if (origin && (allowedOrigins.length === 0 || allowedOrigins.includes(origin))) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
   }
   res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -88,6 +89,48 @@ const platformAccount = privateKeyToAccount(env.PLATFORM_PRIVATE_KEY);
 const publicClient = createPublicClient({ transport: http(env.ESCROW_RPC_URL) });
 const walletClient = createWalletClient({ account: platformAccount, transport: http(env.ESCROW_RPC_URL) });
 const expectedChainId = env.ESCROW_CHAIN_ID ? BigInt(env.ESCROW_CHAIN_ID) : null;
+const appSessionCookieName = 'sorsa_session';
+const appSessionTtlSeconds = 5 * 24 * 60 * 60;
+
+function parseCookies(req) {
+  return String(req.headers.cookie || '')
+    .split(';')
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .reduce((cookies, part) => {
+      const separator = part.indexOf('=');
+      if (separator === -1) return cookies;
+      const name = decodeURIComponent(part.slice(0, separator).trim());
+      const value = decodeURIComponent(part.slice(separator + 1).trim());
+      cookies[name] = value;
+      return cookies;
+    }, {});
+}
+
+function hashSessionToken(token) {
+  return createHash('sha256').update(token).digest('hex');
+}
+
+function serializeAppSessionCookie(value, maxAgeSeconds) {
+  const encodedName = encodeURIComponent(appSessionCookieName);
+  const encodedValue = encodeURIComponent(value);
+  return [
+    `${encodedName}=${encodedValue}`,
+    'Path=/',
+    'HttpOnly',
+    'Secure',
+    'SameSite=Lax',
+    `Max-Age=${maxAgeSeconds}`
+  ].join('; ');
+}
+
+function setAppSessionCookie(res, token) {
+  res.setHeader('Set-Cookie', serializeAppSessionCookie(token, appSessionTtlSeconds));
+}
+
+function clearAppSessionCookie(res) {
+  res.setHeader('Set-Cookie', serializeAppSessionCookie('', 0));
+}
 
 function requireBearer(req) {
   const header = req.headers.authorization || '';
@@ -97,10 +140,26 @@ function requireBearer(req) {
 }
 
 async function authenticate(req) {
-  const token = requireBearer(req);
-  const { data, error } = await supabase.auth.getUser(token);
-  if (error || !data.user) throw Object.assign(new Error('Invalid session'), { status: 401 });
-  return data.user;
+  const cookies = parseCookies(req);
+  const sessionToken = cookies[appSessionCookieName];
+  if (!sessionToken) throw Object.assign(new Error('Missing app session'), { status: 401 });
+
+  const tokenHash = hashSessionToken(sessionToken);
+  const { data: sessionRow, error } = await supabase
+    .from('app_sessions')
+    .select('id, user_id, expires_at, revoked_at')
+    .eq('token_hash', tokenHash)
+    .maybeSingle();
+
+  if (error || !sessionRow || sessionRow.revoked_at || new Date(sessionRow.expires_at).getTime() <= Date.now()) {
+    throw Object.assign(new Error('Invalid app session'), { status: 401 });
+  }
+
+  await supabase
+    .from('app_sessions')
+    .update({ last_seen_at: new Date().toISOString() })
+    .eq('id', sessionRow.id);
+  return { id: sessionRow.user_id };
 }
 
 async function authenticateToken(token) {
@@ -108,6 +167,32 @@ async function authenticateToken(token) {
   const { data, error } = await supabase.auth.getUser(token);
   if (error || !data.user) throw Object.assign(new Error('Invalid session'), { status: 401 });
   return data.user;
+}
+
+async function createAppSession(userId) {
+  const token = randomBytes(32).toString('base64url');
+  const expiresAt = new Date(Date.now() + appSessionTtlSeconds * 1000).toISOString();
+  const { error } = await supabase
+    .from('app_sessions')
+    .insert({
+      user_id: userId,
+      token_hash: hashSessionToken(token),
+      expires_at: expiresAt
+    });
+  if (error) throw Object.assign(new Error(error.message), { status: 500 });
+  return { token, expiresAt };
+}
+
+async function revokeCurrentAppSession(req) {
+  const token = parseCookies(req)[appSessionCookieName];
+  if (!token) return false;
+  const { error } = await supabase
+    .from('app_sessions')
+    .update({ revoked_at: new Date().toISOString() })
+    .eq('token_hash', hashSessionToken(token))
+    .is('revoked_at', null);
+  if (error) throw Object.assign(new Error(error.message), { status: 500 });
+  return true;
 }
 
 const telegramStatusStreams = new Map();
@@ -1872,6 +1957,35 @@ app.get('/campaigns/launch/ready', async (_req, res) => {
   }
 });
 
+app.post('/auth/session', async (req, res) => {
+  try {
+    const token = requireBearer(req);
+    const user = await authenticateToken(token);
+    const session = await createAppSession(user.id);
+    setAppSessionCookie(res, session.token);
+    return res.status(201).json({
+      userId: user.id,
+      expiresAt: session.expiresAt,
+      maxAge: appSessionTtlSeconds
+    });
+  } catch (error) {
+    const status = error.status || 500;
+    return res.status(status).json({ error: error.message || 'Could not create app session' });
+  }
+});
+
+app.post('/auth/logout', async (req, res) => {
+  try {
+    await revokeCurrentAppSession(req);
+    clearAppSessionCookie(res);
+    return res.json({ ok: true });
+  } catch (error) {
+    clearAppSessionCookie(res);
+    const status = error.status || 500;
+    return res.status(status).json({ error: error.message || 'Could not end app session' });
+  }
+});
+
 app.post('/telegram/webhook/setup', async (req, res) => {
   try {
     const user = await authenticate(req);
@@ -1951,8 +2065,7 @@ app.get('/telegram/status/stream', async (req, res) => {
   let userId = null;
   let heartbeat = null;
   try {
-    const token = typeof req.query.token === 'string' ? req.query.token : null;
-    const user = await authenticateToken(token);
+    const user = await authenticate(req);
     userId = user.id;
 
     res.setHeader('Content-Type', 'text/event-stream');
