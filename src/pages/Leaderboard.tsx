@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'motion/react';
-import { Trophy, Medal, Star, Target, DollarSign, ArrowUpRight, Loader2 } from 'lucide-react';
+import { Trophy, Medal, Star, Target, ArrowUpRight, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 
 import CreatorSidebar from '../components/CreatorSidebar';
 import CreatorTopBar from '../components/CreatorTopBar';
@@ -10,9 +10,12 @@ import CreatorAvatar from '../components/CreatorAvatar';
 const appleEase = [0.16, 1, 0.3, 1] as const;
 
 type SortType = 'sorsaScore' | 'points' | 'campaignsCompleted';
+const MOBILE_PAGE_SIZE = 20;
 
 export default function Leaderboard() {
   const [activeSort, setActiveSort] = useState<SortType>('sorsaScore');
+  const [currentPage, setCurrentPage] = useState(1);
+  const listTopRef = useRef<HTMLDivElement | null>(null);
   const { leaderboard, loading, currentUserId } = useLeaderboard();
 
   const sortedLeaderboard = useMemo(() => {
@@ -21,6 +24,40 @@ export default function Leaderboard() {
 
   const top3 = sortedLeaderboard.slice(0, 3);
   const rest = sortedLeaderboard.slice(3);
+  const totalPages = Math.max(1, Math.ceil(sortedLeaderboard.length / MOBILE_PAGE_SIZE));
+  const mobilePageItems = useMemo(() => {
+    const pageStart = (currentPage - 1) * MOBILE_PAGE_SIZE;
+
+    return sortedLeaderboard
+      .slice(pageStart, pageStart + MOBILE_PAGE_SIZE)
+      .map((creator, index) => ({
+        creator,
+        rank: pageStart + index + 1,
+      }))
+      .filter(({ rank }) => rank > 3);
+  }, [currentPage, sortedLeaderboard]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const handleSortChange = (sort: SortType) => {
+    setActiveSort(sort);
+    setCurrentPage(1);
+  };
+
+  const goToPage = (page: number) => {
+    const nextPage = Math.min(Math.max(page, 1), totalPages);
+
+    if (nextPage === currentPage) return;
+
+    setCurrentPage(nextPage);
+    window.setTimeout(() => {
+      listTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 0);
+  };
 
   const getMedalColor = (index: number) => {
     switch (index) {
@@ -76,7 +113,7 @@ export default function Leaderboard() {
                 className="grid min-w-0 flex-1 grid-cols-3 bg-white/5 rounded-xl p-1 border border-white/10 md:flex-none"
               >
               <button
-                onClick={() => setActiveSort('sorsaScore')}
+                onClick={() => handleSortChange('sorsaScore')}
                 className={`min-w-0 px-2 sm:px-3 md:px-4 py-2 rounded-lg text-[11px] sm:text-xs md:text-sm leading-tight font-medium transition-all ${
                   activeSort === 'sorsaScore' ? 'bg-white/10 text-white shadow-sm' : 'text-muted hover:text-white'
                 }`}
@@ -85,7 +122,7 @@ export default function Leaderboard() {
                 <span className="hidden sm:inline">By Sorsa Score</span>
               </button>
               <button
-                onClick={() => setActiveSort('points')}
+                onClick={() => handleSortChange('points')}
                 className={`min-w-0 px-2 sm:px-3 md:px-4 py-2 rounded-lg text-[11px] sm:text-xs md:text-sm leading-tight font-medium transition-all ${
                   activeSort === 'points' ? 'bg-white/10 text-white shadow-sm' : 'text-muted hover:text-white'
                 }`}
@@ -94,7 +131,7 @@ export default function Leaderboard() {
                 <span className="hidden sm:inline">By Activity Points</span>
               </button>
               <button
-                onClick={() => setActiveSort('campaignsCompleted')}
+                onClick={() => handleSortChange('campaignsCompleted')}
                 className={`min-w-0 px-2 sm:px-3 md:px-4 py-2 rounded-lg text-[11px] sm:text-xs md:text-sm leading-tight font-medium transition-all ${
                   activeSort === 'campaignsCompleted' ? 'bg-white/10 text-white shadow-sm' : 'text-muted hover:text-white'
                 }`}
@@ -189,6 +226,7 @@ export default function Leaderboard() {
               </motion.div>
 
               {/* Full Ranked Table */}
+              <div ref={listTopRef} className="scroll-mt-24" />
               {rest.length > 0 && (
                 <motion.div 
                   initial={{ opacity: 0, y: 20 }}
@@ -197,8 +235,7 @@ export default function Leaderboard() {
                   className="glass-panel rounded-2xl md:rounded-[2rem] border border-white/10 overflow-hidden"
                 >
                   <div className="md:hidden divide-y divide-white/5">
-                    {rest.map((creator, index) => {
-                      const rank = index + 4;
+                    {mobilePageItems.map(({ creator, rank }) => {
                       const isCurrentUser = creator.id === currentUserId;
 
                       return (
@@ -235,6 +272,45 @@ export default function Leaderboard() {
                       );
                     })}
                   </div>
+                  {totalPages > 1 && (
+                    <div className="md:hidden flex items-center justify-center gap-2 border-t border-white/10 p-3">
+                      <button
+                        type="button"
+                        onClick={() => goToPage(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        aria-label="Previous leaderboard page"
+                        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-muted transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+                      <div className="flex min-w-0 items-center gap-1 overflow-x-auto">
+                        {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+                          <button
+                            key={page}
+                            type="button"
+                            onClick={() => goToPage(page)}
+                            aria-current={currentPage === page ? 'page' : undefined}
+                            className={`h-8 min-w-8 rounded-lg px-2 text-xs font-semibold tabular-nums transition-colors ${
+                              currentPage === page
+                                ? 'bg-cyan text-black'
+                                : 'border border-white/10 bg-white/5 text-muted hover:text-white'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => goToPage(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        aria-label="Next leaderboard page"
+                        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-muted transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
                   <div className="hidden md:block overflow-x-auto">
                     <table className="w-full min-w-[820px] table-fixed text-left border-collapse whitespace-nowrap">
                       <colgroup>
