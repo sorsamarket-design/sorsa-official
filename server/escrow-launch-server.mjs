@@ -2018,7 +2018,9 @@ app.post('/telegram/webhook/:secret', async (req, res) => {
     const message = req.body?.message;
     const text = String(message?.text || '').trim();
     const chatId = message?.chat?.id ? String(message.chat.id) : null;
+    const chatType = message?.chat?.type || null;
     if (!chatId || !text) return res.json({ ok: true });
+    if (chatType !== 'private') return res.json({ ok: true });
 
     const isStartCommand = text.startsWith('/start');
     const connectCode = isStartCommand ? text.split(/\s+/)[1]?.trim() : text.replace(/^\/connect\s+/i, '').trim();
