@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { Settings as SettingsIcon, Building2, Save, Image as ImageIcon, LogOut } from 'lucide-react';
+import { Building2, Save, Image as ImageIcon, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDisconnect } from 'wagmi';
 import BrandSidebar from '../components/BrandSidebar';
@@ -89,7 +89,7 @@ export default function BrandSettings() {
         <div className="max-w-4xl mx-auto space-y-8">
           <div>
             <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: appleEase }} className="text-3xl font-semibold tracking-tight text-white flex items-center gap-3">
-              <SettingsIcon className="w-8 h-8 text-cyan" /> Settings
+              Settings
             </motion.h1>
             <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: appleEase, delay: 0.1 }} className="text-muted mt-2">
               Manage your company details, team access, and preferences.

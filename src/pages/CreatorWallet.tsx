@@ -91,7 +91,7 @@ export default function CreatorWallet() {
               transition={{ duration: 0.8, ease: appleEase }}
               className="flex items-center gap-3 text-3xl font-semibold tracking-tight text-white"
             >
-              <Wallet className="h-8 w-8 text-cyan" /> Wallet
+              Wallet
             </motion.h1>
             <p className="mt-2 text-muted">Track confirmed onchain campaign payouts.</p>
           </div>

@@ -73,7 +73,7 @@ export default function BrandWallet() {
                 transition={{ duration: 0.8, ease: appleEase }}
                 className="text-3xl font-semibold tracking-tight text-white flex items-center gap-3"
               >
-                <Wallet className="w-8 h-8 text-cyan" /> Wallet
+                Wallet
               </motion.h1>
               <div className="shrink-0">
                 <BrandConnectWalletButton compactMobile />

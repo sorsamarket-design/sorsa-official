@@ -54,9 +54,6 @@ export default function CreatorNFTCampaigns() {
         <div className="max-w-6xl mx-auto space-y-8">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <div className="w-14 h-14 rounded-2xl bg-cyan/10 border border-cyan/20 flex items-center justify-center mb-5">
-                <Sparkles className="w-7 h-7 text-cyan" />
-              </div>
               <h1 className="text-3xl font-semibold tracking-tight text-white mb-3">NFT Campaigns</h1>
               <p className="text-muted max-w-2xl leading-relaxed">
                 Browse NFT-focused creator campaigns, complete raffle tasks, or submit content for review.

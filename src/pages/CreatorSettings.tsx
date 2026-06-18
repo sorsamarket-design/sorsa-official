@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
-import { Settings as SettingsIcon, Bell, Shield, Wallet, Twitter, LogOut, Send, Copy, X } from 'lucide-react';
+import { Bell, Shield, Wallet, Twitter, LogOut, Send, Copy, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAccount, useDisconnect } from 'wagmi';
 import CreatorSidebar from '../components/CreatorSidebar';
@@ -156,7 +156,7 @@ export default function CreatorSettings() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: appleEase }} className="text-3xl font-semibold tracking-tight text-white flex items-center gap-3">
-                <SettingsIcon className="w-8 h-8 text-cyan" /> Settings
+                Settings
               </motion.h1>
               <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: appleEase, delay: 0.1 }} className="text-muted mt-2">
                 Manage your account preferences and connected services.
