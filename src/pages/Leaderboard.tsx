@@ -248,7 +248,7 @@ export default function Leaderboard() {
                             isCurrentUser ? 'bg-cyan/10' : 'hover:bg-white/5'
                           }`}
                         >
-                          <span className={`w-7 text-xs font-bold tabular-nums ${isCurrentUser ? 'text-cyan' : 'text-muted'}`}>
+                          <span className={`w-10 shrink-0 text-xs font-bold tabular-nums ${isCurrentUser ? 'text-cyan' : 'text-muted'}`}>
                             #{rank}
                           </span>
                           <div className="flex min-w-0 items-center gap-2.5">
