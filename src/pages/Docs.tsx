@@ -12,7 +12,7 @@ const content = {
   'for-brands': {
     title: 'For Brands',
     body: [
-      'SorsaMarket helps brands launch creator campaigns with clear goals, transparent budgets, and escrow-backed reward distribution. Brands can define the campaign brief, target audience, start and end dates, and the actions creators need to complete.',
+      'AtlasReach helps brands launch creator campaigns with clear goals, transparent budgets, and escrow-backed reward distribution. Brands can define the campaign brief, target audience, start and end dates, and the actions creators need to complete.',
       'Campaign funds are confirmed before a campaign goes live, which gives creators confidence that approved work can be paid on time. Brand teams can review submissions, approve quality work, and track campaign progress from their dashboard.'
     ]
   },
@@ -75,7 +75,7 @@ export default function Docs() {
       <header className="border-b border-black/10 bg-white">
         <div className="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
           <a href="/" className="text-lg font-semibold tracking-tight text-black">
-            Sorsa<span className="text-cyan">.market</span>
+            AtlasReach
           </a>
           <a href="/campaigns" className="text-sm font-medium text-[#52525B] hover:text-black transition-colors">
             Sign in
@@ -137,10 +137,10 @@ export default function Docs() {
 
         <article className="bg-white border border-black/10 rounded-2xl px-6 sm:px-10 lg:px-14 py-10 lg:py-14">
           <div className="max-w-3xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan mb-4">SorsaMarket Docs</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan mb-4">AtlasReach Docs</p>
             <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-black mb-5">Platform Guide</h1>
             <p className="text-lg leading-8 text-[#52525B] mb-14">
-              A concise guide for brands and creators using SorsaMarket to launch, join, verify, and reward performance-driven campaigns.
+              A concise guide for brands and creators using AtlasReach to launch, join, verify, and reward performance-driven campaigns.
             </p>
 
             <section id="for-brands" className="scroll-mt-28 border-t border-black/10 pt-10 mb-16">

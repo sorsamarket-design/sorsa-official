@@ -1,5 +1,5 @@
 /**
- * Custom Reward Engine for SorsaMarket
+ * Custom Reward Engine for AtlasReach
  * 
  * Logic:
  * 1. Base = Sorsa Score * 0.1

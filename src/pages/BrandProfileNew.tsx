@@ -194,7 +194,7 @@ export default function BrandProfileNew() {
                     value={formData.company_name}
                     onChange={handleInputChange}
                     required
-                    placeholder="e.g. SorsaMarket"
+                    placeholder="e.g. AtlasReach"
                     className="w-full px-4 py-3 rounded-xl bg-black/50 border border-white/10 text-white placeholder:text-white/20 focus:outline-none focus:border-cyan focus:ring-1 focus:ring-cyan transition-all"
                   />
                 </div>

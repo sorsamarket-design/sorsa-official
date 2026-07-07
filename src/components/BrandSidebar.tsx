@@ -44,8 +44,8 @@ export default function BrandSidebar() {
             className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => navigate('/')}
           >
-            <img src="/SorsaMarketlogo.PNG" alt="Logo" className="w-6 h-6 object-contain" />
-            <span className="text-base font-semibold text-white tracking-tight">SorsaMarket</span>
+            <img src="/AtlasReachLogo.PNG" alt="Logo" className="w-6 h-6 object-contain" />
+            <span className="text-base font-semibold text-white tracking-tight">AtlasReach</span>
           </div>
           <button
             className="md:hidden text-muted hover:text-white"

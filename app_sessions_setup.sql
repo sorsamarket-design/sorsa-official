@@ -1,4 +1,4 @@
--- First-party application sessions for SorsaMarket.
+-- First-party application sessions for AtlasReach.
 -- Run this in Supabase before enabling cookie-based backend auth in production.
 
 create table if not exists public.app_sessions (

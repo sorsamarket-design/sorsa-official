@@ -391,7 +391,7 @@ export default function CampaignBudget() {
                         type="text"
                         value={req}
                         onChange={(e) => handleRequestChange(index, e.target.value)}
-                        placeholder="e.g. Mention @SorsaMarket"
+                        placeholder="e.g. Mention @AtlasReach"
                         className="flex-1 px-4 py-3 rounded-xl bg-black/50 border border-white/10 text-white placeholder:text-white/20 focus:outline-none focus:border-cyan focus:ring-1 focus:ring-cyan transition-all text-sm"
                       />
                       <button
@@ -421,7 +421,7 @@ export default function CampaignBudget() {
                   <p>After a campaign becomes active on the blockchain, its configuration and budget are considered final. Projects cannot edit, pause, or terminate an ongoing campaign. Allocated campaign budgets are treated as committed and are not eligible for refunds.</p>
 
                   <h4 className="text-white font-medium mt-4">4. Wallet Interaction</h4>
-                  <p>You must connect a Web3 wallet to authorize the funding transaction. SorsaMarket never has direct access to your wallet's private keys. The transaction will prompt your wallet extension to approve the USDC transfer to the escrow contract.</p>
+                  <p>You must connect a Web3 wallet to authorize the funding transaction. AtlasReach never has direct access to your wallet's private keys. The transaction will prompt your wallet extension to approve the USDC transfer to the escrow contract.</p>
                 </div>
 
                 <label className="flex items-start gap-3 cursor-pointer group">

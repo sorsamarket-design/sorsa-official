@@ -392,7 +392,7 @@ async function assertAdmin(userId) {
 async function getOrCreateNftBrandProfile(userId) {
   const profilePayload = {
     owner_id: userId,
-    company_name: 'Sorsa NFT Campaigns',
+    company_name: 'AtlasReach NFT Campaigns',
     website: null,
     twitter_handle: null,
     telegram_handle: null,
@@ -494,7 +494,7 @@ function normalizeNftCampaignBody(body, userId, brandProfile) {
     status: 'draft',
     start_date: campaign.start_date || null,
     end_date: campaign.end_date || null,
-    brand_name: brandProfile.company_name || 'Sorsa NFT Campaigns',
+    brand_name: brandProfile.company_name || 'AtlasReach NFT Campaigns',
     brand_logo_url: brandProfile.logo_url || null,
     brand_twitter_handle: brandProfile.twitter_handle || null
   };
@@ -881,7 +881,7 @@ function getCreatorCampaignUrl(campaign) {
 
 function buildCampaignNotification(campaign, label = 'New campaign') {
   const title = escapeTelegramHtml(campaign.title || 'Campaign');
-  const brand = escapeTelegramHtml(campaign.brand_profile?.company_name || campaign.brand_name || 'SorsaMarket brand');
+  const brand = escapeTelegramHtml(campaign.brand_profile?.company_name || campaign.brand_name || 'AtlasReach brand');
   const budget = Number(campaign.budget || 0).toLocaleString();
   const categories = Array.isArray(campaign.categories) && campaign.categories.length
     ? `\nCategories: ${escapeTelegramHtml(campaign.categories.join(', '))}`
@@ -889,9 +889,9 @@ function buildCampaignNotification(campaign, label = 'New campaign') {
   const campaignUrl = getCampaignUrl(campaign);
   const action = campaignUrl
     ? `\n\n<a href="${escapeTelegramHtml(campaignUrl)}">View Campaign</a>`
-    : '\n\nOpen SorsaMarket to view details.';
+    : '\n\nOpen AtlasReach to view details.';
 
-  return `<b>${escapeTelegramHtml(label).toUpperCase()}</b>\n\nA new creator opportunity is now live on SorsaMarket.\n\nCampaign: <b>${title}</b>\nBrand: ${brand}\nReward Pool: ${budget} USDC${categories}\n\nOpen the campaign page to read the brief, review the requirements, and join if it fits your profile.${action}`;
+  return `<b>${escapeTelegramHtml(label).toUpperCase()}</b>\n\nA new creator opportunity is now live on AtlasReach.\n\nCampaign: <b>${title}</b>\nBrand: ${brand}\nReward Pool: ${budget} USDC${categories}\n\nOpen the campaign page to read the brief, review the requirements, and join if it fits your profile.${action}`;
 }
 
 async function sendNewCampaignNotification(chatId, campaign) {
@@ -994,13 +994,13 @@ async function notifySubmissionDecision(submission) {
     return { sent: 0, skipped: 1 };
   }
 
-  const campaignTitle = submission.campaign?.title || 'SorsaMarket campaign';
+  const campaignTitle = submission.campaign?.title || 'AtlasReach campaign';
   const decision = submission.status === 'approved' ? 'approved' : 'rejected';
   const feedbackLine = submission.feedback ? `\nFeedback: ${escapeTelegramHtml(submission.feedback)}` : '';
 
   await sendTelegramMessage(
     creator.telegram_chat_id,
-    `<b>Submission ${decision}</b>\n${escapeTelegramHtml(campaignTitle)}${feedbackLine}\nOpen SorsaMarket to review details.`
+    `<b>Submission ${decision}</b>\n${escapeTelegramHtml(campaignTitle)}${feedbackLine}\nOpen AtlasReach to review details.`
   );
 
   return { sent: 1, skipped: 0 };
@@ -1348,7 +1348,7 @@ function getSubmissionWindowEndTime(joinedAt) {
 }
 
 function buildMissedSubmissionNotification(campaign, windowEndsAt) {
-  const title = escapeTelegramHtml(campaign?.title || 'SorsaMarket campaign');
+  const title = escapeTelegramHtml(campaign?.title || 'AtlasReach campaign');
   const deadline = windowEndsAt
     ? new Date(windowEndsAt).toLocaleString('en-US', {
         month: 'short',
@@ -1361,13 +1361,13 @@ function buildMissedSubmissionNotification(campaign, windowEndsAt) {
   const campaignUrl = getCreatorCampaignUrl(campaign);
   const action = campaignUrl
     ? `\n\n<a href="${escapeTelegramHtml(campaignUrl)}">View Campaign</a>`
-    : '\n\nOpen SorsaMarket to review campaign details.';
+    : '\n\nOpen AtlasReach to review campaign details.';
 
   return `<b>Submission window closed</b>\n\nThe 24 hour creator submission window for <b>${title}</b> has ended.\n\nNo eligible content submission was recorded from your account before the window closed.\n\nWindow ended: ${escapeTelegramHtml(deadline)}${action}`;
 }
 
 function buildJoinSubmissionReminder(campaign, windowEndsAt) {
-  const title = escapeTelegramHtml(campaign?.title || 'SorsaMarket campaign');
+  const title = escapeTelegramHtml(campaign?.title || 'AtlasReach campaign');
   const deadline = windowEndsAt
     ? new Date(windowEndsAt).toLocaleString('en-US', {
         month: 'short',
@@ -1380,7 +1380,7 @@ function buildJoinSubmissionReminder(campaign, windowEndsAt) {
   const campaignUrl = getCreatorCampaignUrl(campaign);
   const action = campaignUrl
     ? `\n\n<a href="${escapeTelegramHtml(campaignUrl)}">View Campaign</a>`
-    : '\n\nOpen SorsaMarket to view the campaign.';
+    : '\n\nOpen AtlasReach to view the campaign.';
 
   return `<b>Campaign joined</b>\n\nCongrats, you've successfully joined <b>${title}</b>.\n\nYou now have 24 hours to submit your content for this campaign.\n\nSubmission window ends: ${escapeTelegramHtml(deadline)}${action}`;
 }
@@ -1694,7 +1694,7 @@ async function sendPaymentNotification(creator, campaignTitle, amount) {
 
   await sendTelegramMessage(
     creator.telegram_chat_id,
-    `<b>Payment sent</b>\n${escapeTelegramHtml(campaignTitle || 'SorsaMarket campaign')}\nAmount: ${escapeTelegramHtml(amount)} USDC\nOpen SorsaMarket to review your wallet history.`
+    `<b>Payment sent</b>\n${escapeTelegramHtml(campaignTitle || 'AtlasReach campaign')}\nAmount: ${escapeTelegramHtml(amount)} USDC\nOpen AtlasReach to review your wallet history.`
   );
   return { sent: 1, skipped: 0 };
 }
@@ -2025,7 +2025,7 @@ app.post('/telegram/webhook/:secret', async (req, res) => {
     const isStartCommand = text.startsWith('/start');
     const connectCode = isStartCommand ? text.split(/\s+/)[1]?.trim() : text.replace(/^\/connect\s+/i, '').trim();
     if (!connectCode) {
-      await sendTelegramMessage(chatId, 'Send the Telegram connect code shown in SorsaMarket Creator Settings.');
+      await sendTelegramMessage(chatId, 'Send the Telegram connect code shown in AtlasReach Creator Settings.');
       return res.json({ ok: true });
     }
 
@@ -2036,7 +2036,7 @@ app.post('/telegram/webhook/:secret', async (req, res) => {
       .maybeSingle();
     const expiresAt = profile?.telegram_connect_expires_at ? new Date(profile.telegram_connect_expires_at) : null;
     if (error || !profile || !expiresAt || expiresAt < new Date()) {
-      await sendTelegramMessage(chatId, 'That SorsaMarket Telegram code is invalid or expired. Generate a new code from Creator Settings.');
+      await sendTelegramMessage(chatId, 'That AtlasReach Telegram code is invalid or expired. Generate a new code from Creator Settings.');
       return res.json({ ok: true });
     }
 
@@ -2055,7 +2055,7 @@ app.post('/telegram/webhook/:secret', async (req, res) => {
 
     pushTelegramStatus(profile.id, await getTelegramStatus(profile.id));
 
-    await sendTelegramMessage(chatId, 'Telegram notifications are connected for SorsaMarket. You can manage notification types from Creator Settings.');
+    await sendTelegramMessage(chatId, 'Telegram notifications are connected for AtlasReach. You can manage notification types from Creator Settings.');
     return res.json({ ok: true });
   } catch (error) {
     console.error('telegram webhook failed:', error);
@@ -3594,7 +3594,7 @@ app.post('/notifications/telegram/payment', async (req, res) => {
     const amountLine = amount ? `\nAmount: ${escapeTelegramHtml(amount)} USDC` : '';
     await sendTelegramMessage(
       creator.telegram_chat_id,
-      `<b>Payment update</b>\n${escapeTelegramHtml(campaign.title || 'SorsaMarket campaign')}${amountLine}\nOpen SorsaMarket to review your wallet history.`
+      `<b>Payment update</b>\n${escapeTelegramHtml(campaign.title || 'AtlasReach campaign')}${amountLine}\nOpen AtlasReach to review your wallet history.`
     );
     return res.json({ sent: 1, skipped: 0 });
   } catch (error) {

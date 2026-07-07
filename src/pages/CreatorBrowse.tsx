@@ -143,7 +143,7 @@ export default function CreatorBrowse() {
               >
                 {activeTab === 'live'
                   ? "Discover and apply to high-quality Web3 campaigns."
-                  : "Explore past successful campaigns on SorsaMarket."}
+                  : "Explore past successful campaigns on AtlasReach."}
               </motion.p>
             </div>
 

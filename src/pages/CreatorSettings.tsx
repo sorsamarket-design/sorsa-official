@@ -318,7 +318,7 @@ export default function CreatorSettings() {
               </div>
               <h3 className="text-xl font-bold text-white mb-2">Connect Telegram</h3>
               <p className="text-sm text-muted mb-4">
-                Send this code to the SorsaMarket bot to connect Telegram notifications.
+                Send this code to the AtlasReach bot to connect Telegram notifications.
               </p>
 
               <div className="w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 mb-6">

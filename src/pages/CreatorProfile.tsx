@@ -184,7 +184,7 @@ export default function CreatorProfile() {
                             ) : null}
                           </div>
                           <p className="text-xs text-muted truncate">
-                            {item.campaign.brand_name || item.campaign.brand_profile?.company_name || (item.campaign.is_nft ? 'Sorsa NFT Campaigns' : 'Campaign')}
+                            {item.campaign.brand_name || item.campaign.brand_profile?.company_name || (item.campaign.is_nft ? 'AtlasReach NFT Campaigns' : 'Campaign')}
                           </p>
                         </div>
                         <div className="hidden sm:flex items-center gap-2 text-xs text-muted shrink-0">

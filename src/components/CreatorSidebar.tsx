@@ -86,8 +86,8 @@ export default function CreatorSidebar() {
             className="flex min-h-11 items-center gap-3 rounded-xl text-left transition-opacity hover:opacity-80"
             onClick={() => navigate('/')}
           >
-            <img src="/SorsaMarketlogo.PNG" alt="" className="h-6 w-6 object-contain" />
-            <span className="text-base font-semibold tracking-tight text-white">SorsaMarket</span>
+            <img src="/AtlasReachLogo.PNG" alt="" className="h-6 w-6 object-contain" />
+            <span className="text-base font-semibold tracking-tight text-white">AtlasReach</span>
           </button>
 
           <button

@@ -54,8 +54,8 @@ const Navbar = () => {
     >
       <div className={`transition-all duration-500 w-full max-w-7xl mx-auto flex items-center justify-between ${isScrolled ? 'bg-black/70 backdrop-blur-2xl border border-white/10 rounded-full py-3 px-6' : 'bg-transparent'}`}>
         <a href="#top" aria-label="Back to top" className="-my-1.5 flex min-h-11 items-center gap-3 py-1.5 text-xl font-semibold tracking-tight text-white">
-          <img src="/SorsaMarketlogo.PNG" alt="Logo" className="w-8 h-8 object-contain" />
-          <div>Sorsa<span className="text-cyan">.market</span></div>
+          <img src="/AtlasReachLogo.PNG" alt="Logo" className="h-11 w-11 object-contain md:h-12 md:w-12" />
+          <div>AtlasReach</div>
         </a>
 
         <div className="hidden md:flex items-center space-x-8">
@@ -180,27 +180,19 @@ const Hero = () => {
         >
           {/* Apple-style clean visual container */}
           <div className="relative w-full max-w-lg aspect-square flex items-center justify-center">
-            {/* The Circle */}
-            <motion.div
-              className="absolute inset-0 border border-white/10 rounded-full will-change-transform"
-              animate={{ rotate: 360 }}
-              transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
-            />
-            <div className="absolute inset-8 border border-white/5 rounded-full" />
-
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="w-32 h-32 md:w-48 md:h-48 bg-gradient-to-br from-cyan/30 to-purple/30 rounded-full blur-2xl opacity-60 animate-pulse"></div>
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ duration: 1.5, ease: appleEase, delay: 0.4 }}
-                className="w-24 h-24 md:w-40 md:h-40 glass-panel rounded-full z-10 flex items-center justify-center shadow-2xl"
+                className="z-10 flex items-center justify-center"
               >
                 {/* The massively oversized image as requested previously */}
                 <div className="relative z-20 lg:-translate-x-12 xl:-translate-x-16">
                   <motion.img
-                    src="/SorsaMarketlogo.PNG"
-                    alt="SorsaMarket Logo"
+                    src="/AtlasReachLogo.PNG"
+                    alt="AtlasReach Logo"
                     className="w-[76vw] h-[76vw] sm:w-[360px] sm:h-[360px] md:w-[480px] md:h-[480px] lg:w-[620px] lg:h-[620px] xl:w-[680px] xl:h-[680px] max-w-[280px] sm:max-w-none object-contain drop-shadow-2xl will-change-transform"
                     initial={{ y: 20 }}
                     animate={{ y: [-10, 10, -10] }}
@@ -215,14 +207,12 @@ const Hero = () => {
 
       <div className="pointer-events-none absolute top-[100svh] left-0 right-0 flex h-[300px] items-center justify-center px-6 md:hidden">
         <div className="relative flex aspect-square w-full max-w-[280px] items-center justify-center">
-          <div className="absolute inset-0 rounded-full border border-white/10" />
-          <div className="absolute inset-8 rounded-full border border-white/5" />
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="h-32 w-32 rounded-full bg-gradient-to-br from-cyan/30 to-purple/30 opacity-60 blur-2xl" />
-            <div className="absolute flex h-24 w-24 items-center justify-center rounded-full glass-panel">
+            <div className="absolute flex items-center justify-center">
               <img
-                src="/SorsaMarketlogo.PNG"
-                alt="SorsaMarket Logo"
+                src="/AtlasReachLogo.PNG"
+                alt="AtlasReach Logo"
                 className="h-[280px] w-[280px] max-w-none object-contain drop-shadow-2xl"
               />
             </div>
@@ -399,8 +389,8 @@ const Footer = () => {
           <div>
             <div>
               <div className="flex items-center gap-2 text-xl font-semibold tracking-tight text-white md:mb-6 md:text-2xl">
-                <img src="/SorsaMarketlogo.PNG" alt="Logo" className="w-6 h-6 object-contain" />
-                SorsaMarket
+                <img src="/AtlasReachLogo.PNG" alt="Logo" className="h-9 w-9 object-contain md:h-11 md:w-11" />
+                AtlasReach
               </div>
               <p className="hidden max-w-xs text-sm leading-relaxed text-muted md:mb-8 md:block">
                 The decentralized marketplace connecting brands with creators.
@@ -432,19 +422,19 @@ const Footer = () => {
               <h4 className="mb-2 text-xs font-bold text-white md:mb-6 md:text-base md:font-semibold">Contact Us</h4>
               <ul className="space-y-2 text-xs text-[#6b7280] md:space-y-4 md:text-sm md:text-muted">
                 <li>
-                  <a href="https://x.com/sorsamarket" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 hover:text-white transition-colors">
+                  <a href="https://x.com/AtlasReach" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 hover:text-white transition-colors">
                     <XLogo className="h-3.5 w-3.5 shrink-0" />
                     <span>X (Twitter)</span>
                   </a>
                 </li>
                 <li>
-                  <a href="https://t.me/SorsaMarket" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 hover:text-white transition-colors">
+                  <a href="https://t.me/AtlasReach" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 hover:text-white transition-colors">
                     <TelegramLogo className="h-3.5 w-3.5 shrink-0" />
                     <span>Telegram</span>
                   </a>
                 </li>
                 <li>
-                  <a href="mailto:contact@sorsamarket.com" className="inline-flex items-center gap-2 hover:text-white transition-colors">
+                  <a href="mailto:contact@atlasreach.io" className="inline-flex items-center gap-2 hover:text-white transition-colors">
                     <Mail className="h-3.5 w-3.5 shrink-0" />
                     <span>Email</span>
                   </a>
@@ -455,7 +445,7 @@ const Footer = () => {
         </div>
 
         <div className="mt-6 flex flex-col items-center justify-between border-t border-white/10 pt-6 text-xs text-muted md:mt-0 md:flex-row md:pt-8 md:text-sm">
-          <p>&copy; {new Date().getFullYear()} SorsaMarket. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} AtlasReach. All rights reserved.</p>
           <div className="mt-4 md:mt-0 flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
             <span>Systems Operational</span>
@@ -470,15 +460,15 @@ const FAQ = () => {
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const faqs = [
     {
-      q: "What is SorsaMarket?",
-      a: "SorsaMarket is an influence marketplace where creators earn by scaling projects and brands through quality contents on X."
+      q: "What is AtlasReach?",
+      a: "AtlasReach is an influence marketplace where creators earn by scaling projects and brands through quality contents on X."
     },
     {
       q: "Who is eligible to join campaigns?",
       a: "Anyone with a Sorsa score of 150 and above is eligible."
     },
     {
-      q: "What kind of contents are accepted on SorsaMarket?",
+      q: "What kind of contents are accepted on AtlasReach?",
       a: (
         <ul className="list-disc pl-5 space-y-2 mt-2">
           <li>Contents must be exclusive to the brand you're campaigning for.</li>
@@ -503,7 +493,7 @@ const FAQ = () => {
           transition={{ duration: 0.8, ease: appleEase }}
         >
           <h2 className="text-4xl md:text-6xl font-semibold tracking-tight mb-6">FAQ.</h2>
-          <p className="text-xl text-muted">Everything you need to know about SorsaMarket.</p>
+          <p className="text-xl text-muted">Everything you need to know about AtlasReach.</p>
         </motion.div>
 
         <div className="flex flex-col gap-3 md:gap-6">

@@ -10,12 +10,12 @@ const pages = {
   terms: {
     title: 'Terms of Service',
     intro:
-      'These Terms govern your access to and use of SorsaMarket, including creator campaigns, brand dashboards, escrow-backed rewards, and related services.',
+      'These Terms govern your access to and use of AtlasReach, including creator campaigns, brand dashboards, escrow-backed rewards, and related services.',
     sections: [
       {
         title: '1. Eligibility',
         body:
-          'You must be able to form a binding agreement and comply with applicable laws to use SorsaMarket. If you use the platform for a company or brand, you confirm that you are authorized to act on its behalf.'
+          'You must be able to form a binding agreement and comply with applicable laws to use AtlasReach. If you use the platform for a company or brand, you confirm that you are authorized to act on its behalf.'
       },
       {
         title: '2. Accounts and Wallets',
@@ -35,24 +35,24 @@ const pages = {
       {
         title: '5. Prohibited Conduct',
         body:
-          'You may not use SorsaMarket to submit fraudulent activity, manipulate engagement, impersonate others, violate intellectual property rights, distribute harmful content, or attempt to interfere with platform security.'
+          'You may not use AtlasReach to submit fraudulent activity, manipulate engagement, impersonate others, violate intellectual property rights, distribute harmful content, or attempt to interfere with platform security.'
       },
       {
         title: '6. Disclaimers',
         body:
-          'SorsaMarket is provided on an as-is and as-available basis. We do not guarantee uninterrupted access, campaign availability, creator performance, earnings, or specific business outcomes.'
+          'AtlasReach is provided on an as-is and as-available basis. We do not guarantee uninterrupted access, campaign availability, creator performance, earnings, or specific business outcomes.'
       },
       {
         title: '7. Changes',
         body:
-          'We may update these Terms as the platform evolves. Continued use of SorsaMarket after updates means you accept the revised Terms.'
+          'We may update these Terms as the platform evolves. Continued use of AtlasReach after updates means you accept the revised Terms.'
       }
     ]
   },
   privacy: {
     title: 'Privacy Policy',
     intro:
-      'This Privacy Policy explains how SorsaMarket collects, uses, and protects information when you use our website, dashboards, campaign tools, and related services.',
+      'This Privacy Policy explains how AtlasReach collects, uses, and protects information when you use our website, dashboards, campaign tools, and related services.',
     sections: [
       {
         title: '1. Information We Collect',
@@ -67,7 +67,7 @@ const pages = {
       {
         title: '3. Wallet and Onchain Data',
         body:
-          'Wallet addresses and blockchain transactions may be public by nature. Information recorded on public networks may remain visible independently of SorsaMarket.'
+          'Wallet addresses and blockchain transactions may be public by nature. Information recorded on public networks may remain visible independently of AtlasReach.'
       },
       {
         title: '4. Service Providers',
@@ -94,7 +94,7 @@ const pages = {
   cookies: {
     title: 'Cookie Policy',
     intro:
-      'This Cookie Policy explains how SorsaMarket may use cookies and similar technologies to keep the site working, improve performance, and support product analytics.',
+      'This Cookie Policy explains how AtlasReach may use cookies and similar technologies to keep the site working, improve performance, and support product analytics.',
     sections: [
       {
         title: '1. What Cookies Are',
@@ -109,7 +109,7 @@ const pages = {
       {
         title: '3. Analytics and Performance',
         body:
-          'We may use analytics tools to understand how visitors use SorsaMarket, identify errors, measure performance, and improve pages and workflows.'
+          'We may use analytics tools to understand how visitors use AtlasReach, identify errors, measure performance, and improve pages and workflows.'
       },
       {
         title: '4. Preferences',
@@ -133,7 +133,7 @@ export default function LegalPage({ type }: LegalPageProps) {
       <header className="border-b border-black/10 bg-white">
         <div className="max-w-4xl mx-auto px-6 py-6 flex items-center justify-between">
           <a href="/" className="text-lg font-semibold tracking-tight text-black">
-            Sorsa<span className="text-cyan">.market</span>
+            AtlasReach
           </a>
           <a href="/docs" className="text-sm font-medium text-[#52525B] hover:text-black transition-colors">
             Docs

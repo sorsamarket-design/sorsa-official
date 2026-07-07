@@ -69,7 +69,7 @@ export default function AdminLogin() {
                 <ShieldCheck className="w-8 h-8 text-purple-400" />
               </div>
               <h1 className="text-3xl font-semibold tracking-tight mb-3 text-white">Admin Sign In</h1>
-              <p className="text-muted">Restricted SorsaMarket access</p>
+              <p className="text-muted">Restricted AtlasReach access</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5 relative z-10">

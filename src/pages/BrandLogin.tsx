@@ -64,7 +64,7 @@ export default function BrandLogin() {
           <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-white/5 opacity-50 group-hover:opacity-100 transition-opacity duration-500"></div>
           <div className="glass-panel rounded-[2.5rem] p-8 md:p-10 relative overflow-hidden h-full w-full bg-black/40 backdrop-blur-3xl">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-1/2 bg-cyan/10 blur-[100px] rounded-full pointer-events-none"></div>
-            <div className="text-center mb-10 relative z-10"><h1 className="text-3xl font-semibold tracking-tight mb-3 text-white">Brand Sign In</h1><p className="text-muted">Welcome back to SorsaMarket</p></div>
+            <div className="text-center mb-10 relative z-10"><h1 className="text-3xl font-semibold tracking-tight mb-3 text-white">Brand Sign In</h1><p className="text-muted">Welcome back to AtlasReach</p></div>
 
             <form onSubmit={handleSubmit} className="space-y-5 relative z-10">
               {errorVisible && <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">Error</div>}

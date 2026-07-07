@@ -86,7 +86,7 @@ export default function Contact() {
                 transition={{ duration: 0.8, ease: appleEase }}
                 className="text-3xl font-semibold tracking-tight text-white"
               >
-                Contact SorsaMarket Support
+                Contact AtlasReach Support
               </motion.h1>
               <motion.p 
                 initial={{ opacity: 0, y: 20 }}
@@ -108,7 +108,7 @@ export default function Contact() {
             className="grid grid-cols-3 gap-2.5 md:gap-6"
           >
             <a 
-              href="https://t.me/SorsaMarket" 
+              href="https://t.me/AtlasReach"
               target="_blank" 
               rel="noopener noreferrer"
               className="glass-panel rounded-2xl p-6 border border-white/10 hover:border-cyan/50 hover:bg-white/5 transition-all group flex flex-col items-center text-center"
@@ -121,7 +121,7 @@ export default function Contact() {
             </a>
 
             <a 
-              href="https://x.com/sorsamarket" 
+              href="https://x.com/AtlasReach"
               target="_blank" 
               rel="noopener noreferrer"
               className="glass-panel rounded-2xl p-6 border border-white/10 hover:border-cyan/50 hover:bg-white/5 transition-all group flex flex-col items-center text-center"
@@ -136,14 +136,14 @@ export default function Contact() {
             </a>
 
             <a 
-              href="mailto:contact@sorsamarket.com"
+              href="mailto:contact@atlasreach.io"
               className="glass-panel rounded-2xl p-6 border border-white/10 hover:border-cyan/50 hover:bg-white/5 transition-all group flex flex-col items-center text-center"
             >
               <div className="w-12 h-12 rounded-full bg-cyan/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                 <Mail className="w-6 h-6 text-cyan" />
               </div>
               <h3 className="text-lg font-medium text-white mb-1">Email</h3>
-              <p className="text-sm text-muted">contact@sorsamarket.com</p>
+              <p className="text-sm text-muted">contact@atlasreach.io</p>
             </a>
           </motion.div>
 

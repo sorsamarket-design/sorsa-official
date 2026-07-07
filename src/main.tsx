@@ -17,7 +17,7 @@ import './index.css';
 type WagmiProviderConfig = ComponentProps<typeof WagmiProvider>['config'];
 
 const config = getDefaultConfig({
-  appName: 'SorsaMarket',
+  appName: 'AtlasReach',
   projectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || '3fbb6b34438139a04a5840e4f3261a35',
  // Placeholder, user should update in .env if needed
   chains: [baseSepolia, base],

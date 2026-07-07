@@ -65,7 +65,7 @@ export default function BrandRegister() {
             <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-white/5 opacity-50 group-hover:opacity-100 transition-opacity duration-500"></div>
             <div className="glass-panel rounded-[2.5rem] p-8 md:p-10 relative overflow-hidden h-full w-full bg-black/40 backdrop-blur-3xl border border-white/10">
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-1/2 bg-cyan/10 blur-[100px] rounded-full pointer-events-none"></div>
-              <div className="text-center mb-10 relative z-10"><h1 className="text-3xl font-semibold tracking-tight mb-3 text-white">Create Account</h1><p className="text-muted">Join SorsaMarket as a Brand</p></div>
+              <div className="text-center mb-10 relative z-10"><h1 className="text-3xl font-semibold tracking-tight mb-3 text-white">Create Account</h1><p className="text-muted">Join AtlasReach as a Brand</p></div>
               <form onSubmit={handleSubmit} className="space-y-5 relative z-10">
                 <div><label className="block text-sm font-medium text-white/80 mb-2">Email Address</label><input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white focus:outline-none focus:border-cyan/50 focus:bg-white/10 transition-all placeholder:text-muted" placeholder="brand@company.com" /></div>
                 <TimedPasswordInput label="Password" required value={password} onChange={setPassword} autoComplete="new-password" />

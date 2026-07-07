@@ -53,7 +53,7 @@ export default function CreatorLogin() {
               {isLoggingIn ? 'Connecting...' : 'Connect with X'}
             </button>
             {errorVisible && <div className="mt-4 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm relative z-10">Error</div>}
-            <p className="mt-8 text-xs text-muted max-w-[250px] mx-auto relative z-10">By connecting, you agree to SorsaMarket's Terms of Service and Privacy Policy.</p>
+            <p className="mt-8 text-xs text-muted max-w-[250px] mx-auto relative z-10">By connecting, you agree to AtlasReach's Terms of Service and Privacy Policy.</p>
           </div>
         </motion.div>
       </div>

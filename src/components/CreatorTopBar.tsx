@@ -27,12 +27,12 @@ export default function CreatorTopBar({ embedded = false }: CreatorTopBarProps) 
       <button
         type="button"
         onClick={() => navigate('/')}
-        aria-label="Go to SorsaMarket home"
+        aria-label="Go to AtlasReach home"
         className="flex min-w-0 touch-manipulation items-center gap-2 rounded-xl px-1.5 py-2 text-left"
       >
-        <img src="/SorsaMarketlogo.PNG" alt="" className="h-8 w-8 shrink-0 object-contain" />
+        <img src="/AtlasReachLogo.PNG" alt="" className="h-8 w-8 shrink-0 object-contain" />
         <span className="truncate text-base font-semibold tracking-tight text-white">
-          Sorsa<span className="text-cyan">Market</span>
+          AtlasReach
         </span>
       </button>
     </div>
