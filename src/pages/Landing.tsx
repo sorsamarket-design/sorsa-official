@@ -102,9 +102,7 @@ const Hero = () => {
   const { scrollY } = useScroll();
   const smoothScrollY = useSpring(scrollY, { stiffness: 90, damping: 24, mass: 0.35 });
   const y1 = useTransform(smoothScrollY, [0, 1000], [0, 200]);
-  const y2 = useTransform(smoothScrollY, [0, 1000], [0, -100]);
   const opacity = useTransform(smoothScrollY, [0, 500], [1, 0]);
-  const glowOpacity = useTransform(smoothScrollY, [0, 500], [0.5, 0]);
   const scale = useTransform(smoothScrollY, [0, 500], [1, 0.95]);
   const navigate = useNavigate();
   const { session, role, signOut } = useAuth();
@@ -133,91 +131,63 @@ const Hero = () => {
   };
 
   return (
-    <section id="top" className="relative min-h-[calc(100svh+300px)] md:min-h-[100svh] flex items-start md:items-center pt-24 pb-8 md:pt-28 md:pb-10 overflow-hidden">
-      {/* Subtle Apple-style Ambient Glow */}
-      <motion.div style={{ y: y1, opacity: glowOpacity, willChange: "transform, opacity" }} className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[400px] md:w-[800px] h-[200px] md:h-[400px] bg-cyan/20 blur-[80px] md:blur-[120px] rounded-full pointer-events-none"></motion.div>
-      <motion.div style={{ y: y2, opacity: glowOpacity, willChange: "transform, opacity" }} className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[300px] md:w-[600px] h-[150px] md:h-[300px] bg-purple/20 blur-[80px] md:blur-[120px] rounded-full pointer-events-none"></motion.div>
+    <section 
+      id="top" 
+      className="relative min-h-[100svh] flex items-center pt-24 pb-12 overflow-hidden bg-[#050505]"
+    >
+      {/* Optimized Background Image Container */}
+      <div className="absolute inset-0 z-0">
+        <picture>
+          <img 
+            src="/hero-bg.jpg" 
+            alt="AtlasReach Background" 
+            className="w-full h-full object-cover object-[75%_center] md:object-center"
+            loading="eager"
+            fetchPriority="high"
+          />
+        </picture>
+        {/* Responsive Overlay to ensure text readability across all devices */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#050505] via-[#050505]/80 to-transparent lg:via-[#050505]/40" />
+      </div>
 
-      <div className="max-w-7xl mx-auto min-h-[calc(100svh-8rem)] md:min-h-0 px-6 grid lg:grid-cols-2 gap-8 lg:gap-10 items-center z-10 w-full">
+      <div className="max-w-7xl mx-auto w-full px-6 z-10 relative">
         <motion.div
           style={{ y: y1, opacity, scale, willChange: "transform, opacity" }}
-          className="flex flex-col items-start"
+          className="flex flex-col items-start pt-10 md:pt-0 max-w-2xl lg:max-w-xl xl:max-w-2xl"
         >
+          {/* Headlines & Copy */}
           <motion.h1
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, ease: appleEase, delay: 0.1 }}
-            className="mt-11 text-4xl md:text-5xl lg:text-[3.4rem] xl:text-6xl font-semibold tracking-tighter leading-[1.03] mb-4 text-gradient"
+            className="text-[2.75rem] sm:text-5xl lg:text-[4rem] xl:text-[4.5rem] font-bold tracking-[-0.04em] leading-[1.05] mb-6 text-white drop-shadow-lg"
           >
-            Where Brands <br/> Meet Creators.
+            Where Brands <br className="hidden sm:block"/> Meet Creators.
           </motion.h1>
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, ease: appleEase, delay: 0.2 }}
-            className="text-sm md:text-base lg:text-[1.05rem] text-muted mb-6 max-w-md font-medium leading-relaxed"
+            className="text-base sm:text-lg lg:text-xl text-[#d1d5db] mb-10 max-w-[480px] font-medium leading-relaxed tracking-tight drop-shadow-md"
           >
             Post campaigns. Match creators. Pay on results. The decentralized marketplace for performance.
           </motion.p>
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, ease: appleEase, delay: 0.3 }}
-            className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto"
+            className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto"
           >
-            <button type="button" onClick={() => handleRoleEntry('brand')} className="hero-cta relative z-20 touch-manipulation px-6 py-3 rounded-full bg-white text-black text-sm font-medium text-center flex items-center justify-center gap-2">
-              I'm a Brand <ArrowRight className="w-4 h-4" />
+            {/* CTA Buttons */}
+            <button type="button" onClick={() => handleRoleEntry('brand')} className="group relative flex items-center justify-center gap-2 px-8 py-4 bg-white text-black text-sm font-semibold rounded-full hover:bg-[#f0f0f0] transition-colors duration-300">
+              I'm a Brand 
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
             </button>
-            <button type="button" onClick={() => handleRoleEntry('creator')} className="hero-cta relative z-20 touch-manipulation px-6 py-3 rounded-full glass-panel text-white text-sm font-medium text-center hover:bg-white/10">
+            <button type="button" onClick={() => handleRoleEntry('creator')} className="group relative flex items-center justify-center gap-2 px-8 py-4 bg-transparent border border-white/40 text-white text-sm font-semibold rounded-full hover:bg-white/10 hover:border-white/60 transition-all duration-300 backdrop-blur-sm">
               I'm a Creator
             </button>
           </motion.div>
         </motion.div>
-
-        <motion.div
-          style={{ y: y2, opacity, scale, willChange: "transform, opacity" }}
-          className="pointer-events-none relative hidden h-[300px] sm:h-[380px] md:flex lg:h-[500px] xl:h-[560px] w-full items-center justify-center"
-        >
-          {/* Apple-style clean visual container */}
-          <div className="relative w-full max-w-lg aspect-square flex items-center justify-center">
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-32 h-32 md:w-48 md:h-48 bg-gradient-to-br from-cyan/30 to-purple/30 rounded-full blur-2xl opacity-60 animate-pulse"></div>
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ duration: 1.5, ease: appleEase, delay: 0.4 }}
-                className="z-10 flex items-center justify-center"
-              >
-                {/* The massively oversized image as requested previously */}
-                <div className="relative z-20 lg:-translate-x-12 xl:-translate-x-16">
-                  <motion.img
-                    src="/AtlasReachLogo.PNG"
-                    alt="AtlasReach Logo"
-                    className="w-[76vw] h-[76vw] sm:w-[360px] sm:h-[360px] md:w-[480px] md:h-[480px] lg:w-[620px] lg:h-[620px] xl:w-[680px] xl:h-[680px] max-w-[280px] sm:max-w-none object-contain drop-shadow-2xl will-change-transform"
-                    initial={{ y: 20 }}
-                    animate={{ y: [-10, 10, -10] }}
-                    transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                  />
-                </div>
-              </motion.div>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-
-      <div className="pointer-events-none absolute top-[100svh] left-0 right-0 flex h-[300px] items-center justify-center px-6 md:hidden">
-        <div className="relative flex aspect-square w-full max-w-[280px] items-center justify-center">
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="h-32 w-32 rounded-full bg-gradient-to-br from-cyan/30 to-purple/30 opacity-60 blur-2xl" />
-            <div className="absolute flex items-center justify-center">
-              <img
-                src="/AtlasReachLogo.PNG"
-                alt="AtlasReach Logo"
-                className="h-[280px] w-[280px] max-w-none object-contain drop-shadow-2xl"
-              />
-            </div>
-          </div>
-        </div>
       </div>
     </section>
   );
