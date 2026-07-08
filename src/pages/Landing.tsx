@@ -53,8 +53,8 @@ const Navbar = () => {
       className={`landing-navbar fixed top-0 left-0 right-0 z-50 transition-all duration-500 flex justify-center ${isScrolled ? 'py-4 px-4' : 'py-6 px-6'}`}
     >
       <div className={`transition-all duration-500 w-full max-w-7xl mx-auto flex items-center justify-between ${isScrolled ? 'bg-black/70 backdrop-blur-2xl border border-white/10 rounded-full py-3 px-6' : 'bg-transparent'}`}>
-        <a href="#top" aria-label="Back to top" className="-my-1.5 flex min-h-11 items-center gap-3 py-1.5 text-xl font-semibold tracking-tight text-white">
-          <img src="/AtlasReachLogo.PNG" alt="Logo" className="h-11 w-11 object-contain md:h-12 md:w-12" />
+        <a href="#top" aria-label="Back to top" className="-my-1.5 flex min-h-11 items-center gap-1.5 py-1.5 text-xl font-semibold tracking-tight text-white">
+          <img src="/AtlasReachIcon.png" alt="Logo" className="h-3.5 w-auto shrink-0 object-contain" />
           <div>AtlasReach</div>
         </a>
 
@@ -358,8 +358,8 @@ const Footer = () => {
         <div className="md:mb-16 md:grid md:grid-cols-4 md:gap-12">
           <div>
             <div>
-              <div className="flex items-center gap-2 text-xl font-semibold tracking-tight text-white md:mb-6 md:text-2xl">
-                <img src="/AtlasReachLogo.PNG" alt="Logo" className="h-9 w-9 object-contain md:h-11 md:w-11" />
+              <div className="flex items-center gap-1.5 text-xl font-semibold tracking-tight text-white md:mb-6 md:text-2xl">
+                <img src="/AtlasReachIcon.png" alt="Logo" className="h-3.5 w-auto shrink-0 object-contain md:h-4" />
                 AtlasReach
               </div>
               <p className="hidden max-w-xs text-sm leading-relaxed text-muted md:mb-8 md:block">

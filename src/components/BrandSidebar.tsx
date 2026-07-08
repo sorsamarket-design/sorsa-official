@@ -44,10 +44,10 @@ export default function BrandSidebar() {
       <aside className={`app-sidebar w-64 h-screen fixed left-0 top-0 bg-[#0A0A1E] border-r border-white/10 flex flex-col z-50 transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
         <div className="h-16 px-4 flex items-center justify-between">
           <div
-            className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+            className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => navigate('/')}
           >
-            <img src="/AtlasReachLogo.PNG" alt="Logo" className="w-6 h-6 object-contain" />
+            <img src="/AtlasReachIcon.png" alt="Logo" className="h-3 w-auto shrink-0 object-contain" />
             <span className="text-base font-semibold text-white tracking-tight">AtlasReach</span>
           </div>
           <button

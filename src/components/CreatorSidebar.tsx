@@ -86,10 +86,10 @@ export default function CreatorSidebar() {
         <div className="flex h-16 items-center justify-between px-4">
           <button
             type="button"
-            className="flex min-h-11 items-center gap-3 rounded-xl text-left transition-opacity hover:opacity-80"
+            className="flex min-h-11 items-center gap-1 rounded-xl text-left transition-opacity hover:opacity-80"
             onClick={() => navigate('/')}
           >
-            <img src="/AtlasReachLogo.PNG" alt="" className="h-6 w-6 object-contain" />
+            <img src="/AtlasReachIcon.png" alt="" className="h-3 w-auto shrink-0 object-contain" />
             <span className="text-base font-semibold tracking-tight text-white">AtlasReach</span>
           </button>
 
