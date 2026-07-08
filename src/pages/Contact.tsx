@@ -76,11 +76,11 @@ export default function Contact() {
       <CreatorSidebar />
       <main className="creator-page-main flex-1 md:ml-64 p-4 md:p-8">
         <div className="max-w-4xl mx-auto space-y-12">
-          
+
           {/* Header */}
           <div className="flex items-start justify-between gap-4">
             <div>
-              <motion.h1 
+              <motion.h1
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: appleEase }}
@@ -88,7 +88,7 @@ export default function Contact() {
               >
                 Contact AtlasReach Support
               </motion.h1>
-              <motion.p 
+              <motion.p
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: appleEase, delay: 0.1 }}
@@ -101,15 +101,15 @@ export default function Contact() {
           </div>
 
           {/* Contact Options */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: appleEase, delay: 0.2 }}
             className="grid grid-cols-3 gap-2.5 md:gap-6"
           >
-            <a 
-              href="https://t.me/AtlasReach"
-              target="_blank" 
+            <a
+              href="https://t.me/AtlasReachX"
+              target="_blank"
               rel="noopener noreferrer"
               className="glass-panel rounded-2xl p-6 border border-white/10 hover:border-cyan/50 hover:bg-white/5 transition-all group flex flex-col items-center text-center"
             >
@@ -120,9 +120,9 @@ export default function Contact() {
               <p className="text-sm text-muted">Fastest response time</p>
             </a>
 
-            <a 
-              href="https://x.com/AtlasReach"
-              target="_blank" 
+            <a
+              href="https://x.com/atlasreachx"
+              target="_blank"
               rel="noopener noreferrer"
               className="glass-panel rounded-2xl p-6 border border-white/10 hover:border-cyan/50 hover:bg-white/5 transition-all group flex flex-col items-center text-center"
             >
@@ -132,10 +132,10 @@ export default function Contact() {
                 </svg>
               </div>
               <h3 className="text-lg font-medium text-white mb-1">X / Twitter</h3>
-              <p className="text-sm text-muted">DM us @sorsamarket</p>
+              <p className="text-sm text-muted">DM us @atlasreachx</p>
             </a>
 
-            <a 
+            <a
               href="mailto:contact@atlasreach.io"
               className="glass-panel rounded-2xl p-6 border border-white/10 hover:border-cyan/50 hover:bg-white/5 transition-all group flex flex-col items-center text-center"
             >
@@ -148,9 +148,9 @@ export default function Contact() {
           </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            
+
             {/* FAQs */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, ease: appleEase, delay: 0.3 }}
@@ -159,7 +159,7 @@ export default function Contact() {
               <h2 className="text-2xl font-semibold text-white">Frequently Asked Questions</h2>
               <div className="space-y-3">
                 {faqs.map((faq, index) => (
-                  <div 
+                  <div
                     key={index}
                     className="glass-panel rounded-2xl border border-white/10 overflow-hidden"
                   >
@@ -194,14 +194,14 @@ export default function Contact() {
             </motion.div>
 
             {/* Report Bug Form */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, ease: appleEase, delay: 0.4 }}
             >
               <div className="glass-panel rounded-[2rem] p-8 border border-white/10 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-cyan/5 blur-[80px] rounded-full pointer-events-none"></div>
-                
+
                 <div className="relative z-10">
                   <div className="flex items-center gap-3 mb-6">
                     <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
@@ -213,7 +213,7 @@ export default function Contact() {
                   <form onSubmit={handleSubmit} className="space-y-5">
                     <div>
                       <label className="block text-sm font-medium text-muted mb-2">Issue Type</label>
-                      <select 
+                      <select
                         value={issueType}
                         onChange={(e) => setIssueType(e.target.value)}
                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan/50 transition-colors appearance-none"
@@ -228,7 +228,7 @@ export default function Contact() {
 
                     <div>
                       <label className="block text-sm font-medium text-muted mb-2">Description</label>
-                      <textarea 
+                      <textarea
                         required
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
@@ -240,7 +240,7 @@ export default function Contact() {
                     {submitError && <p className="text-sm text-red-400">{submitError}</p>}
                     {submitSuccess && <p className="text-sm text-green-400">Report submitted.</p>}
 
-                    <button 
+                    <button
                       type="submit"
                       disabled={isSubmitting || !description.trim()}
                       className="w-full py-3.5 rounded-xl bg-white text-black font-semibold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:hover:bg-white"

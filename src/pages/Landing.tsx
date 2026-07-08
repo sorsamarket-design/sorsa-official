@@ -392,13 +392,13 @@ const Footer = () => {
               <h4 className="mb-2 text-xs font-bold text-white md:mb-6 md:text-base md:font-semibold">Contact Us</h4>
               <ul className="space-y-2 text-xs text-[#6b7280] md:space-y-4 md:text-sm md:text-muted">
                 <li>
-                  <a href="https://x.com/AtlasReach" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 hover:text-white transition-colors">
+                  <a href="https://x.com/atlasreachx" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 hover:text-white transition-colors">
                     <XLogo className="h-3.5 w-3.5 shrink-0" />
                     <span>X (Twitter)</span>
                   </a>
                 </li>
                 <li>
-                  <a href="https://t.me/AtlasReach" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 hover:text-white transition-colors">
+                  <a href="https://t.me/AtlasReachX" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 hover:text-white transition-colors">
                     <TelegramLogo className="h-3.5 w-3.5 shrink-0" />
                     <span>Telegram</span>
                   </a>
