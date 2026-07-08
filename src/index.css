@@ -75,7 +75,14 @@ body::before {
   overscroll-behavior: contain;
 }
 
-.app-topbar {
+/* The blur/gradient glass effect lives on .app-topbar-glass, an absolutely
+   positioned child of .app-topbar (see TopBar.tsx) rather than on .app-topbar
+   itself - iOS Safari (26+) doesn't reliably composite backdrop-filter directly
+   on a fixed element that extends into the safe area, which showed up as a
+   transparent/black seam behind the notch. .app-topbar keeps a solid
+   background-color (set inline in TopBar.tsx) as a fallback that's never
+   see-through, even if this blur layer has issues. */
+.app-topbar-glass {
   background:
     linear-gradient(90deg, rgba(10, 10, 30, 0.97), rgba(10, 10, 30, 0.9)) !important;
   backdrop-filter: blur(20px);

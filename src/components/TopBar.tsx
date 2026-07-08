@@ -29,7 +29,15 @@ export default function TopBar() {
   const avatar = normalizeAvatarUrl(user?.user_metadata?.avatar_url) || getInitialsAvatarUrl(user?.email || 'User');
 
   return (
-    <header className="app-topbar h-16 fixed top-0 right-0 left-0 md:left-64 bg-[#0A0A1E]/80 backdrop-blur-xl border-b border-white/10 z-40 flex items-center justify-between gap-2 px-3 sm:px-4 md:px-6">
+    <header className="app-topbar h-16 fixed top-0 right-0 left-0 md:left-64 bg-[#0A0A1E] z-40">
+      {/* Glass effect lives on its own absolutely-positioned layer, separate from
+          the fixed positioning element above - iOS Safari (26+) doesn't reliably
+          composite backdrop-filter directly on a fixed element that extends into
+          the safe area, which showed up as a transparent/black seam behind the
+          notch. The bg-[#0A0A1E] on the fixed parent is a solid fallback so that
+          region is never see-through even if the blur layer has issues. */}
+      <div className="app-topbar-glass absolute inset-0 border-b border-white/10" />
+      <div className="relative flex h-full min-w-0 items-center justify-between gap-2 px-3 sm:px-4 md:px-6">
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         <button
           type="button"
@@ -94,6 +102,7 @@ export default function TopBar() {
         <div className="hidden sm:block w-9 h-9 rounded-full bg-gradient-to-tr from-cyan to-blue-500 p-[1px] cursor-pointer hover:scale-105 transition-transform">
           <img src={avatar} alt="User Avatar" className="w-full h-full rounded-full object-cover border-2 border-[#0A0A1E]" referrerPolicy="no-referrer" />
         </div>
+      </div>
       </div>
     </header>
   );
