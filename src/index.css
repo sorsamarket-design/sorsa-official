@@ -103,6 +103,19 @@ body::before {
   padding-top: env(safe-area-inset-top);
 }
 
+/* Promotes these fixed bars to their own GPU compositing layer, same fix already
+   used for body::before above - without it, iOS Safari can let fixed-position
+   elements lag a frame behind fast scrolling, briefly showing page content
+   sliding past/through the bar instead of staying cleanly pinned on top of it. */
+.app-topbar,
+.creator-page-controls,
+.landing-navbar {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
 .app-nav-link,
 .app-control,
 .app-profile-card {
