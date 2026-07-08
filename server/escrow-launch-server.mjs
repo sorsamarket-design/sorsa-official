@@ -142,24 +142,34 @@ function requireBearer(req) {
 async function authenticate(req) {
   const cookies = parseCookies(req);
   const sessionToken = cookies[appSessionCookieName];
-  if (!sessionToken) throw Object.assign(new Error('Missing app session'), { status: 401 });
 
-  const tokenHash = hashSessionToken(sessionToken);
-  const { data: sessionRow, error } = await supabase
-    .from('app_sessions')
-    .select('id, user_id, expires_at, revoked_at')
-    .eq('token_hash', tokenHash)
-    .maybeSingle();
+  if (sessionToken) {
+    const tokenHash = hashSessionToken(sessionToken);
+    const { data: sessionRow, error } = await supabase
+      .from('app_sessions')
+      .select('id, user_id, expires_at, revoked_at')
+      .eq('token_hash', tokenHash)
+      .maybeSingle();
 
-  if (error || !sessionRow || sessionRow.revoked_at || new Date(sessionRow.expires_at).getTime() <= Date.now()) {
-    throw Object.assign(new Error('Invalid app session'), { status: 401 });
+    if (!error && sessionRow && !sessionRow.revoked_at && new Date(sessionRow.expires_at).getTime() > Date.now()) {
+      await supabase
+        .from('app_sessions')
+        .update({ last_seen_at: new Date().toISOString() })
+        .eq('id', sessionRow.id);
+      return { id: sessionRow.user_id };
+    }
   }
 
-  await supabase
-    .from('app_sessions')
-    .update({ last_seen_at: new Date().toISOString() })
-    .eq('id', sessionRow.id);
-  return { id: sessionRow.user_id };
+  // Fall back to the Supabase bearer token: the app-session cookie can be briefly
+  // unavailable right after login (e.g. in-app browsers with stricter cookie jars),
+  // so callers that still hold the access token in memory can authenticate with it.
+  const header = req.headers.authorization || '';
+  const [scheme, bearerToken] = header.split(' ');
+  if (scheme === 'Bearer' && bearerToken) {
+    return authenticateToken(bearerToken);
+  }
+
+  throw Object.assign(new Error('Missing app session'), { status: 401 });
 }
 
 async function authenticateToken(token) {
@@ -247,7 +257,7 @@ async function getTelegramStatus(userId) {
     .from('creator_profiles')
     .select('telegram_chat_id, telegram_username, telegram_connected_at, notify_new_campaigns, notify_campaign_updates, notify_payments')
     .eq('id', userId)
-    .single();
+    .maybeSingle();
   if (error) throw error;
   return mapTelegramPreferences(data);
 }
@@ -3512,7 +3522,7 @@ app.post('/submissions/:submissionId/status', async (req, res) => {
           .order('submitted_at', { ascending: true })
           .order('id', { ascending: true })
           .limit(1)
-          .maybeSingle();
+          .single();
         if (firstSubmissionError) throw firstSubmissionError;
         shouldReleaseBaseReward = firstSubmission?.id === submission.id;
       }

@@ -1,13 +1,14 @@
 import { requireSupabase } from './supabase';
 import { getBackendBase } from './appSession';
 
-async function proxySorsa(path: string, options: RequestInit = {}) {
+async function proxySorsa(path: string, options: RequestInit = {}, accessToken?: string) {
   requireSupabase();
   const response = await fetch(`${getBackendBase()}${path}`, {
     ...options,
     credentials: 'include',
     headers: {
-      ...(options.headers || {})
+      ...(options.headers || {}),
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
     }
   });
   const body = await response.json().catch(() => null);
@@ -82,11 +83,13 @@ const sorsaApi = {
 
   /**
    * Forces the backend to refresh the signed-in creator's stored Sorsa profile.
+   * Accepts the just-issued Supabase access token as a fallback credential, since
+   * the app-session cookie can be briefly unavailable right after login.
    */
-  async syncCreatorProfile() {
+  async syncCreatorProfile(accessToken?: string) {
     return proxySorsa('/creator/sorsa/sync', {
       method: 'POST'
-    });
+    }, accessToken);
   }
 };
 

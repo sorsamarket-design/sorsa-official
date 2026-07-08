@@ -88,7 +88,7 @@ export default function AuthCallback() {
 
           await attachSavedReferralToCreator(user.id);
           try {
-            await sorsaApi.syncCreatorProfile();
+            await sorsaApi.syncCreatorProfile(session.access_token);
           } catch (syncError) {
             console.warn('First-login Sorsa profile sync failed:', syncError);
           }
