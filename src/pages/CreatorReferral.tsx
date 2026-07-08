@@ -19,7 +19,7 @@ export default function CreatorReferral() {
   const { user } = useAuth();
   const { profile, refreshProfile } = useCreatorProfile();
   const referralCode = profile?.referral_code || buildReferralCode(profile?.x_handle, user?.id);
-  const referralLink = `https://atlasreach.io/join?ref=${encodeURIComponent(referralCode)}`;
+  const referralLink = `https://atlasreach.xyz/join?ref=${encodeURIComponent(referralCode)}`;
   const filteredActivity = useMemo(() => {
     const query = search.trim().toLowerCase();
     if (!query) return referralActivity;
