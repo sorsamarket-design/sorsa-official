@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { FileText, Inbox, LayoutDashboard, LogOut, Megaphone, PlusCircle, ShieldCheck, Sparkles, Ticket, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
 
 export default function AdminSidebar() {
   const { user, signOut } = useAuth();
@@ -19,6 +20,8 @@ export default function AdminSidebar() {
   useEffect(() => {
     setIsOpen(false);
   }, [location.pathname]);
+
+  useLockBodyScroll(isOpen);
 
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin/dashboard' },

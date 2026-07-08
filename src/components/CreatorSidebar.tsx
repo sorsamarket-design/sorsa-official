@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCreatorProfile } from '../hooks/useCreatorProfile';
+import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
 import { getInitialsAvatarUrl, normalizeAvatarUrl } from '../lib/avatars';
 
 const navigationGroups = [
@@ -52,6 +53,8 @@ export default function CreatorSidebar() {
   useEffect(() => {
     setIsOpen(false);
   }, [location.pathname]);
+
+  useLockBodyScroll(isOpen);
 
   const handle =
     profile?.x_handle ||

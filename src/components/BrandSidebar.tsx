@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Briefcase, Megaphone, Wallet, Settings, X, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
 
 export default function BrandSidebar() {
   const { user } = useAuth();
@@ -19,6 +20,8 @@ export default function BrandSidebar() {
   useEffect(() => {
     setIsOpen(false);
   }, [location.pathname]);
+
+  useLockBodyScroll(isOpen);
 
   const navLinks = [
     { name: 'Dashboard', path: '/brand/dashboard', icon: LayoutDashboard },
