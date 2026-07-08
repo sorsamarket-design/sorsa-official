@@ -534,19 +534,13 @@ body::before {
     padding-top: 0.875rem !important;
   }
 
-  .creator-page-controls,
-  .app-topbar {
-    /* vw is always anchored to the true device viewport, regardless of any
-       ancestor's own width/padding/containing-block situation - this is a
-       stronger guarantee of edge-to-edge than right:0 + width:100% alone.
-       !important wins over the inline right-0/inset-x-0 Tailwind utilities
-       unconditionally, rather than depending on stylesheet source order. */
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: auto !important;
-    width: 100vw !important;
-    margin: 0 !important;
+  .creator-page-controls {
+    position: fixed;
+    top: 0;
+    right: 0;
+    left: 0;
+    width: 100%;
+    margin: 0;
   }
 
   .app-sidebar + .creator-page-controls + main {
