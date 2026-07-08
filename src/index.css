@@ -103,6 +103,16 @@ body::before {
   padding-top: env(safe-area-inset-top);
 }
 
+/* Top clearance for content below the fixed topbar, derived from the same 4rem +
+   safe-area value the bar's own height uses above, instead of a hardcoded margin
+   that would drift out of sync if the bar's height ever changes. On mobile widths
+   this is superseded by .workspace-route-frame's padding-top (which also clears
+   the sidebar's own mobile-only fixed controls); this rule is what actually applies
+   at desktop widths, where TopBar is visible and margin-left clears the sidebar. */
+.brand-page-main {
+  margin-top: calc(4rem + env(safe-area-inset-top));
+}
+
 .app-nav-link,
 .app-control,
 .app-profile-card {

@@ -6,6 +6,7 @@ import {
   ChevronRight, Users, ArrowUpDown
 } from 'lucide-react';
 import AdminSidebar from '../components/AdminSidebar';
+import AdminTopBar from '../components/AdminTopBar';
 import { useCampaigns } from '../hooks/useCampaigns';
 
 const appleEase = [0.16, 1, 0.3, 1] as const;
@@ -59,8 +60,9 @@ export default function AdminApprovals() {
   return (
     <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] font-sans selection:bg-purple-500/30 flex">
       <AdminSidebar />
-      
-      <main className="flex-1 md:ml-64 p-4 md:p-8">
+      <AdminTopBar />
+
+      <main className="admin-page-main flex-1 md:ml-64 p-4 md:p-8">
         <div className="max-w-7xl mx-auto space-y-8">
           <header>
             <h1 className="text-3xl font-bold">Submission Approvals</h1>

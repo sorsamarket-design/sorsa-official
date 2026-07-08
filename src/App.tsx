@@ -67,7 +67,8 @@ function RouteLayout() {
   const location = useLocation();
   const hasWorkspaceMobileNavbar =
     location.pathname.startsWith('/brand/') ||
-    location.pathname.startsWith('/creator/');
+    location.pathname.startsWith('/creator/') ||
+    location.pathname.startsWith('/admin/');
 
   return (
     <div className={hasWorkspaceMobileNavbar ? 'workspace-route-frame' : undefined}>

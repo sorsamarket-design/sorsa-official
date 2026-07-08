@@ -104,7 +104,7 @@ export default function BrandProfileNew() {
       <BrandSidebar />
       <TopBar />
       
-      <main className="flex-1 md:ml-64 mt-20 p-4 md:p-8">
+      <main className="brand-page-main flex-1 md:ml-64 p-4 md:p-8">
         <div className="max-w-3xl mx-auto">
           
           <div className="flex items-center gap-4 mb-10">
