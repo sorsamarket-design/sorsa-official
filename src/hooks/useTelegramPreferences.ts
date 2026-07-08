@@ -19,7 +19,8 @@ type TelegramPreferencesContextValue = {
 const TelegramPreferencesContext = createContext<TelegramPreferencesContextValue | null>(null);
 
 export function TelegramPreferencesProvider({ children }: { children: React.ReactNode }) {
-  const { user, loading: authLoading } = useAuth();
+  const { user, session, loading: authLoading } = useAuth();
+  const accessToken = session?.access_token;
   const [status, setStatus] = useState<TelegramStatus | null>(null);
   const [lastFetchedAt, setLastFetchedAt] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -87,7 +88,7 @@ export function TelegramPreferencesProvider({ children }: { children: React.Reac
             return;
           }
 
-          telegramNotifications.getPreferences()
+          telegramNotifications.getPreferences(accessToken)
             .then((nextStatus) => {
               streamLoadedRef.current = true;
               setStatus(nextStatus);
@@ -113,7 +114,7 @@ export function TelegramPreferencesProvider({ children }: { children: React.Reac
         statusStreamRef.current = null;
       }
     };
-  }, [authLoading, user?.id]);
+  }, [accessToken, authLoading, user?.id]);
 
   const loadPreferences = useCallback(async (options: { force?: boolean } = {}) => {
     if (authLoading) return null;
@@ -129,7 +130,7 @@ export function TelegramPreferencesProvider({ children }: { children: React.Reac
     try {
       setLoading(true);
       setError(null);
-      const nextStatus = await telegramNotifications.getPreferences();
+      const nextStatus = await telegramNotifications.getPreferences(accessToken);
       setStatus(nextStatus);
       setLoaded(true);
       setLastFetchedAt(Date.now());
@@ -140,26 +141,26 @@ export function TelegramPreferencesProvider({ children }: { children: React.Reac
     } finally {
       setLoading(false);
     }
-  }, [authLoading, lastFetchedAt, loaded, resetCache, status, user]);
+  }, [accessToken, authLoading, lastFetchedAt, loaded, resetCache, status, user]);
 
   const createConnectLink = useCallback(async () => {
     try {
       setSaving(true);
       setError(null);
-      return await telegramNotifications.createConnectLink();
+      return await telegramNotifications.createConnectLink(accessToken);
     } catch (err: any) {
       setError(err.message || 'Telegram link could not be created.');
       throw err;
     } finally {
       setSaving(false);
     }
-  }, []);
+  }, [accessToken]);
 
   const disconnectTelegram = useCallback(async () => {
     try {
       setSaving(true);
       setError(null);
-      await telegramNotifications.disconnect();
+      await telegramNotifications.disconnect(accessToken);
       setStatus((current) => ({ ...current, connected: false, telegramUsername: null, connectedAt: null }));
       setLoaded(true);
       setLastFetchedAt(Date.now());
@@ -169,7 +170,7 @@ export function TelegramPreferencesProvider({ children }: { children: React.Reac
     } finally {
       setSaving(false);
     }
-  }, []);
+  }, [accessToken]);
 
   const updatePreferences = useCallback(async (preferences: TelegramPreferences) => {
     const previousStatus = status;
@@ -178,7 +179,7 @@ export function TelegramPreferencesProvider({ children }: { children: React.Reac
     try {
       setSaving(true);
       setError(null);
-      const result = await telegramNotifications.updatePreferences(preferences);
+      const result = await telegramNotifications.updatePreferences(preferences, accessToken);
       setStatus((current) => ({ ...current, preferences: result.preferences }));
       setLoaded(true);
       setLastFetchedAt(Date.now());
@@ -189,7 +190,7 @@ export function TelegramPreferencesProvider({ children }: { children: React.Reac
     } finally {
       setSaving(false);
     }
-  }, [status]);
+  }, [accessToken, status]);
 
   const value = useMemo(() => ({
     status,

@@ -14,13 +14,14 @@ export type TelegramStatus = {
   preferences?: TelegramPreferences;
 };
 
-async function request(path: string, options: RequestInit = {}) {
+async function request(path: string, options: RequestInit = {}, accessToken?: string) {
   requireSupabase();
   const response = await fetch(`${getBackendBase()}${path}`, {
     ...options,
     credentials: 'include',
     headers: {
-      ...(options.headers || {})
+      ...(options.headers || {}),
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
     }
   });
   const body = await response.json().catch(() => null);
@@ -36,26 +37,29 @@ async function createStatusEventSource() {
 }
 
 const telegramNotifications = {
-  getPreferences() {
-    return request('/telegram/preferences');
+  // accessToken is a fallback credential for when the app-session cookie isn't on the
+  // request yet (see authenticate() on the backend) - EventSource can't carry it, so
+  // the live status stream still depends on the cookie, but this one-shot fetch doesn't.
+  getPreferences(accessToken?: string) {
+    return request('/telegram/preferences', {}, accessToken);
   },
 
   createStatusEventSource,
 
-  createConnectLink() {
-    return request('/telegram/connect-code', { method: 'POST' });
+  createConnectLink(accessToken?: string) {
+    return request('/telegram/connect-code', { method: 'POST' }, accessToken);
   },
 
-  disconnect() {
-    return request('/telegram/disconnect', { method: 'POST' });
+  disconnect(accessToken?: string) {
+    return request('/telegram/disconnect', { method: 'POST' }, accessToken);
   },
 
-  updatePreferences(preferences: TelegramPreferences) {
+  updatePreferences(preferences: TelegramPreferences, accessToken?: string) {
     return request('/telegram/preferences', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ preferences })
-    });
+    }, accessToken);
   }
 };
 
