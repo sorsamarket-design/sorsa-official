@@ -3,7 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowLeft, Calendar, ExternalLink, FileText, Loader2, Search, Sparkles, Users, Wallet } from 'lucide-react';
 import AdminSidebar from '../components/AdminSidebar';
-import AdminTopBar from '../components/AdminTopBar';
 import { getAdminNftContentCampaign, listAdminNftContentCampaigns, type NftCampaign } from '../lib/nftCampaigns';
 import { formatCampaignTimeLeft, getCampaignEndTime } from '../lib/campaignTime';
 
@@ -115,8 +114,7 @@ export default function AdminNFTSubmissions() {
     return (
       <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] flex">
         <AdminSidebar />
-        <AdminTopBar />
-        <main className="admin-page-main flex-1 md:ml-64 p-8 flex items-center justify-center">
+        <main className="flex-1 md:ml-64 p-8 flex items-center justify-center">
           <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
         </main>
       </div>
@@ -127,8 +125,7 @@ export default function AdminNFTSubmissions() {
     return (
       <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] flex">
         <AdminSidebar />
-        <AdminTopBar />
-        <main className="admin-page-main flex-1 md:ml-64 p-8 flex items-center justify-center">
+        <main className="flex-1 md:ml-64 p-8 flex items-center justify-center">
           <div className="text-center">
             <FileText className="w-12 h-12 text-red-400 mx-auto mb-4" />
             <h1 className="text-xl font-semibold text-white mb-2">{error}</h1>
@@ -142,9 +139,8 @@ export default function AdminNFTSubmissions() {
   return (
     <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] font-sans selection:bg-purple-500/30 flex">
       <AdminSidebar />
-      <AdminTopBar />
 
-      <main className="admin-page-main flex-1 md:ml-64 p-4 md:p-8">
+      <main className="flex-1 md:ml-64 p-4 md:p-8">
         <div className="max-w-6xl mx-auto space-y-8">
           {id && campaign ? (
             <>

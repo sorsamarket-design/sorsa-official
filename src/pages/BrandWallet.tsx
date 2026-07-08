@@ -63,7 +63,7 @@ export default function BrandWallet() {
     <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] font-sans selection:bg-cyan/30 flex">
       <BrandSidebar />
       <TopBar />
-      <main className="brand-page-main flex-1 md:ml-64 p-4 md:p-8">
+      <main className="flex-1 md:ml-64 mt-20 p-4 md:p-8">
         <div className="max-w-6xl mx-auto space-y-8">
           <div>
             <div className="flex items-center justify-between gap-3">

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Users, Megaphone, ShieldCheck, AlertCircle, CheckCircle2, XCircle, ExternalLink, Loader2 } from 'lucide-react';
+import { Users, Megaphone, ShieldCheck, AlertCircle, CheckCircle2, XCircle, ExternalLink, Menu, Loader2 } from 'lucide-react';
 import AdminSidebar from '../components/AdminSidebar';
-import AdminTopBar from '../components/AdminTopBar';
 import { useCampaigns } from '../hooks/useCampaigns';
 
 const appleEase = [0.16, 1, 0.3, 1] as const;
@@ -48,12 +47,30 @@ export default function AdminDashboard() {
     }
   };
 
+  const toggleSidebar = () => {
+    document.dispatchEvent(new CustomEvent('toggleSidebar'));
+  };
+
   return (
     <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] font-sans selection:bg-purple-500/30 flex">
       <AdminSidebar />
-      <AdminTopBar />
+      
+      <main className="flex-1 md:ml-64 p-4 md:p-8">
+        <div className="md:hidden flex items-center justify-between mb-6">
+          <button 
+            onClick={toggleSidebar}
+            className="p-2 rounded-xl bg-white/5 border border-white/10"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-purple-500 flex items-center justify-center">
+              <ShieldCheck className="w-5 h-5 text-white" />
+            </div>
+            <span className="font-bold">Admin</span>
+          </div>
+        </div>
 
-      <main className="admin-page-main flex-1 md:ml-64 p-4 md:p-8">
         <div className="max-w-6xl mx-auto space-y-8">
           <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
