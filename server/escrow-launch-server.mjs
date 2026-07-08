@@ -1079,7 +1079,35 @@ async function syncCreatorProfileFromSorsa(profile) {
     throw error;
   }
 
-  const score = Math.round(Number(scoreData?.score || 0));
+  let score = Math.round(Number(scoreData?.score || 0));
+  const followerCount = stats?.followers_count ?? 0;
+
+  // Sorsa's /score endpoint has been observed to return a transient, wrong value for
+  // accounts with a small follower graph (a fresh read of 65 that settled to 0 minutes
+  // later with no profile change). Re-check once before trusting a low-follower score.
+  const LOW_FOLLOWER_RECHECK_THRESHOLD = 100;
+  if (followerCount < LOW_FOLLOWER_RECHECK_THRESHOLD) {
+    let confirmScore = null;
+    try {
+      const confirmScoreData = await callSorsa(`/score?username=${encodeURIComponent(xHandle)}`);
+      confirmScore = Math.round(Number(confirmScoreData?.score || 0));
+    } catch (error) {
+      confirmScore = null;
+    }
+
+    if (confirmScore === null || confirmScore !== score) {
+      console.warn('Sorsa score unstable on re-check, keeping previous score:', {
+        creatorId: profile.id,
+        xHandle,
+        followerCount,
+        firstRead: score,
+        secondRead: confirmScore,
+        previousScore
+      });
+      score = previousScore ?? 0;
+    }
+  }
+
   const finalLocation = stats?.location || about?.country || null;
   const syncedAt = new Date().toISOString();
 
