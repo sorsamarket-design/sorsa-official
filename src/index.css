@@ -85,22 +85,26 @@ body::before {
     0 8px 24px rgba(0, 0, 0, 0.08);
 }
 
-/* viewport-fit=cover lets the page paint behind the iPhone notch/Dynamic Island so
-   the background color matches all the way to the top - these fixed bars need the
-   safe-area inset added back so their content doesn't sit under it. env() resolves
-   to 0 on devices without a safe area, so this is a no-op elsewhere.
-   app-topbar/creator-page-controls are a fixed h-16 (Tailwind), so the inset is
-   added to their height too - otherwise padding alone would squeeze their content
-   instead of sitting above it. landing-navbar has no fixed height, so padding is
-   enough there. */
-.app-topbar,
-.creator-page-controls {
-  padding-top: env(safe-area-inset-top);
-  height: calc(4rem + env(safe-area-inset-top));
-}
+/* viewport-fit=cover (index.html) lets the page paint behind the iPhone notch/Dynamic
+   Island so the background color matches all the way to the top - these fixed bars
+   need the safe-area inset added back so their content doesn't sit under it. env()
+   resolves to 0 on devices without a safe area/browsers that don't support it, so
+   this degrades safely everywhere; scoped to mobile only since desktop bars don't
+   sit under a notch and shouldn't grow taller. app-topbar/creator-page-controls are
+   a fixed h-16 (Tailwind) on mobile, so the inset is added to their height too -
+   otherwise padding alone would squeeze their content instead of sitting above it.
+   landing-navbar has no fixed height, so padding is enough there. No notch height is
+   ever hardcoded - env() reads it from the browser/device at render time. */
+@media (max-width: 47.999rem) {
+  .app-topbar,
+  .creator-page-controls {
+    padding-top: env(safe-area-inset-top);
+    height: calc(4rem + env(safe-area-inset-top));
+  }
 
-.landing-navbar {
-  padding-top: env(safe-area-inset-top);
+  .landing-navbar {
+    padding-top: env(safe-area-inset-top);
+  }
 }
 
 /* Promotes these fixed bars to their own GPU compositing layer, same fix already
