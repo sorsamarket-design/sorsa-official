@@ -18,7 +18,7 @@ function formatTxHash(hash?: string | null) {
 
 function getTxUrl(hash?: string | null) {
   if (!hash) return null;
-  return `https://sepolia.basescan.org/tx/${hash}`;
+  return `https://basescan.org/tx/${hash}`;
 }
 
 export default function BrandWallet() {
@@ -100,7 +100,7 @@ export default function BrandWallet() {
                 {!isConnected
                   ? 'Connect a wallet to view its balance.'
                   : chainId !== configuredChainId
-                    ? 'Switch to Base Sepolia to view the balance.'
+                    ? 'Switch to Base to view the balance.'
                     : usdcBalanceError
                       ? 'USDC balance is currently unavailable.'
                       : 'Available in the connected brand wallet.'}

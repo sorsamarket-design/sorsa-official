@@ -17,7 +17,7 @@ function formatTxHash(hash?: string | null) {
 
 function getTxUrl(hash?: string | null) {
   if (!hash) return null;
-  return `https://sepolia.basescan.org/tx/${hash}`;
+  return `https://basescan.org/tx/${hash}`;
 }
 
 export default function CreatorWallet() {
