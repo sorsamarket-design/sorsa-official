@@ -1,9 +1,9 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ArrowLeft, Calendar, CheckCircle2, Image, Loader2, Minus, Plus, Sparkles, Users, X } from 'lucide-react';
+import { ArrowLeft, Calendar, CheckCircle2, Image, Loader2, MessageCircle, Minus, Plus, Sparkles, Users, X } from 'lucide-react';
 import AdminSidebar from '../components/AdminSidebar';
-import { createNftCampaign, type NftCampaignType } from '../lib/nftCampaigns';
+import { createNftCampaign, getAdminTelegramGroupStatuses, type NftCampaignType, type TelegramGroupStatus } from '../lib/nftCampaigns';
 
 const appleEase = [0.16, 1, 0.3, 1] as const;
 
@@ -14,6 +14,18 @@ function cleanXHandle(value: string) {
     .replace(/^@/, '')
     .split(/[/?#]/)[0]
     .trim();
+}
+
+function cleanTelegramChatId(value: string) {
+  return value.trim();
+}
+
+function telegramStatusLabel(status?: string | null) {
+  if (status === 'configured') return 'Configured';
+  if (status === 'needs_admin') return 'Bot needs admin';
+  if (status === 'bot_not_in_chat') return 'Bot not in group';
+  if (status === 'restricted') return 'Bot restricted';
+  return 'Not detected';
 }
 
 export default function AdminNFTCampaignNew() {
@@ -29,6 +41,9 @@ export default function AdminNFTCampaignNew() {
   const [backgroundImagePreview, setBackgroundImagePreview] = useState('');
   const [followAccounts, setFollowAccounts] = useState<string[]>(['']);
   const [retweetLinks, setRetweetLinks] = useState<string[]>(['']);
+  const [telegramTasks, setTelegramTasks] = useState<string[]>(['']);
+  const [telegramStatuses, setTelegramStatuses] = useState<Record<string, TelegramGroupStatus>>({});
+  const [telegramStatusLoading, setTelegramStatusLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -105,6 +120,45 @@ export default function AdminNFTCampaignNew() {
     setRetweetLinks(prev => prev.length === 1 ? [''] : prev.filter((_, itemIndex) => itemIndex !== index));
   };
 
+  const updateTelegramTask = (index: number, value: string) => {
+    setTelegramTasks(prev => prev.map((item, itemIndex) => itemIndex === index ? value : item));
+  };
+
+  const addTelegramTask = () => {
+    setTelegramTasks(prev => prev.length >= 3 ? prev : [...prev, '']);
+  };
+
+  const removeTelegramTask = (index: number) => {
+    setTelegramTasks(prev => prev.length === 1 ? [''] : prev.filter((_, itemIndex) => itemIndex !== index));
+  };
+
+  const refreshTelegramStatuses = async () => {
+    const chatIds = Array.from(new Set(telegramTasks.map(cleanTelegramChatId).filter(Boolean)));
+    if (!chatIds.length) {
+      setTelegramStatuses({});
+      return;
+    }
+    setTelegramStatusLoading(true);
+    try {
+      const result = await getAdminTelegramGroupStatuses(chatIds);
+      const next: Record<string, TelegramGroupStatus> = {};
+      for (const group of result.groups || []) {
+        next[group.chat_id] = group;
+      }
+      setTelegramStatuses(next);
+    } catch (err: any) {
+      setError(err.message || 'Telegram group status could not be loaded.');
+    } finally {
+      setTelegramStatusLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (campaignType !== 'raffle') return;
+    const timer = window.setTimeout(refreshTelegramStatuses, 500);
+    return () => window.clearTimeout(timer);
+  }, [campaignType, telegramTasks]);
+
   const goToStepTwo = () => {
     setError('');
     setSuccess('');
@@ -131,6 +185,8 @@ export default function AdminNFTCampaignNew() {
     setBackgroundImagePreview('');
     setFollowAccounts(['']);
     setRetweetLinks(['']);
+    setTelegramTasks(['']);
+    setTelegramStatuses({});
     setStep(1);
   };
 
@@ -146,6 +202,9 @@ export default function AdminNFTCampaignNew() {
     const cleanedRetweetLinks = Array.from(
       new Set<string>(retweetLinks.map(link => link.trim()).filter(Boolean))
     ).slice(0, 2);
+    const cleanedTelegramTasks = Array.from(
+      new Set<string>(telegramTasks.map(cleanTelegramChatId).filter(Boolean))
+    ).slice(0, 3);
 
     try {
       await createNftCampaign({
@@ -162,6 +221,10 @@ export default function AdminNFTCampaignNew() {
         max_content_submissions: campaignType === 'content' ? Math.min(5, Math.max(1, Number(formData.max_content_submissions || 5))) : null,
         follow_accounts: cleanedFollowAccounts,
         retweet_links: campaignType === 'raffle' ? cleanedRetweetLinks : [],
+        telegram_tasks: campaignType === 'raffle' ? cleanedTelegramTasks.map(chatId => ({
+          chat_id: chatId,
+          title: telegramStatuses[chatId]?.title || null
+        })) : [],
         start_date: formData.start_date || null,
         end_date: formData.end_date || null
       });
@@ -473,8 +536,8 @@ export default function AdminNFTCampaignNew() {
                       <div className="space-y-4">
                         <div className="flex items-center justify-between gap-4">
                           <div>
-                            <label className="text-sm font-medium text-white">Retweet Tasks</label>
-                            <p className="text-xs text-muted mt-1">Add up to 2 X post links creators must retweet to join.</p>
+                            <label className="text-sm font-medium text-white">Like & Retweet Tasks</label>
+                            <p className="text-xs text-muted mt-1">Add up to 2 X post links creators must like and retweet to join.</p>
                           </div>
                           <button type="button" onClick={addRetweetLink} disabled={retweetLinks.length >= 2} className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm font-medium text-white hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-2">
                             <Plus className="w-4 h-4" /> Add
@@ -489,6 +552,52 @@ export default function AdminNFTCampaignNew() {
                               </button>
                             </div>
                           ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <label className="text-sm font-medium text-white">Telegram Join Tasks</label>
+                            <p className="text-xs text-muted mt-1">Add up to 3 Telegram group or channel chat IDs creators must join.</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button type="button" onClick={refreshTelegramStatuses} disabled={telegramStatusLoading} className="w-10 h-10 rounded-full bg-white/5 border border-white/10 text-white hover:bg-white/10 disabled:opacity-50 inline-flex items-center justify-center" aria-label="Refresh Telegram group status">
+                              {telegramStatusLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageCircle className="w-4 h-4" />}
+                            </button>
+                            <button type="button" onClick={addTelegramTask} disabled={telegramTasks.length >= 3} className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm font-medium text-white hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-2">
+                              <Plus className="w-4 h-4" /> Add
+                            </button>
+                          </div>
+                        </div>
+                        <div className="space-y-3">
+                          {telegramTasks.map((chatId, index) => {
+                            const cleanedChatId = cleanTelegramChatId(chatId);
+                            const status = cleanedChatId ? telegramStatuses[cleanedChatId] : null;
+                            const isConfigured = status?.bot_permission_status === 'configured';
+
+                            return (
+                              <div key={index} className="space-y-2">
+                                <div className="flex items-center gap-3">
+                                  <input value={chatId} onChange={(e) => updateTelegramTask(index, e.target.value)} placeholder="-1001234567890" className="flex-1 px-4 py-3 rounded-xl bg-black/50 border border-white/10 text-white placeholder:text-white/20 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all" />
+                                  <button type="button" onClick={() => removeTelegramTask(index)} className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 text-muted hover:text-white hover:bg-white/10 flex items-center justify-center">
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+                                {cleanedChatId ? (
+                                  <div className={`px-4 py-3 rounded-xl border text-xs ${isConfigured ? 'bg-green-500/10 border-green-500/20 text-green-300' : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-300'}`}>
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                                      <span>{status?.title || cleanedChatId}</span>
+                                      <span className="font-semibold">{telegramStatusLabel(status?.bot_permission_status)}</span>
+                                    </div>
+                                    {!status || !isConfigured ? (
+                                      <p className="mt-1 text-[11px] opacity-80">Add the bot to this group/channel as an admin, then refresh status.</p>
+                                    ) : null}
+                                  </div>
+                                ) : null}
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     </>

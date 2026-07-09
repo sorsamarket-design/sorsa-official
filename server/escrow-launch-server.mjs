@@ -206,6 +206,8 @@ async function revokeCurrentAppSession(req) {
 }
 
 const telegramStatusStreams = new Map();
+const telegramMembershipCache = new Map();
+const telegramMembershipCacheTtlMs = 60 * 1000;
 
 function writeTelegramStatusEvent(res, status) {
   res.write(`data: ${JSON.stringify(status)}\n\n`);
@@ -237,6 +239,78 @@ function pushTelegramStatus(userId, status) {
       removeTelegramStatusClient(userId, client);
     }
   }
+}
+
+function telegramTaskKey(chatId) {
+  return String(chatId || '').trim();
+}
+
+function normalizeTelegramTasks(tasks) {
+  if (!Array.isArray(tasks)) return [];
+  const seen = new Set();
+  const normalized = [];
+  for (const task of tasks) {
+    const chatId = telegramTaskKey(typeof task === 'object' ? task.chat_id : task);
+    if (!chatId || seen.has(chatId)) continue;
+    seen.add(chatId);
+    normalized.push({
+      chat_id: chatId,
+      title: typeof task?.title === 'string' && task.title.trim() ? task.title.trim() : null
+    });
+  }
+  return normalized.slice(0, 3);
+}
+
+function telegramBotPermissionStatus(member, chatType) {
+  const status = String(member?.status || '').toLowerCase();
+  if (status === 'creator' || status === 'administrator') return 'configured';
+  if (status === 'left' || status === 'kicked') return 'bot_not_in_chat';
+  if (status === 'member' && chatType === 'channel') return 'needs_admin';
+  if (status === 'member') return 'needs_admin';
+  if (status === 'restricted') return 'restricted';
+  return 'unknown';
+}
+
+async function upsertTelegramGroupConfigFromChatMember(chat, member, lastError = null) {
+  if (!chat?.id) return null;
+  const chatId = String(chat.id);
+  const payload = {
+    chat_id: chatId,
+    chat_type: chat.type || null,
+    title: chat.title || chat.username || null,
+    bot_status: member?.status || null,
+    bot_permission_status: telegramBotPermissionStatus(member, chat.type),
+    bot_permissions: member || {},
+    last_error: lastError,
+    last_seen_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+  const { data, error } = await supabase
+    .from('telegram_group_configs')
+    .upsert(payload, { onConflict: 'chat_id' })
+    .select()
+    .single();
+  if (error) {
+    console.warn(`Could not save Telegram group config for ${chatId}:`, error.message || error);
+    return payload;
+  }
+  return data;
+}
+
+async function getTelegramGroupConfigMap(chatIds) {
+  const ids = Array.from(new Set((chatIds || []).map(telegramTaskKey).filter(Boolean)));
+  const map = new Map();
+  if (!ids.length) return map;
+  const { data, error } = await supabase
+    .from('telegram_group_configs')
+    .select('chat_id, chat_type, title, bot_status, bot_permission_status, bot_permissions, last_error, last_seen_at, updated_at')
+    .in('chat_id', ids);
+  if (error) {
+    console.warn('Could not read Telegram group configs:', error.message || error);
+    return map;
+  }
+  for (const row of data || []) map.set(String(row.chat_id), row);
+  return map;
 }
 
 function mapTelegramPreferences(data) {
@@ -473,6 +547,9 @@ function normalizeNftCampaignBody(body, userId, brandProfile) {
         .filter(Boolean)
         .slice(0, 2)
     : [];
+  const telegramTasks = isNftRaffleType(campaignType)
+    ? normalizeTelegramTasks(campaign.telegram_tasks)
+    : [];
 
   if (!title) throw Object.assign(new Error('Campaign title is required'), { status: 400 });
   if (!goal) throw Object.assign(new Error('Campaign goal is required'), { status: 400 });
@@ -485,7 +562,8 @@ function normalizeNftCampaignBody(body, userId, brandProfile) {
     max_creators: maxCreators,
     max_content_submissions: maxContentSubmissions,
     follow_accounts: Array.from(new Set(followAccounts)),
-    retweet_links: Array.from(new Set(retweetLinks))
+    retweet_links: Array.from(new Set(retweetLinks)),
+    telegram_tasks: telegramTasks
   };
 
   return {
@@ -526,6 +604,7 @@ function withNftCampaignMetadata(campaign) {
     max_content_submissions: metadata.max_content_submissions ?? null,
     follow_accounts: Array.isArray(metadata.follow_accounts) ? metadata.follow_accounts : [],
     retweet_links: Array.isArray(metadata.retweet_links) ? metadata.retweet_links : [],
+    telegram_tasks: normalizeTelegramTasks(metadata.telegram_tasks),
     raffle_results: Array.isArray(metadata.raffle_results) ? metadata.raffle_results : [],
     raffle_finalized_at: metadata.raffle_finalized_at || null
   };
@@ -811,7 +890,13 @@ async function telegramRequest(method, payload) {
   });
   const body = await response.json().catch(() => null);
   if (!response.ok || body?.ok === false) {
-    throw Object.assign(new Error(body?.description || 'Telegram request failed'), { status: 502 });
+    const retryAfter = body?.parameters?.retry_after ? Number(body.parameters.retry_after) : null;
+    const status = response.status === 429 ? 429 : 502;
+    throw Object.assign(new Error(body?.description || 'Telegram request failed'), {
+      status,
+      telegramStatus: response.status,
+      retryAfter
+    });
   }
   return body?.result;
 }
@@ -862,6 +947,82 @@ async function sendTelegramPhoto(chatId, imageUrl, caption, buttonUrl = null, op
   }
 
   return telegramRequest('sendPhoto', form);
+}
+
+function telegramMembershipCacheKey(chatId, userId) {
+  return `${telegramTaskKey(chatId)}:${telegramTaskKey(userId)}`;
+}
+
+function mapTelegramVerificationError(error, chatId) {
+  const description = String(error?.message || '');
+  if (error?.status === 429) {
+    const suffix = error.retryAfter ? ` Try again in ${error.retryAfter} seconds.` : ' Try again shortly.';
+    return Object.assign(new Error(`Telegram rate limit reached.${suffix}`), { status: 429 });
+  }
+  if (/chat not found/i.test(description)) {
+    return Object.assign(new Error(`Telegram chat ${chatId} was not found. Add the bot to the group and refresh the task.`), { status: 404 });
+  }
+  if (/not enough rights|not a member|bot is not a member|forbidden/i.test(description)) {
+    return Object.assign(new Error('The Telegram bot is not an admin in this group or cannot inspect members.'), { status: 403 });
+  }
+  return Object.assign(new Error(description || 'Telegram membership could not be verified'), { status: error?.status || 502 });
+}
+
+async function verifyTelegramChatConfigured(chatId) {
+  if (!env.TELEGRAM_BOT_TOKEN) {
+    throw Object.assign(new Error('Telegram bot is not configured'), { status: 500 });
+  }
+  const [configMap, botMember] = await Promise.all([
+    getTelegramGroupConfigMap([chatId]),
+    telegramRequest('getChatMember', {
+      chat_id: chatId,
+      user_id: env.TELEGRAM_BOT_TOKEN.split(':')[0]
+    }).catch((error) => {
+      throw mapTelegramVerificationError(error, chatId);
+    })
+  ]);
+  const existing = configMap.get(String(chatId));
+  const chat = {
+    id: chatId,
+    type: existing?.chat_type || null,
+    title: existing?.title || null
+  };
+  const config = await upsertTelegramGroupConfigFromChatMember(chat, botMember);
+  if (config?.bot_permission_status !== 'configured') {
+    throw Object.assign(new Error('The Telegram bot must be an admin in this group before this task can be verified.'), { status: 403 });
+  }
+  return config;
+}
+
+async function verifyTelegramGroupMembership(chatId, userId) {
+  const key = telegramMembershipCacheKey(chatId, userId);
+  const cached = telegramMembershipCache.get(key);
+  if (cached && cached.expiresAt > Date.now()) return cached.result;
+
+  await verifyTelegramChatConfigured(chatId);
+
+  let member;
+  try {
+    member = await telegramRequest('getChatMember', {
+      chat_id: chatId,
+      user_id: userId
+    });
+  } catch (error) {
+    throw mapTelegramVerificationError(error, chatId);
+  }
+
+  const status = String(member?.status || '').toLowerCase();
+  const verified = ['creator', 'administrator', 'member'].includes(status);
+  const result = {
+    verified,
+    status,
+    member
+  };
+  telegramMembershipCache.set(key, {
+    expiresAt: Date.now() + telegramMembershipCacheTtlMs,
+    result
+  });
+  return result;
 }
 
 function getCampaignNotificationImageUrl() {
@@ -2038,7 +2199,7 @@ app.post('/telegram/webhook/setup', async (req, res) => {
     const webhookUrl = `${getBackendBaseUrl(req)}/telegram/webhook/${encodeURIComponent(env.TELEGRAM_WEBHOOK_SECRET)}`;
     const result = await telegramRequest('setWebhook', {
       url: webhookUrl,
-      allowed_updates: ['message']
+      allowed_updates: ['message', 'my_chat_member']
     });
     return res.json({ webhookUrl, result });
   } catch (error) {
@@ -2051,6 +2212,15 @@ app.post('/telegram/webhook/:secret', async (req, res) => {
   try {
     if (!env.TELEGRAM_WEBHOOK_SECRET || req.params.secret !== env.TELEGRAM_WEBHOOK_SECRET) {
       return res.sendStatus(404);
+    }
+
+    const chatMemberUpdate = req.body?.my_chat_member;
+    if (chatMemberUpdate?.chat && chatMemberUpdate?.new_chat_member) {
+      await upsertTelegramGroupConfigFromChatMember(
+        chatMemberUpdate.chat,
+        chatMemberUpdate.new_chat_member
+      );
+      return res.json({ ok: true });
     }
 
     const message = req.body?.message;
@@ -2142,6 +2312,35 @@ app.get('/telegram/preferences', async (req, res) => {
   } catch (error) {
     const status = error.status || 500;
     return res.status(status).json({ error: error.message || 'Could not load Telegram preferences' });
+  }
+});
+
+app.post('/admin/telegram-groups/status', async (req, res) => {
+  try {
+    const user = await authenticate(req);
+    await assertAdmin(user.id);
+    const chatIds = Array.isArray(req.body?.chat_ids)
+      ? req.body.chat_ids.map(telegramTaskKey).filter(Boolean).slice(0, 20)
+      : [];
+    const configMap = await getTelegramGroupConfigMap(chatIds);
+    return res.json({
+      groups: chatIds.map((chatId) => {
+        const config = configMap.get(chatId);
+        return {
+          chat_id: chatId,
+          chat_type: config?.chat_type || null,
+          title: config?.title || null,
+          bot_status: config?.bot_status || null,
+          bot_permission_status: config?.bot_permission_status || 'unknown',
+          last_error: config?.last_error || null,
+          last_seen_at: config?.last_seen_at || null,
+          updated_at: config?.updated_at || null
+        };
+      })
+    });
+  } catch (error) {
+    const status = error.status || 500;
+    return res.status(status).json({ error: error.message || 'Telegram group status could not be loaded' });
   }
 });
 
@@ -2763,7 +2962,7 @@ app.post('/nft-campaigns/:campaignId/verify-task', async (req, res) => {
     const taskType = String(req.body?.type || '').trim().toLowerCase();
     const taskValue = String(req.body?.value || '').trim();
     if (!campaignId) throw Object.assign(new Error('Missing campaign id'), { status: 400 });
-    if (!['follow', 'retweet'].includes(taskType) || !taskValue) {
+    if (!['follow', 'retweet', 'telegram'].includes(taskType) || !taskValue) {
       throw Object.assign(new Error('Missing task to verify'), { status: 400 });
     }
 
@@ -2788,16 +2987,31 @@ app.post('/nft-campaigns/:campaignId/verify-task', async (req, res) => {
     if (campaignError || !campaign) {
       throw Object.assign(new Error('NFT campaign not found'), { status: 404 });
     }
-    if (taskType === 'retweet' && !isNftRaffleType(campaign.campaign_type)) {
-      throw Object.assign(new Error('Retweet verification is only available for raffle campaigns'), { status: 400 });
+    if ((taskType === 'retweet' || taskType === 'telegram') && !isNftRaffleType(campaign.campaign_type)) {
+      throw Object.assign(new Error('This task is only available for raffle campaigns'), { status: 400 });
+    }
+
+    const nftCampaign = withNftCampaignMetadata(campaign);
+    if (taskType === 'telegram') {
+      const chatId = telegramTaskKey(taskValue);
+      const requiredTelegramTasks = normalizeTelegramTasks(nftCampaign.telegram_tasks);
+      if (!requiredTelegramTasks.some((task) => task.chat_id === chatId)) {
+        throw Object.assign(new Error('This Telegram group task is not part of the campaign'), { status: 400 });
+      }
+      if (!creator.telegram_chat_id) {
+        throw Object.assign(new Error('Connect Telegram in Creator Settings before verifying this task'), { status: 403 });
+      }
+      const result = await verifyTelegramGroupMembership(chatId, creator.telegram_chat_id);
+      if (!result.verified) {
+        throw Object.assign(new Error('Join the required Telegram group, then verify again'), { status: 403 });
+      }
+      return res.json({ verified: true, type: 'telegram', value: chatId, member_status: result.status });
     }
 
     const creatorHandle = cleanHandle(creator.x_handle);
     if (!creatorHandle) {
       throw Object.assign(new Error('Add your X handle to your creator profile before verifying tasks'), { status: 403 });
     }
-
-    const nftCampaign = withNftCampaignMetadata(campaign);
     if (taskType === 'follow') {
       const targetAccount = cleanHandle(taskValue);
       const requiredFollowAccounts = Array.isArray(nftCampaign.follow_accounts)
@@ -2828,7 +3042,7 @@ app.post('/nft-campaigns/:campaignId/verify-task', async (req, res) => {
       ? nftCampaign.retweet_links.map((link) => String(link || '').trim()).filter(Boolean).slice(0, 2)
       : [];
     if (!requiredRetweetLinks.includes(tweetLink)) {
-      throw Object.assign(new Error('This retweet task is not part of the campaign'), { status: 400 });
+      throw Object.assign(new Error('This Like & Retweet task is not part of the campaign'), { status: 400 });
     }
 
     let nextCursor = null;
@@ -2853,7 +3067,7 @@ app.post('/nft-campaigns/:campaignId/verify-task', async (req, res) => {
     }
 
     if (!retweeted) {
-      throw Object.assign(new Error('Retweet this X post, then verify again'), { status: 403 });
+      throw Object.assign(new Error('Like and retweet this X post, then verify again'), { status: 403 });
     }
 
     return res.json({ verified: true, type: 'retweet', value: tweetLink });
@@ -2872,7 +3086,7 @@ app.post('/nft-campaigns/:campaignId/join', async (req, res) => {
     const [{ data: creator, error: creatorError }, { data: campaign, error: campaignError }] = await Promise.all([
       supabase
         .from('creator_profiles')
-        .select('id, x_handle, sorsa_score, wallet_address')
+        .select('id, x_handle, sorsa_score, wallet_address, telegram_chat_id')
         .eq('id', user.id)
         .single(),
       supabase
@@ -2968,7 +3182,22 @@ app.post('/nft-campaigns/:campaignId/join', async (req, res) => {
         }
 
         if (!retweeted) {
-          throw Object.assign(new Error('Retweet all required X posts before joining this NFT campaign'), { status: 403 });
+          throw Object.assign(new Error('Like and retweet all required X posts before joining this NFT campaign'), { status: 403 });
+        }
+      }
+    }
+
+    const requiredTelegramTasks = isNftRaffleType(campaign.campaign_type)
+      ? normalizeTelegramTasks(nftCampaign.telegram_tasks)
+      : [];
+    if (requiredTelegramTasks.length > 0) {
+      if (!creator.telegram_chat_id) {
+        throw Object.assign(new Error('Connect Telegram in Creator Settings before joining this NFT campaign'), { status: 403 });
+      }
+      for (const task of requiredTelegramTasks) {
+        const result = await verifyTelegramGroupMembership(task.chat_id, creator.telegram_chat_id);
+        if (!result.verified) {
+          throw Object.assign(new Error(`Join ${task.title || 'the required Telegram group'} before joining this NFT campaign`), { status: 403 });
         }
       }
     }

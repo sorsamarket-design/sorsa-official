@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { AlertCircle, ArrowLeft, CheckCircle2, Clock, ExternalLink, Loader2, Sparkles, Star, Ticket, Users } from 'lucide-react';
+import { AlertCircle, ArrowLeft, CheckCircle2, Clock, ExternalLink, Loader2, MessageCircle, Sparkles, Star, Ticket, Users } from 'lucide-react';
 import CreatorSidebar from '../components/CreatorSidebar';
 import CreatorTopBar from '../components/CreatorTopBar';
 import LinkifiedText from '../components/LinkifiedText';
@@ -27,6 +27,9 @@ function verifiedTaskMap(campaign: NftCampaign) {
   }
   for (const link of campaign.retweet_links || []) {
     next[`retweet:${link}`] = true;
+  }
+  for (const task of campaign.telegram_tasks || []) {
+    if (task.chat_id) next[`telegram:${task.chat_id}`] = true;
   }
   return next;
 }
@@ -94,9 +97,9 @@ export default function CreatorNFTCampaignDetail() {
     }
   };
 
-  const taskKey = (type: 'follow' | 'retweet', value: string) => `${type}:${value}`;
+  const taskKey = (type: 'follow' | 'retweet' | 'telegram', value: string) => `${type}:${value}`;
 
-  const handleVerifyTask = async (type: 'follow' | 'retweet', value: string) => {
+  const handleVerifyTask = async (type: 'follow' | 'retweet' | 'telegram', value: string) => {
     if (!id) return;
     if (campaignEnded) return;
     const key = taskKey(type, value);
@@ -355,7 +358,7 @@ export default function CreatorNFTCampaignDetail() {
                   </button>
                 </form>
               </div>
-            ) : campaign.follow_accounts?.length || campaign.retweet_links?.length ? (
+            ) : campaign.follow_accounts?.length || campaign.retweet_links?.length || campaign.telegram_tasks?.length ? (
               <div className="space-y-6">
                 {campaign.follow_accounts?.length ? (
                   <div className="space-y-3">
@@ -412,7 +415,7 @@ export default function CreatorNFTCampaignDetail() {
 
                 {campaign.retweet_links?.length ? (
                   <div className="space-y-3">
-                    <h3 className="text-sm font-semibold uppercase tracking-wider text-muted">Retweet</h3>
+                    <h3 className="text-sm font-semibold uppercase tracking-wider text-muted">Like & Retweet</h3>
                     {campaign.retweet_links.map((link) => {
                       const key = taskKey('retweet', link);
                       const isVerified = hasJoined || verifiedTasks[key];
@@ -427,7 +430,7 @@ export default function CreatorNFTCampaignDetail() {
                         >
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div className="min-w-0">
-                              <p className="text-white font-medium">Retweet required post</p>
+                              <p className="text-white font-medium">Like and retweet required post</p>
                               <p className="text-xs text-muted mt-1 break-all">{link}</p>
                             </div>
                             <div className="flex items-center gap-3 shrink-0">
@@ -442,6 +445,53 @@ export default function CreatorNFTCampaignDetail() {
                               </a>
                               <button
                                 onClick={() => handleVerifyTask('retweet', link)}
+                                disabled={isVerifying || isVerified || !canVerifyTasks}
+                                className={`px-4 py-2 rounded-full text-sm font-semibold inline-flex items-center gap-2 transition-colors ${
+                                  isVerified
+                                    ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                                    : !canVerifyTasks
+                                      ? 'bg-white/5 text-muted border border-white/10 cursor-not-allowed'
+                                    : 'bg-cyan text-black hover:bg-cyan/90'
+                                } disabled:opacity-80`}
+                              >
+                                {isVerifying ? <Loader2 className="w-4 h-4 animate-spin" /> : isVerified ? <CheckCircle2 className="w-4 h-4" /> : null}
+                                {isVerifying ? 'Verifying...' : isVerified ? 'Verified' : campaignEnded ? 'Ended' : 'Verify'}
+                              </button>
+                            </div>
+                          </div>
+                          {taskErrors[key] ? <p className="text-xs text-red-400 mt-3">{taskErrors[key]}</p> : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : null}
+
+                {campaign.telegram_tasks?.length ? (
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold uppercase tracking-wider text-muted">Telegram</h3>
+                    {campaign.telegram_tasks.map((task) => {
+                      const key = taskKey('telegram', task.chat_id);
+                      const isVerified = hasJoined || verifiedTasks[key];
+                      const isVerifying = verifyingTask === key;
+
+                      return (
+                        <div
+                          key={task.chat_id}
+                          className={`p-4 rounded-2xl bg-white/5 border transition-colors ${
+                            isVerified ? 'border-green-500/30 bg-green-500/5' : 'border-white/10 hover:border-cyan/30'
+                          }`}
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="min-w-0">
+                              <p className="text-white font-medium">Join Telegram group</p>
+                              <p className="text-xs text-muted mt-1 break-all">{task.title || task.chat_id}</p>
+                            </div>
+                            <div className="flex items-center gap-3 shrink-0">
+                              <div className="w-10 h-10 rounded-full border border-white/10 bg-white/5 text-cyan inline-flex items-center justify-center">
+                                <MessageCircle className="w-4 h-4" />
+                              </div>
+                              <button
+                                onClick={() => handleVerifyTask('telegram', task.chat_id)}
                                 disabled={isVerifying || isVerified || !canVerifyTasks}
                                 className={`px-4 py-2 rounded-full text-sm font-semibold inline-flex items-center gap-2 transition-colors ${
                                   isVerified

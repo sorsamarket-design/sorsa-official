@@ -38,6 +38,7 @@ function withNftCampaignMetadata(campaign: any) {
     max_content_submissions: metadata.max_content_submissions ?? null,
     follow_accounts: Array.isArray(metadata.follow_accounts) ? metadata.follow_accounts : [],
     retweet_links: Array.isArray(metadata.retweet_links) ? metadata.retweet_links : [],
+    telegram_tasks: Array.isArray(metadata.telegram_tasks) ? metadata.telegram_tasks : [],
     raffle_results: Array.isArray(metadata.raffle_results) ? metadata.raffle_results : [],
     raffle_finalized_at: metadata.raffle_finalized_at || null
   };
@@ -130,8 +131,23 @@ export type NftCampaignPayload = {
   max_content_submissions?: number | null;
   follow_accounts: string[];
   retweet_links: string[];
+  telegram_tasks?: TelegramTask[];
   start_date: string | null;
   end_date: string | null;
+};
+
+export type TelegramTask = {
+  chat_id: string;
+  title?: string | null;
+};
+
+export type TelegramGroupStatus = TelegramTask & {
+  chat_type?: string | null;
+  bot_status?: string | null;
+  bot_permission_status?: string | null;
+  last_error?: string | null;
+  last_seen_at?: string | null;
+  updated_at?: string | null;
 };
 
 export type NftCampaign = NftCampaignPayload & {
@@ -159,6 +175,13 @@ export async function createNftCampaign(campaign: NftCampaignPayload) {
   return requestNftCampaigns('/admin/nft-campaigns', {
     method: 'POST',
     body: JSON.stringify({ campaign })
+  });
+}
+
+export async function getAdminTelegramGroupStatuses(chatIds: string[]) {
+  return requestNftCampaigns('/admin/telegram-groups/status', {
+    method: 'POST',
+    body: JSON.stringify({ chat_ids: chatIds })
   });
 }
 
@@ -476,7 +499,7 @@ export async function submitNftCampaignContent(id: string, tweetUrl: string) {
   });
 }
 
-export async function verifyNftCampaignTask(id: string, task: { type: 'follow' | 'retweet'; value: string }) {
+export async function verifyNftCampaignTask(id: string, task: { type: 'follow' | 'retweet' | 'telegram'; value: string }) {
   return requestNftCampaigns(`/nft-campaigns/${encodeURIComponent(id)}/verify-task`, {
     method: 'POST',
     body: JSON.stringify(task)
