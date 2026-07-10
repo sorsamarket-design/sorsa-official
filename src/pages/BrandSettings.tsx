@@ -12,6 +12,43 @@ import telegramNotifications, { type BrandTelegramGroup } from '../lib/telegramN
 
 const appleEase = [0.16, 1, 0.3, 1] as const;
 
+function telegramGroupStatusMeta(group: BrandTelegramGroup | null) {
+  const status = group?.bot_permission_status || 'unknown';
+  if (!group) {
+    return {
+      label: 'Pending Verification',
+      dotClass: 'bg-white/50',
+      pillClass: 'bg-white/5 text-white/70 border-white/10'
+    };
+  }
+  if (group.is_active || status === 'configured') {
+    return {
+      label: 'Connected',
+      dotClass: 'bg-green-400',
+      pillClass: 'bg-green-500/10 text-green-300 border-green-500/30'
+    };
+  }
+  if (status === 'needs_admin' || status === 'restricted') {
+    return {
+      label: 'Needs Admin Permission',
+      dotClass: 'bg-yellow-300',
+      pillClass: 'bg-yellow-500/10 text-yellow-300 border-yellow-500/30'
+    };
+  }
+  if (status === 'bot_not_in_chat') {
+    return {
+      label: 'Bot Removed',
+      dotClass: 'bg-red-400',
+      pillClass: 'bg-red-500/10 text-red-300 border-red-500/30'
+    };
+  }
+  return {
+    label: 'Pending Verification',
+    dotClass: 'bg-white/50',
+    pillClass: 'bg-white/5 text-white/70 border-white/10'
+  };
+}
+
 export default function BrandSettings() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('company');
@@ -24,6 +61,7 @@ export default function BrandSettings() {
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
   const [botUsername, setBotUsername] = useState<string | null>(null);
   const [telegramBotCopied, setTelegramBotCopied] = useState(false);
+  const [telegramVerifySuccess, setTelegramVerifySuccess] = useState(false);
   const { selectedProfile, loading, refreshProfiles } = useBrandProfiles();
   const { role, signOut, session } = useAuth();
   const { disconnectAsync } = useDisconnect();
@@ -80,18 +118,27 @@ export default function BrandSettings() {
     }
   };
 
+  const closeTelegramModal = () => {
+    setIsTelegramModalOpen(false);
+    setTelegramVerifySuccess(false);
+  };
+
   const handleVerifyTelegramGroup = async () => {
     if (!selectedProfile?.id || !telegramGroupLink.trim()) return;
     setTelegramLoading(true);
     setTelegramMessage(null);
+    setTelegramVerifySuccess(false);
     try {
       const result = await telegramNotifications.verifyBrandGroup(selectedProfile.id, telegramGroupLink.trim(), session?.access_token);
       setTelegramGroup(result.group);
       setBotUsername(result.botUsername || botUsername);
       setTelegramMessage('Telegram group connected.');
+      setTelegramLoading(false);
+      setTelegramVerifySuccess(true);
+      window.setTimeout(closeTelegramModal, 900);
     } catch (err: any) {
       setTelegramMessage(err.message || 'Telegram group setup could not be verified.');
-    } finally {
+      setTelegramVerifySuccess(false);
       setTelegramLoading(false);
     }
   };
@@ -120,6 +167,8 @@ export default function BrandSettings() {
   };
 
   const logo = formData.logo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.company_name || 'Brand')}`;
+  const isTelegramConnected = Boolean(telegramGroup?.is_active || telegramGroup?.bot_permission_status === 'configured');
+  const telegramStatus = telegramGroupStatusMeta(telegramGroup);
 
   const handleLogout = async () => {
     if (role === 'creator') {
@@ -228,8 +277,9 @@ export default function BrandSettings() {
                             <h2 className="text-xl font-semibold text-white mb-2">Connect Telegram Group</h2>
                             <p className="text-sm text-muted">Connect one public Telegram group to this brand profile for campaign join requirements.</p>
                           </div>
-                          <button type="button" onClick={() => setIsTelegramModalOpen(true)} className="shrink-0 whitespace-nowrap px-5 py-2.5 rounded-xl bg-cyan text-black text-sm font-semibold hover:bg-cyan/90 transition-colors">
-                            Connect
+                          <button type="button" onClick={() => setIsTelegramModalOpen(true)} className={`shrink-0 whitespace-nowrap px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors inline-flex items-center gap-2 ${isTelegramConnected ? 'bg-green-500/10 border border-green-500/30 text-green-300 hover:bg-green-500/15' : 'bg-cyan text-black hover:bg-cyan/90'}`}>
+                            {isTelegramConnected && <CheckCircle2 className="w-4 h-4" />}
+                            {isTelegramConnected ? 'Connected' : 'Connect'}
                           </button>
                         </div>
 
@@ -243,14 +293,21 @@ export default function BrandSettings() {
                                   <p className="text-white font-medium">{telegramGroup.title || telegramGroup.chat_id}</p>
                                   <p className="text-xs text-muted">{telegramGroup.public_link || telegramGroup.chat_id}</p>
                                 </div>
-                                <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${telegramGroup.bot_permission_status === 'configured' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-yellow-500/10 text-yellow-300 border-yellow-500/20'}`}>
-                                  {telegramGroup.bot_permission_status === 'configured' ? 'Bot admin' : 'Needs admin'}
+                                <span className={`shrink-0 px-3 py-1 rounded-full text-xs font-semibold border inline-flex items-center gap-2 ${telegramStatus.pillClass}`}>
+                                  <span className={`w-2 h-2 rounded-full ${telegramStatus.dotClass}`} />
+                                  {telegramStatus.label}
                                 </span>
                               </div>
                               <p className="text-xs text-muted">Chat ID: {telegramGroup.chat_id}</p>
                             </div>
                           ) : (
-                            <div className="text-sm text-muted">No Telegram group connected yet.</div>
+                            <div className="flex items-center justify-between gap-4">
+                              <div className="text-sm text-muted">No Telegram group connected yet.</div>
+                              <span className={`shrink-0 px-3 py-1 rounded-full text-xs font-semibold border inline-flex items-center gap-2 ${telegramStatus.pillClass}`}>
+                                <span className={`w-2 h-2 rounded-full ${telegramStatus.dotClass}`} />
+                                {telegramStatus.label}
+                              </span>
+                            </div>
                           )}
                         </div>
 
@@ -275,11 +332,11 @@ export default function BrandSettings() {
 
       {isTelegramModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsTelegramModalOpen(false)} />
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeTelegramModal} />
           <div className="relative w-full max-w-lg glass-panel border border-white/10 rounded-2xl bg-[#11112A] p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-semibold text-white">Connect Telegram Group</h3>
-              <button onClick={() => setIsTelegramModalOpen(false)} className="text-muted hover:text-white transition-colors">
+              <button onClick={closeTelegramModal} className="text-muted hover:text-white transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -305,9 +362,9 @@ export default function BrandSettings() {
                 <input value={telegramGroupLink} onChange={(e) => setTelegramGroupLink(e.target.value)} placeholder="https://t.me/your_public_group" className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/20 focus:outline-none focus:border-cyan/50" />
               </div>
               {telegramMessage && <p className="text-sm text-cyan">{telegramMessage}</p>}
-              <button type="button" onClick={handleVerifyTelegramGroup} disabled={telegramLoading || !telegramGroupLink.trim()} className="w-full py-3 rounded-xl bg-cyan text-black font-semibold hover:bg-cyan/90 disabled:opacity-50 inline-flex items-center justify-center gap-2">
+              <button type="button" onClick={handleVerifyTelegramGroup} disabled={telegramLoading || telegramVerifySuccess || !telegramGroupLink.trim()} className={`w-full py-3 rounded-xl font-semibold disabled:opacity-50 inline-flex items-center justify-center gap-2 transition-colors ${telegramVerifySuccess ? 'bg-green-500/15 text-green-300 border border-green-500/30' : 'bg-cyan text-black hover:bg-cyan/90'}`}>
                 {telegramLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                Verify Bot Setup
+                {telegramLoading ? 'Verifying...' : telegramVerifySuccess ? 'Verified!' : 'Verify Bot Setup'}
               </button>
             </div>
           </div>
