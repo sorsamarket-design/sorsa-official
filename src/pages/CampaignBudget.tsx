@@ -425,15 +425,16 @@ export default function CampaignBudget() {
                 </div>
 
                 <label className="flex items-start gap-3 cursor-pointer group">
-                  <div className="relative flex items-center justify-center mt-0.5">
+                  <div className="relative flex items-center justify-center w-5 h-5 shrink-0 mt-0.5">
                     <input
                       type="checkbox"
                       required
                       checked={agreed}
                       onChange={(e) => setAgreed(e.target.checked)}
-                      className="peer appearance-none w-5 h-5 rounded-full border border-white/20 bg-transparent checked:bg-cyan checked:border-cyan transition-colors duration-200"
+                      className="peer sr-only"
                     />
-                    <svg className="absolute inset-0 m-auto w-3 h-3 text-white opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity duration-200" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <span className="absolute inset-0 rounded-full border border-white/20 bg-transparent peer-checked:bg-cyan peer-checked:border-cyan transition-colors duration-200"></span>
+                    <svg className="relative w-3 h-3 text-white opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity duration-200" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M1 5L4.5 8.5L13 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </div>
