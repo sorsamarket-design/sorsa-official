@@ -277,7 +277,7 @@ export default function BrandSettings() {
                             <h2 className="text-xl font-semibold text-white mb-2">Connect Telegram Group</h2>
                             <p className="text-sm text-muted">Connect one public Telegram group to this brand profile for campaign join requirements.</p>
                           </div>
-                          <button type="button" onClick={() => setIsTelegramModalOpen(true)} className={`shrink-0 whitespace-nowrap px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors inline-flex items-center gap-2 ${isTelegramConnected ? 'bg-green-500/10 border border-green-500/30 text-green-300 hover:bg-green-500/15' : 'bg-cyan text-black hover:bg-cyan/90'}`}>
+                          <button type="button" onClick={() => setIsTelegramModalOpen(true)} disabled={isTelegramConnected} className={`shrink-0 whitespace-nowrap px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors inline-flex items-center gap-2 ${isTelegramConnected ? 'bg-green-500/10 border border-green-500/30 text-green-300 cursor-default' : 'bg-cyan text-black hover:bg-cyan/90'}`}>
                             {isTelegramConnected && <CheckCircle2 className="w-4 h-4" />}
                             {isTelegramConnected ? 'Connected' : 'Connect'}
                           </button>

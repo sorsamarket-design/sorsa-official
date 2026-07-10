@@ -316,6 +316,62 @@ async function upsertTelegramGroupConfigFromChatMember(chat, member, lastError =
   return data;
 }
 
+async function refreshTelegramGroupConfig(config) {
+  if (!config?.chat_id || !env.TELEGRAM_BOT_TOKEN) return config;
+  try {
+    const botMember = await telegramRequest('getChatMember', {
+      chat_id: config.chat_id,
+      user_id: env.TELEGRAM_BOT_TOKEN.split(':')[0]
+    });
+    return upsertTelegramGroupConfigFromChatMember(
+      {
+        id: config.chat_id,
+        type: config.chat_type,
+        title: config.title
+      },
+      botMember,
+      null,
+      {
+        brand_profile_id: config.brand_profile_id,
+        public_link: config.public_link
+      }
+    );
+  } catch (error) {
+    const description = String(error?.message || '');
+    if (error?.status === 429) {
+      return {
+        ...config,
+        last_error: error.message || 'Telegram rate limit reached'
+      };
+    }
+    if (!/chat not found|not enough rights|not a member|bot is not a member|forbidden|kicked|blocked/i.test(description)) {
+      return {
+        ...config,
+        last_error: description || 'Telegram group status could not be refreshed'
+      };
+    }
+    const payload = {
+      bot_status: 'left',
+      bot_permission_status: 'bot_not_in_chat',
+      is_active: false,
+      last_error: description || 'The Telegram bot is not in this group.',
+      last_seen_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    const { data, error: updateError } = await supabase
+      .from('telegram_group_configs')
+      .update(payload)
+      .eq('chat_id', config.chat_id)
+      .select('chat_id, brand_profile_id, chat_type, title, public_link, bot_status, bot_permission_status, is_active, last_error, last_seen_at, updated_at')
+      .single();
+    if (updateError) {
+      console.warn(`Could not mark Telegram group ${config.chat_id} inactive:`, updateError.message || updateError);
+      return { ...config, ...payload };
+    }
+    return data;
+  }
+}
+
 async function getTelegramGroupConfigMap(chatIds) {
   const ids = Array.from(new Set((chatIds || []).map(telegramTaskKey).filter(Boolean)));
   const map = new Map();
@@ -2481,13 +2537,14 @@ app.get('/brand/telegram-group/:brandProfileId', async (req, res) => {
     await assertBrandProfileOwner(brandProfileId, user.id);
     const { data, error } = await supabase
       .from('telegram_group_configs')
-      .select('chat_id, chat_type, title, public_link, bot_status, bot_permission_status, is_active, last_error, last_seen_at, updated_at')
+      .select('chat_id, brand_profile_id, chat_type, title, public_link, bot_status, bot_permission_status, is_active, last_error, last_seen_at, updated_at')
       .eq('brand_profile_id', brandProfileId)
       .order('updated_at', { ascending: false })
       .limit(1)
       .maybeSingle();
     if (error) throw Object.assign(new Error(error.message), { status: 500 });
-    return res.json({ group: data || null, botUsername: env.TELEGRAM_BOT_USERNAME || null });
+    const group = data ? await refreshTelegramGroupConfig(data) : null;
+    return res.json({ group: group || null, botUsername: env.TELEGRAM_BOT_USERNAME || null });
   } catch (error) {
     const status = error.status || 500;
     return res.status(status).json({ error: error.message || 'Telegram group status could not be loaded' });
