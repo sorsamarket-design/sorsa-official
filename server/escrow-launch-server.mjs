@@ -838,6 +838,27 @@ function buildDraftPayload(campaign, userId) {
   };
 }
 
+function isMissingCampaignColumnError(error, column) {
+  const message = String(error?.message || error?.details || error?.hint || '').toLowerCase();
+  return message.includes(column.toLowerCase()) && (
+    message.includes('schema cache') ||
+    message.includes('could not find') ||
+    message.includes('does not exist') ||
+    message.includes('column')
+  );
+}
+
+function usesTelegramCampaignRequirements(payload) {
+  return normalizeAdditionalRequirements(payload?.additional_requirements).telegram_enabled;
+}
+
+function missingAdditionalRequirementsError() {
+  return Object.assign(
+    new Error('Database migration required: apply telegram_group_tasks.sql so campaigns.additional_requirements exists before enabling Telegram campaign requirements.'),
+    { status: 500 }
+  );
+}
+
 function eventMatches(args, launch) {
   return (
     String(args.campaignId).toLowerCase() === launch.authorization.campaignId.toLowerCase() &&
@@ -2664,10 +2685,10 @@ app.post('/campaigns/drafts', async (req, res) => {
     await assertDraftCampaignOwner(draftCampaignId, user.id, draftPayload.brand_profile_id);
     Object.assign(draftPayload, brandSnapshot);
 
-    const mutation = draftCampaignId
+    const saveDraft = (payload) => draftCampaignId
       ? supabase
           .from('campaigns')
-          .update(draftPayload)
+          .update(payload)
           .eq('id', draftCampaignId)
           .eq('owner_id', user.id)
           .eq('status', 'draft')
@@ -2675,11 +2696,17 @@ app.post('/campaigns/drafts', async (req, res) => {
           .single()
       : supabase
           .from('campaigns')
-          .insert([draftPayload])
+          .insert([payload])
           .select('id, status')
           .single();
 
-    const { data, error } = await mutation;
+    let { data, error } = await saveDraft(draftPayload);
+    if (error && isMissingCampaignColumnError(error, 'additional_requirements')) {
+      if (usesTelegramCampaignRequirements(draftPayload)) throw missingAdditionalRequirementsError();
+      const fallbackDraftPayload = { ...draftPayload };
+      delete fallbackDraftPayload.additional_requirements;
+      ({ data, error } = await saveDraft(fallbackDraftPayload));
+    }
     if (error) throw Object.assign(new Error(error.message), { status: 500 });
 
     return res.status(draftCampaignId ? 200 : 201).json({
@@ -3926,10 +3953,10 @@ app.post('/campaigns/launch', async (req, res) => {
     Object.assign(insertPayload, brandSnapshot);
     delete insertPayload.brand_id;
 
-    const campaignMutation = launch.draftCampaignId
+    const saveCampaign = (payload) => launch.draftCampaignId
       ? supabase
           .from('campaigns')
-          .update(insertPayload)
+          .update(payload)
           .eq('id', launch.draftCampaignId)
           .eq('owner_id', user.id)
           .eq('status', 'draft')
@@ -3937,11 +3964,17 @@ app.post('/campaigns/launch', async (req, res) => {
           .single()
       : supabase
           .from('campaigns')
-          .insert([insertPayload])
+          .insert([payload])
           .select()
           .single();
 
-    const { data: campaignRow, error: insertError } = await campaignMutation;
+    let { data: campaignRow, error: insertError } = await saveCampaign(insertPayload);
+    if (insertError && isMissingCampaignColumnError(insertError, 'additional_requirements')) {
+      if (usesTelegramCampaignRequirements(insertPayload)) throw missingAdditionalRequirementsError();
+      const fallbackInsertPayload = { ...insertPayload };
+      delete fallbackInsertPayload.additional_requirements;
+      ({ data: campaignRow, error: insertError } = await saveCampaign(fallbackInsertPayload));
+    }
     if (insertError) throw Object.assign(new Error(insertError.message), { status: 500 });
 
     notifyTelegramCreators('new_campaign', campaignRow, buildCampaignNotification(campaignRow))
