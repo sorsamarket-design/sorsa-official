@@ -210,7 +210,7 @@ export default function BrandSettings() {
                             <h2 className="text-xl font-semibold text-white mb-2">Connect Telegram Group</h2>
                             <p className="text-sm text-muted">Connect one public Telegram group to this brand profile for campaign join requirements.</p>
                           </div>
-                          <button type="button" onClick={() => setIsTelegramModalOpen(true)} className="px-4 py-2 rounded-xl bg-cyan text-black text-sm font-semibold hover:bg-cyan/90 transition-colors">
+                          <button type="button" onClick={() => setIsTelegramModalOpen(true)} className="shrink-0 whitespace-nowrap px-5 py-2.5 rounded-xl bg-cyan text-black text-sm font-semibold hover:bg-cyan/90 transition-colors">
                             Connect
                           </button>
                         </div>
