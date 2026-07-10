@@ -283,10 +283,6 @@ function telegramBotPermissionStatus(member, chatType) {
   return 'unknown';
 }
 
-function isTelegramGroupConnectionActive(member, chatType) {
-  return telegramBotPermissionStatus(member, chatType) === 'configured';
-}
-
 async function upsertTelegramGroupConfigFromChatMember(chat, member, lastError = null, extra = {}) {
   if (!chat?.id) return null;
   const chatId = String(chat.id);
@@ -298,7 +294,6 @@ async function upsertTelegramGroupConfigFromChatMember(chat, member, lastError =
     ...(extra.public_link ? { public_link: extra.public_link } : {}),
     bot_status: member?.status || null,
     bot_permission_status: telegramBotPermissionStatus(member, chat.type),
-    is_active: isTelegramGroupConnectionActive(member, chat.type),
     bot_permissions: member || {},
     last_error: lastError,
     last_seen_at: new Date().toISOString(),
@@ -353,7 +348,6 @@ async function refreshTelegramGroupConfig(config) {
     const payload = {
       bot_status: 'left',
       bot_permission_status: 'bot_not_in_chat',
-      is_active: false,
       last_error: description || 'The Telegram bot is not in this group.',
       last_seen_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -362,7 +356,7 @@ async function refreshTelegramGroupConfig(config) {
       .from('telegram_group_configs')
       .update(payload)
       .eq('chat_id', config.chat_id)
-      .select('chat_id, brand_profile_id, chat_type, title, public_link, bot_status, bot_permission_status, is_active, last_error, last_seen_at, updated_at')
+      .select('chat_id, brand_profile_id, chat_type, title, public_link, bot_status, bot_permission_status, last_error, last_seen_at, updated_at')
       .single();
     if (updateError) {
       console.warn(`Could not mark Telegram group ${config.chat_id} inactive:`, updateError.message || updateError);
@@ -378,7 +372,7 @@ async function getTelegramGroupConfigMap(chatIds) {
   if (!ids.length) return map;
   const { data, error } = await supabase
     .from('telegram_group_configs')
-    .select('chat_id, chat_type, title, bot_status, bot_permission_status, is_active, bot_permissions, last_error, last_seen_at, updated_at')
+    .select('chat_id, chat_type, title, bot_status, bot_permission_status, bot_permissions, last_error, last_seen_at, updated_at')
     .in('chat_id', ids);
   if (error) {
     console.warn('Could not read Telegram group configs:', error.message || error);
@@ -2517,7 +2511,6 @@ app.post('/admin/telegram-groups/status', async (req, res) => {
           title: config?.title || null,
           bot_status: config?.bot_status || null,
           bot_permission_status: config?.bot_permission_status || 'unknown',
-          is_active: Boolean(config?.is_active),
           last_error: config?.last_error || null,
           last_seen_at: config?.last_seen_at || null,
           updated_at: config?.updated_at || null
@@ -2537,7 +2530,7 @@ app.get('/brand/telegram-group/:brandProfileId', async (req, res) => {
     await assertBrandProfileOwner(brandProfileId, user.id);
     const { data, error } = await supabase
       .from('telegram_group_configs')
-      .select('chat_id, brand_profile_id, chat_type, title, public_link, bot_status, bot_permission_status, is_active, last_error, last_seen_at, updated_at')
+      .select('chat_id, brand_profile_id, chat_type, title, public_link, bot_status, bot_permission_status, last_error, last_seen_at, updated_at')
       .eq('brand_profile_id', brandProfileId)
       .order('updated_at', { ascending: false })
       .limit(1)
@@ -2566,7 +2559,6 @@ app.post('/brand/telegram-group/verify', async (req, res) => {
         public_link: group.public_link,
         bot_status: group.bot_status,
         bot_permission_status: group.bot_permission_status,
-        is_active: Boolean(group.is_active),
         last_error: group.last_error,
         last_seen_at: group.last_seen_at,
         updated_at: group.updated_at

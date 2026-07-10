@@ -21,7 +21,6 @@ export type BrandTelegramGroup = {
   public_link?: string | null;
   bot_status?: string | null;
   bot_permission_status?: string | null;
-  is_active?: boolean | null;
   last_error?: string | null;
   last_seen_at?: string | null;
   updated_at?: string | null;

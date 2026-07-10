@@ -16,34 +16,44 @@ function telegramGroupStatusMeta(group: BrandTelegramGroup | null) {
   const status = group?.bot_permission_status || 'unknown';
   if (!group) {
     return {
-      label: 'Pending Verification',
+      label: 'Not Verified',
+      detail: 'Add the bot to a public group and verify setup.',
+      buttonLabel: 'Connect',
       dotClass: 'bg-white/50',
       pillClass: 'bg-white/5 text-white/70 border-white/10'
     };
   }
-  if (group.is_active || status === 'configured') {
+  if (status === 'configured') {
     return {
       label: 'Connected',
+      detail: 'Bot is active as an admin in this group.',
+      buttonLabel: 'Connected',
       dotClass: 'bg-green-400',
       pillClass: 'bg-green-500/10 text-green-300 border-green-500/30'
     };
   }
   if (status === 'needs_admin' || status === 'restricted') {
     return {
-      label: 'Needs Admin Permission',
+      label: 'Admin Permission Needed',
+      detail: 'Promote the bot to admin, then verify again.',
+      buttonLabel: 'Fix Admin',
       dotClass: 'bg-yellow-300',
       pillClass: 'bg-yellow-500/10 text-yellow-300 border-yellow-500/30'
     };
   }
   if (status === 'bot_not_in_chat') {
     return {
-      label: 'Bot Removed',
+      label: 'Disconnected',
+      detail: 'The bot was removed from the group. Add it back to reconnect.',
+      buttonLabel: 'Reconnect',
       dotClass: 'bg-red-400',
       pillClass: 'bg-red-500/10 text-red-300 border-red-500/30'
     };
   }
   return {
     label: 'Pending Verification',
+    detail: 'Verify the group to confirm the bot is installed correctly.',
+    buttonLabel: 'Verify',
     dotClass: 'bg-white/50',
     pillClass: 'bg-white/5 text-white/70 border-white/10'
   };
@@ -167,7 +177,7 @@ export default function BrandSettings() {
   };
 
   const logo = formData.logo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.company_name || 'Brand')}`;
-  const isTelegramConnected = Boolean(telegramGroup?.is_active || telegramGroup?.bot_permission_status === 'configured');
+  const isTelegramConnected = telegramGroup?.bot_permission_status === 'configured';
   const telegramStatus = telegramGroupStatusMeta(telegramGroup);
 
   const handleLogout = async () => {
@@ -279,7 +289,7 @@ export default function BrandSettings() {
                           </div>
                           <button type="button" onClick={() => setIsTelegramModalOpen(true)} disabled={isTelegramConnected} className={`shrink-0 whitespace-nowrap px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors inline-flex items-center gap-2 ${isTelegramConnected ? 'bg-green-500/10 border border-green-500/30 text-green-300 cursor-default' : 'bg-cyan text-black hover:bg-cyan/90'}`}>
                             {isTelegramConnected && <CheckCircle2 className="w-4 h-4" />}
-                            {isTelegramConnected ? 'Connected' : 'Connect'}
+                            {telegramStatus.buttonLabel}
                           </button>
                         </div>
 
@@ -299,10 +309,14 @@ export default function BrandSettings() {
                                 </span>
                               </div>
                               <p className="text-xs text-muted">Chat ID: {telegramGroup.chat_id}</p>
+                              <p className="text-xs text-muted">{telegramStatus.detail}</p>
                             </div>
                           ) : (
                             <div className="flex items-center justify-between gap-4">
-                              <div className="text-sm text-muted">No Telegram group connected yet.</div>
+                              <div>
+                                <p className="text-sm text-muted">No Telegram group connected yet.</p>
+                                <p className="text-xs text-muted mt-1">{telegramStatus.detail}</p>
+                              </div>
                               <span className={`shrink-0 px-3 py-1 rounded-full text-xs font-semibold border inline-flex items-center gap-2 ${telegramStatus.pillClass}`}>
                                 <span className={`w-2 h-2 rounded-full ${telegramStatus.dotClass}`} />
                                 {telegramStatus.label}
