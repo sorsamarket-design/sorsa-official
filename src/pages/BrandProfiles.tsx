@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Plus, Edit2, Megaphone, ExternalLink, Loader2 } from 'lucide-react';
+import { Plus, Edit2, Megaphone, ExternalLink, Loader2, CheckCircle2 } from 'lucide-react';
 import BrandSidebar from '../components/BrandSidebar';
 import TopBar from '../components/TopBar';
 import { XLogo } from '../components/XLogo';
@@ -11,7 +11,7 @@ const appleEase = [0.16, 1, 0.3, 1] as const;
 
 export default function BrandProfiles() {
   const navigate = useNavigate();
-  const { profiles, loading } = useBrandProfiles();
+  const { profiles, loading, selectedProfileId, selectProfile } = useBrandProfiles();
   const profileLimitReached = profiles.length >= MAX_BRAND_PROFILES;
 
   const startNewCampaign = (brandProfileId?: string) => {
@@ -111,6 +111,16 @@ export default function BrandProfiles() {
                   <p className="text-sm text-muted leading-relaxed mb-8 flex-1 relative z-10 line-clamp-3">
                     {profile.description}
                   </p>
+
+                  <button
+                    type="button"
+                    onClick={() => selectProfile(profile.id)}
+                    disabled={selectedProfileId === profile.id}
+                    className={`relative z-10 mb-3 flex w-full items-center justify-center gap-2 rounded-full py-2.5 text-sm font-semibold transition-colors md:hidden ${selectedProfileId === profile.id ? 'border border-green-500/30 bg-green-500/10 text-green-300' : 'bg-cyan text-black hover:bg-cyan/90'}`}
+                  >
+                    {selectedProfileId === profile.id && <CheckCircle2 className="h-4 w-4" />}
+                    {selectedProfileId === profile.id ? 'Current' : 'Use'}
+                  </button>
 
                   <div className="grid grid-cols-2 gap-3 relative z-10 mt-auto">
                     <button 
