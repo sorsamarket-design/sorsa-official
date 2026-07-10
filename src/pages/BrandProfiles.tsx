@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Plus, Edit2, Megaphone, ExternalLink, Loader2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Plus, Edit2, Megaphone, ExternalLink, Loader2 } from 'lucide-react';
 import BrandSidebar from '../components/BrandSidebar';
 import TopBar from '../components/TopBar';
 import { XLogo } from '../components/XLogo';
@@ -111,13 +111,11 @@ export default function BrandProfiles() {
                       onClick={() => selectProfile(profile.id)}
                       aria-pressed={selectedProfileId === profile.id}
                       aria-label={`${selectedProfileId === profile.id ? 'Current profile' : 'Use'} ${profile.company_name}`}
-                      className="absolute right-0 top-0 inline-flex h-10 w-10 items-center justify-center rounded-xl text-muted transition-colors hover:bg-white/5 md:hidden"
+                      className="absolute right-0 top-0 inline-flex h-10 items-center justify-center rounded-xl px-1 transition-colors hover:bg-white/5 md:hidden"
                     >
-                      {selectedProfileId === profile.id ? (
-                        <ToggleRight className="h-8 w-8 text-[#5ac8f5]" />
-                      ) : (
-                        <ToggleLeft className="h-8 w-8 text-[#6b6b7a]" />
-                      )}
+                      <span className={`relative block h-6 w-11 rounded-full transition-colors ${selectedProfileId === profile.id ? 'bg-cyan' : 'bg-white/10'}`}>
+                        <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${selectedProfileId === profile.id ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                      </span>
                     </button>
                   </div>
 
