@@ -23,6 +23,7 @@ export default function BrandSettings() {
   const [telegramMessage, setTelegramMessage] = useState<string | null>(null);
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
   const [botUsername, setBotUsername] = useState<string | null>(null);
+  const [telegramBotCopied, setTelegramBotCopied] = useState(false);
   const { selectedProfile, loading, refreshProfiles } = useBrandProfiles();
   const { role, signOut, session } = useAuth();
   const { disconnectAsync } = useDisconnect();
@@ -61,6 +62,23 @@ export default function BrandSettings() {
   useEffect(() => {
     loadTelegramGroup();
   }, [selectedProfile?.id, session?.access_token]);
+
+  useEffect(() => {
+    if (!telegramBotCopied) return;
+    const timeout = window.setTimeout(() => setTelegramBotCopied(false), 2000);
+    return () => window.clearTimeout(timeout);
+  }, [telegramBotCopied]);
+
+  const handleCopyTelegramBotUsername = async () => {
+    const username = botUsername || '@AtlasReachBot';
+    try {
+      if (!navigator.clipboard) throw new Error('Clipboard is unavailable');
+      await navigator.clipboard.writeText(username);
+      setTelegramBotCopied(true);
+    } catch {
+      setTelegramMessage('Could not copy the bot username. Please copy it manually.');
+    }
+  };
 
   const handleVerifyTelegramGroup = async () => {
     if (!selectedProfile?.id || !telegramGroupLink.trim()) return;
@@ -275,10 +293,12 @@ export default function BrandSettings() {
                 <label className="block text-sm font-medium text-muted mb-2">Bot Username</label>
                 <div className="flex items-center gap-2">
                   <input value={botUsername || '@AtlasReachBot'} readOnly className="flex-1 bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white" />
-                  <button type="button" onClick={() => navigator.clipboard?.writeText(botUsername || '@AtlasReachBot')} className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 inline-flex items-center justify-center">
-                    <Copy className="w-4 h-4" />
+                  <button type="button" onClick={handleCopyTelegramBotUsername} className={`shrink-0 whitespace-nowrap h-11 rounded-xl border px-3 text-sm font-semibold transition-colors inline-flex items-center justify-center gap-2 ${telegramBotCopied ? 'bg-green-500/10 border-green-500/30 text-green-300' : 'bg-white/5 border-white/10 text-white hover:bg-white/10'}`}>
+                    {telegramBotCopied ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    <span>{telegramBotCopied ? 'Copied' : 'Copy'}</span>
                   </button>
                 </div>
+                <p className="sr-only" aria-live="polite">{telegramBotCopied ? 'Telegram bot username copied.' : ''}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-muted mb-2">Public Group Link</label>
