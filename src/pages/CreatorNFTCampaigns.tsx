@@ -4,7 +4,7 @@ import { motion } from 'motion/react';
 import { Clock, Loader2, Sparkles, Ticket, Users } from 'lucide-react';
 import CreatorSidebar from '../components/CreatorSidebar';
 import CreatorTopBar from '../components/CreatorTopBar';
-import { listNftCampaigns } from '../lib/nftCampaigns';
+import { getNftCampaignPrimaryAllocation, listNftCampaigns } from '../lib/nftCampaigns';
 import { formatCampaignTimeLeft, getCampaignEndTime } from '../lib/campaignTime';
 
 function nftCampaignTypeLabel(type: string) {
@@ -117,7 +117,9 @@ export default function CreatorNFTCampaigns() {
             </div>
           ) : visibleCampaigns.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {visibleCampaigns.map((campaign) => (
+              {visibleCampaigns.map((campaign) => {
+                const primaryAllocation = getNftCampaignPrimaryAllocation(campaign);
+                return (
                 <button
                   key={campaign.id}
                   type="button"
@@ -181,7 +183,7 @@ export default function CreatorNFTCampaigns() {
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-1.5 text-sm font-medium text-white">
                           <Ticket className="w-4 h-4 text-muted" />
-                          {Number(campaign.budget || 0).toLocaleString()} WL
+                          {primaryAllocation.value.toLocaleString()} {primaryAllocation.suffix}
                         </div>
                         <div className="hidden sm:flex items-center gap-1.5 text-sm font-medium text-white">
                           <Users className="w-4 h-4 text-muted" />
@@ -196,7 +198,8 @@ export default function CreatorNFTCampaigns() {
                   </div>
                   </div>
                 </button>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="glass-panel rounded-[2rem] p-12 border border-white/10 text-center">

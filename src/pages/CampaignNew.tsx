@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ArrowLeft, Users, Star, Plus, X, Loader2 } from 'lucide-react';
+import { ArrowLeft, Users, Star, Plus, X, Loader2, MessageCircle } from 'lucide-react';
 import BrandSidebar from '../components/BrandSidebar';
 import TopBar from '../components/TopBar';
 import { useBrandProfiles } from '../hooks/useBrandProfiles';
 import { useAuth } from '../context/AuthContext';
 import { saveCampaignDraftThroughBackend } from '../lib/escrowLaunch';
+import telegramNotifications, { type BrandTelegramGroup } from '../lib/telegramNotifications';
 
 const appleEase = [0.16, 1, 0.3, 1] as const;
 const defaultCategories = ['DeFi', 'AI', 'NFT', 'ZK', 'DePIN'];
@@ -22,6 +23,10 @@ export default function CampaignNew() {
   const { session } = useAuth();
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [draftError, setDraftError] = useState('');
+  const initialRequirements = draftCampaign?.additional_requirements || {};
+  const [additionalTelegramEnabled, setAdditionalTelegramEnabled] = useState(Boolean(initialRequirements?.telegram_enabled));
+  const [brandTelegramGroup, setBrandTelegramGroup] = useState<BrandTelegramGroup | null>(null);
+  const [telegramGroupLoading, setTelegramGroupLoading] = useState(false);
   
   const [campaignType, setCampaignType] = useState<'general' | 'kol'>(draftCampaign?.campaign_type === 'kol' ? 'kol' : 'general');
   const [minSorsaScore, setMinSorsaScore] = useState(Number(draftCampaign?.min_sorsa_score || 500));
@@ -42,6 +47,29 @@ export default function CampaignNew() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
+
+  React.useEffect(() => {
+    let isMounted = true;
+    async function loadGroup() {
+      if (!formData.brand_profile_id) {
+        setBrandTelegramGroup(null);
+        return;
+      }
+      setTelegramGroupLoading(true);
+      try {
+        const result = await telegramNotifications.getBrandGroup(formData.brand_profile_id, session?.access_token);
+        if (isMounted) setBrandTelegramGroup(result.group || null);
+      } catch {
+        if (isMounted) setBrandTelegramGroup(null);
+      } finally {
+        if (isMounted) setTelegramGroupLoading(false);
+      }
+    }
+    loadGroup();
+    return () => {
+      isMounted = false;
+    };
+  }, [formData.brand_profile_id, session?.access_token]);
 
   const handleCategoryToggle = (cat: string) => {
     if (selectedCategories.includes(cat)) {
@@ -89,6 +117,15 @@ export default function CampaignNew() {
       budget: Number(draftCampaign?.budget || 0),
       net_budget: Number(draftCampaign?.net_budget || 0),
       platform_fee: Number(draftCampaign?.platform_fee || 0),
+      additional_requirements: {
+        telegram_enabled: Boolean(additionalTelegramEnabled && brandTelegramGroup?.bot_permission_status === 'configured'),
+        telegram_tasks: additionalTelegramEnabled && brandTelegramGroup?.bot_permission_status === 'configured'
+          ? [{
+              chat_id: brandTelegramGroup.chat_id,
+              title: brandTelegramGroup.title || null
+            }]
+          : []
+      },
       start_date: draftCampaign?.start_date || null,
       end_date: draftCampaign?.end_date || null
     };
@@ -358,6 +395,45 @@ export default function CampaignNew() {
                   <span className={formData.overview.trim().length < overviewMinLength ? 'text-yellow-400' : 'text-cyan'}>
                     {formData.overview.length}/{overviewMaxLength}
                   </span>
+                </div>
+              </div>
+
+              <div className="space-y-4 rounded-2xl bg-white/5 border border-white/10 p-5">
+                <div className="flex items-start gap-3">
+                  <MessageCircle className="w-5 h-5 text-cyan mt-0.5" />
+                  <div className="flex-1">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div>
+                        <label className="text-sm font-medium text-white">Additional Campaign Requirements</label>
+                        <p className="text-xs text-muted mt-1">Require creators to join your connected Telegram group before they can join this campaign.</p>
+                      </div>
+                      <label className={`relative inline-flex items-center ${brandTelegramGroup?.bot_permission_status === 'configured' ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}`}>
+                        <input
+                          type="checkbox"
+                          checked={additionalTelegramEnabled}
+                          disabled={brandTelegramGroup?.bot_permission_status !== 'configured'}
+                          onChange={(event) => setAdditionalTelegramEnabled(event.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <span className="w-11 h-6 bg-white/10 rounded-full peer peer-checked:bg-cyan after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:w-5 after:h-5 after:rounded-full after:transition-transform peer-checked:after:translate-x-5"></span>
+                      </label>
+                    </div>
+                    <div className="mt-4 rounded-xl bg-black/30 border border-white/10 p-4 text-sm">
+                      {telegramGroupLoading ? (
+                        <div className="text-muted flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Checking connected Telegram group...</div>
+                      ) : brandTelegramGroup?.bot_permission_status === 'configured' ? (
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <p className="text-white font-medium">{brandTelegramGroup.title || 'Telegram group'}</p>
+                            <p className="text-xs text-muted">{brandTelegramGroup.public_link || brandTelegramGroup.chat_id}</p>
+                          </div>
+                          <span className="px-3 py-1 rounded-full bg-green-500/10 text-green-400 border border-green-500/20 text-xs font-semibold">Ready</span>
+                        </div>
+                      ) : (
+                        <p className="text-yellow-300">Connect a public Telegram group from Brand Settings before enabling this requirement.</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
 

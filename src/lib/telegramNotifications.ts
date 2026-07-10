@@ -14,6 +14,18 @@ export type TelegramStatus = {
   preferences?: TelegramPreferences;
 };
 
+export type BrandTelegramGroup = {
+  chat_id: string;
+  chat_type?: string | null;
+  title?: string | null;
+  public_link?: string | null;
+  bot_status?: string | null;
+  bot_permission_status?: string | null;
+  last_error?: string | null;
+  last_seen_at?: string | null;
+  updated_at?: string | null;
+};
+
 async function request(path: string, options: RequestInit = {}, accessToken?: string) {
   requireSupabase();
   const response = await fetch(`${getBackendBase()}${path}`, {
@@ -59,6 +71,18 @@ const telegramNotifications = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ preferences })
+    }, accessToken);
+  },
+
+  getBrandGroup(brandProfileId: string, accessToken?: string): Promise<{ group: BrandTelegramGroup | null; botUsername?: string | null }> {
+    return request(`/brand/telegram-group/${encodeURIComponent(brandProfileId)}`, {}, accessToken);
+  },
+
+  verifyBrandGroup(brandProfileId: string, groupLink: string, accessToken?: string): Promise<{ group: BrandTelegramGroup; botUsername?: string | null }> {
+    return request('/brand/telegram-group/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ brand_profile_id: brandProfileId, group_link: groupLink })
     }, accessToken);
   }
 };

@@ -4,7 +4,7 @@ import { motion } from 'motion/react';
 import { AlertCircle, ArrowLeft, Calendar, Clock, Loader2, Sparkles, Star, Ticket, Users } from 'lucide-react';
 import AdminSidebar from '../components/AdminSidebar';
 import LinkifiedText from '../components/LinkifiedText';
-import { finalizeAdminRaffle, getAdminRaffle, listAdminRaffles, type NftCampaign, type RaffleWinner } from '../lib/nftCampaigns';
+import { finalizeAdminRaffle, getAdminRaffle, getNftCampaignPrimaryAllocation, listAdminRaffles, type NftCampaign, type RaffleWinner } from '../lib/nftCampaigns';
 import { formatCampaignTimeLeft, getCampaignEndTime } from '../lib/campaignTime';
 
 const appleEase = [0.16, 1, 0.3, 1] as const;
@@ -152,6 +152,8 @@ export default function AdminRaffles() {
     );
   }
 
+  const selectedCampaignAllocation = campaign ? getNftCampaignPrimaryAllocation(campaign) : null;
+
   return (
     <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] font-sans selection:bg-purple-500/30 flex">
       <AdminSidebar />
@@ -212,8 +214,8 @@ export default function AdminRaffles() {
                 </div>
                 <div className="glass-panel rounded-2xl p-5 border border-white/10">
                   <Ticket className="w-5 h-5 text-purple-300 mb-3" />
-                  <div className="text-sm text-muted">Total WL</div>
-                  <div className="text-2xl font-semibold text-white">{Number(campaign.budget || 0).toLocaleString()}</div>
+                  <div className="text-sm text-muted">{selectedCampaignAllocation?.label || 'Total WL'}</div>
+                  <div className="text-2xl font-semibold text-white">{Number(selectedCampaignAllocation?.value || 0).toLocaleString()}</div>
                 </div>
                 <div className="glass-panel rounded-2xl p-5 border border-white/10">
                   <Star className="w-5 h-5 text-purple-300 mb-3" />
@@ -406,7 +408,9 @@ export default function AdminRaffles() {
 
               {visibleCampaigns.length ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {visibleCampaigns.map((item) => (
+                  {visibleCampaigns.map((item) => {
+                    const primaryAllocation = getNftCampaignPrimaryAllocation(item);
+                    return (
                     <motion.button
                       key={item.id}
                       type="button"
@@ -444,8 +448,8 @@ export default function AdminRaffles() {
                           </div>
                           <div className="rounded-xl bg-white/5 border border-white/10 p-2.5">
                             <Ticket className="w-3.5 h-3.5 text-purple-300 mb-1.5" />
-                            <p className="text-base font-semibold text-white">{Number(item.budget || 0).toLocaleString()}</p>
-                            <p className="text-[9px] text-muted uppercase tracking-wider">Total WL</p>
+                            <p className="text-base font-semibold text-white">{primaryAllocation.value.toLocaleString()}</p>
+                            <p className="text-[9px] text-muted uppercase tracking-wider">{primaryAllocation.label}</p>
                           </div>
                           <div className="rounded-xl bg-white/5 border border-white/10 p-2.5">
                             <Calendar className="w-3.5 h-3.5 text-purple-300 mb-1.5" />
@@ -455,7 +459,8 @@ export default function AdminRaffles() {
                         </div>
                       </div>
                     </motion.button>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="glass-panel rounded-[2rem] p-12 border border-dashed border-white/10 text-center">

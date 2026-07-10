@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { Building2, Save, Image as ImageIcon, LogOut } from 'lucide-react';
+import { Building2, CheckCircle2, Copy, Image as ImageIcon, Loader2, LogOut, MessageCircle, Save, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDisconnect } from 'wagmi';
 import BrandSidebar from '../components/BrandSidebar';
@@ -8,6 +8,7 @@ import TopBar from '../components/TopBar';
 import { supabase } from '../lib/supabase';
 import { useBrandProfiles } from '../hooks/useBrandProfiles';
 import { useAuth } from '../context/AuthContext';
+import telegramNotifications, { type BrandTelegramGroup } from '../lib/telegramNotifications';
 
 const appleEase = [0.16, 1, 0.3, 1] as const;
 
@@ -16,8 +17,14 @@ export default function BrandSettings() {
   const [activeTab, setActiveTab] = useState('company');
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [telegramGroup, setTelegramGroup] = useState<BrandTelegramGroup | null>(null);
+  const [telegramGroupLink, setTelegramGroupLink] = useState('');
+  const [telegramLoading, setTelegramLoading] = useState(false);
+  const [telegramMessage, setTelegramMessage] = useState<string | null>(null);
+  const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
+  const [botUsername, setBotUsername] = useState<string | null>(null);
   const { selectedProfile, loading, refreshProfiles } = useBrandProfiles();
-  const { role, signOut } = useAuth();
+  const { role, signOut, session } = useAuth();
   const { disconnectAsync } = useDisconnect();
   const [formData, setFormData] = useState({
     company_name: '',
@@ -35,6 +42,41 @@ export default function BrandSettings() {
       logo_url: selectedProfile.logo_url || '',
     });
   }, [selectedProfile]);
+
+  const loadTelegramGroup = async () => {
+    if (!selectedProfile?.id) return;
+    setTelegramLoading(true);
+    setTelegramMessage(null);
+    try {
+      const result = await telegramNotifications.getBrandGroup(selectedProfile.id, session?.access_token);
+      setTelegramGroup(result.group || null);
+      setBotUsername(result.botUsername || null);
+    } catch (err: any) {
+      setTelegramMessage(err.message || 'Telegram group status could not be loaded.');
+    } finally {
+      setTelegramLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadTelegramGroup();
+  }, [selectedProfile?.id, session?.access_token]);
+
+  const handleVerifyTelegramGroup = async () => {
+    if (!selectedProfile?.id || !telegramGroupLink.trim()) return;
+    setTelegramLoading(true);
+    setTelegramMessage(null);
+    try {
+      const result = await telegramNotifications.verifyBrandGroup(selectedProfile.id, telegramGroupLink.trim(), session?.access_token);
+      setTelegramGroup(result.group);
+      setBotUsername(result.botUsername || botUsername);
+      setTelegramMessage('Telegram group connected.');
+    } catch (err: any) {
+      setTelegramMessage(err.message || 'Telegram group setup could not be verified.');
+    } finally {
+      setTelegramLoading(false);
+    }
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,6 +120,7 @@ export default function BrandSettings() {
 
   const tabs = [
     { id: 'company', label: 'Company Profile', icon: Building2 },
+    { id: 'telegram', label: 'Connect Telegram Group', icon: MessageCircle },
   ];
 
   return (
@@ -160,6 +203,43 @@ export default function BrandSettings() {
                       </motion.div>
                     )}
 
+                    {activeTab === 'telegram' && (
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <h2 className="text-xl font-semibold text-white mb-2">Connect Telegram Group</h2>
+                            <p className="text-sm text-muted">Connect one public Telegram group to this brand profile for campaign join requirements.</p>
+                          </div>
+                          <button type="button" onClick={() => setIsTelegramModalOpen(true)} className="px-4 py-2 rounded-xl bg-cyan text-black text-sm font-semibold hover:bg-cyan/90 transition-colors">
+                            Connect
+                          </button>
+                        </div>
+
+                        <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
+                          {telegramLoading ? (
+                            <div className="flex items-center gap-2 text-muted"><Loader2 className="w-4 h-4 animate-spin" /> Checking Telegram setup...</div>
+                          ) : telegramGroup ? (
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between gap-4">
+                                <div>
+                                  <p className="text-white font-medium">{telegramGroup.title || telegramGroup.chat_id}</p>
+                                  <p className="text-xs text-muted">{telegramGroup.public_link || telegramGroup.chat_id}</p>
+                                </div>
+                                <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${telegramGroup.bot_permission_status === 'configured' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-yellow-500/10 text-yellow-300 border-yellow-500/20'}`}>
+                                  {telegramGroup.bot_permission_status === 'configured' ? 'Bot admin' : 'Needs admin'}
+                                </span>
+                              </div>
+                              <p className="text-xs text-muted">Chat ID: {telegramGroup.chat_id}</p>
+                            </div>
+                          ) : (
+                            <div className="text-sm text-muted">No Telegram group connected yet.</div>
+                          )}
+                        </div>
+
+                        {telegramMessage && <p className="text-sm text-cyan">{telegramMessage}</p>}
+                      </motion.div>
+                    )}
+
                     {message && <p className="text-sm text-cyan">{message}</p>}
 
                     <div className="pt-6 border-t border-white/10 flex justify-end">
@@ -174,6 +254,45 @@ export default function BrandSettings() {
           </motion.div>
         </div>
       </main>
+
+      {isTelegramModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsTelegramModalOpen(false)} />
+          <div className="relative w-full max-w-lg glass-panel border border-white/10 rounded-2xl bg-[#11112A] p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-white">Connect Telegram Group</h3>
+              <button onClick={() => setIsTelegramModalOpen(false)} className="text-muted hover:text-white transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-5">
+              <div className="rounded-xl bg-white/5 border border-white/10 p-4 space-y-3 text-sm text-muted">
+                <p>1. Add the AtlasReach bot to your public Telegram group.</p>
+                <p>2. Promote the bot to admin so it can verify members.</p>
+                <p>3. Make sure the group is public and has a t.me username.</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-muted mb-2">Bot Username</label>
+                <div className="flex items-center gap-2">
+                  <input value={botUsername || '@AtlasReachBot'} readOnly className="flex-1 bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white" />
+                  <button type="button" onClick={() => navigator.clipboard?.writeText(botUsername || '@AtlasReachBot')} className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 inline-flex items-center justify-center">
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-muted mb-2">Public Group Link</label>
+                <input value={telegramGroupLink} onChange={(e) => setTelegramGroupLink(e.target.value)} placeholder="https://t.me/your_public_group" className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/20 focus:outline-none focus:border-cyan/50" />
+              </div>
+              {telegramMessage && <p className="text-sm text-cyan">{telegramMessage}</p>}
+              <button type="button" onClick={handleVerifyTelegramGroup} disabled={telegramLoading || !telegramGroupLink.trim()} className="w-full py-3 rounded-xl bg-cyan text-black font-semibold hover:bg-cyan/90 disabled:opacity-50 inline-flex items-center justify-center gap-2">
+                {telegramLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                Verify Bot Setup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

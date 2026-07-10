@@ -34,10 +34,14 @@ function withNftCampaignMetadata(campaign: any) {
     ...campaign,
     image_url: metadata.image_url || null,
     background_image_url: metadata.background_image_url || null,
+    allocation_type: metadata.allocation_type === 'gtd' ? 'gtd' : 'wl',
+    total_gtd: metadata.total_gtd ?? null,
     max_creators: metadata.max_creators ?? null,
     max_content_submissions: metadata.max_content_submissions ?? null,
     follow_accounts: Array.isArray(metadata.follow_accounts) ? metadata.follow_accounts : [],
     retweet_links: Array.isArray(metadata.retweet_links) ? metadata.retweet_links : [],
+    comment_links: Array.isArray(metadata.comment_links) ? metadata.comment_links : [],
+    engagement_links: Array.isArray(metadata.engagement_links) ? metadata.engagement_links : [],
     telegram_tasks: Array.isArray(metadata.telegram_tasks) ? metadata.telegram_tasks : [],
     raffle_results: Array.isArray(metadata.raffle_results) ? metadata.raffle_results : [],
     raffle_finalized_at: metadata.raffle_finalized_at || null
@@ -124,6 +128,8 @@ export type NftCampaignPayload = {
   overview: string;
   categories: string[];
   budget: number;
+  allocation_type?: 'wl' | 'gtd';
+  total_gtd?: number | null;
   min_sorsa_score: number | null;
   image_url: string | null;
   background_image_url: string | null;
@@ -131,10 +137,21 @@ export type NftCampaignPayload = {
   max_content_submissions?: number | null;
   follow_accounts: string[];
   retweet_links: string[];
+  comment_links: string[];
+  engagement_links: string[];
   telegram_tasks?: TelegramTask[];
   start_date: string | null;
   end_date: string | null;
 };
+
+export function getNftCampaignPrimaryAllocation(campaign: Pick<NftCampaignPayload, 'allocation_type' | 'budget' | 'total_gtd'>) {
+  const useGtd = campaign.allocation_type === 'gtd';
+  return {
+    label: useGtd ? 'Total GTD' : 'Total WL',
+    suffix: useGtd ? 'GTD' : 'WL',
+    value: Number(useGtd ? campaign.total_gtd || 0 : campaign.budget || 0)
+  };
+}
 
 export type TelegramTask = {
   chat_id: string;
@@ -499,7 +516,7 @@ export async function submitNftCampaignContent(id: string, tweetUrl: string) {
   });
 }
 
-export async function verifyNftCampaignTask(id: string, task: { type: 'follow' | 'retweet' | 'telegram'; value: string }) {
+export async function verifyNftCampaignTask(id: string, task: { type: 'follow' | 'retweet' | 'comment' | 'engagement' | 'telegram'; value: string }) {
   return requestNftCampaigns(`/nft-campaigns/${encodeURIComponent(id)}/verify-task`, {
     method: 'POST',
     body: JSON.stringify(task)

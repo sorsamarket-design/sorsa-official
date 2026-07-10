@@ -41,6 +41,10 @@ export interface Campaign {
   escrow_tx_hash?: string | null;
   metadata_hash?: string | null;
   brand_wallet?: string | null;
+  additional_requirements?: {
+    telegram_enabled?: boolean;
+    telegram_tasks?: { chat_id: string; title?: string | null }[];
+  } | null;
 }
 
 function isEscrowConfirmedCampaign(campaign: Partial<Campaign> | null | undefined) {

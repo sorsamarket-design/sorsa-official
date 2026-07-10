@@ -5,7 +5,7 @@ import { AlertCircle, ArrowLeft, CheckCircle2, Clock, ExternalLink, Loader2, Mes
 import CreatorSidebar from '../components/CreatorSidebar';
 import CreatorTopBar from '../components/CreatorTopBar';
 import LinkifiedText from '../components/LinkifiedText';
-import { getNftCampaign, joinNftCampaign, submitNftCampaignContent, verifyNftCampaignTask, type NftCampaign } from '../lib/nftCampaigns';
+import { getNftCampaign, getNftCampaignPrimaryAllocation, joinNftCampaign, submitNftCampaignContent, verifyNftCampaignTask, type NftCampaign } from '../lib/nftCampaigns';
 import { formatCampaignTimeLeft, getCampaignEndTime } from '../lib/campaignTime';
 import { useCreatorProfile } from '../hooks/useCreatorProfile';
 
@@ -27,6 +27,12 @@ function verifiedTaskMap(campaign: NftCampaign) {
   }
   for (const link of campaign.retweet_links || []) {
     next[`retweet:${link}`] = true;
+  }
+  for (const link of campaign.comment_links || []) {
+    next[`comment:${link}`] = true;
+  }
+  for (const link of campaign.engagement_links || []) {
+    next[`engagement:${link}`] = true;
   }
   for (const task of campaign.telegram_tasks || []) {
     if (task.chat_id) next[`telegram:${task.chat_id}`] = true;
@@ -97,9 +103,9 @@ export default function CreatorNFTCampaignDetail() {
     }
   };
 
-  const taskKey = (type: 'follow' | 'retweet' | 'telegram', value: string) => `${type}:${value}`;
+  const taskKey = (type: 'follow' | 'retweet' | 'comment' | 'engagement' | 'telegram', value: string) => `${type}:${value}`;
 
-  const handleVerifyTask = async (type: 'follow' | 'retweet' | 'telegram', value: string) => {
+  const handleVerifyTask = async (type: 'follow' | 'retweet' | 'comment' | 'engagement' | 'telegram', value: string) => {
     if (!id) return;
     if (campaignEnded) return;
     const key = taskKey(type, value);
@@ -141,6 +147,7 @@ export default function CreatorNFTCampaignDetail() {
   const campaignEnded = campaign.status === 'completed' || Boolean(campaignEndTime && campaignEndTime <= Date.now());
   const canVerifyTasks = !campaignEnded;
   const hasWalletAddress = Boolean(creatorProfile?.wallet_address);
+  const primaryAllocation = getNftCampaignPrimaryAllocation(campaign);
 
   const handleSubmitContent = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -252,8 +259,8 @@ export default function CreatorNFTCampaignDetail() {
           <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
             <div className="glass-panel min-w-0 rounded-2xl border border-white/10 p-2 sm:p-5">
               <Ticket className="mb-2 h-4 w-4 text-cyan sm:mb-3 sm:h-5 sm:w-5" />
-              <div className="text-[0.6rem] leading-tight text-muted sm:text-sm">Total WL</div>
-              <div className="break-words text-[0.85rem] font-bold leading-tight text-white sm:text-2xl sm:font-semibold">{Number(campaign.budget || 0).toLocaleString()}</div>
+              <div className="text-[0.6rem] leading-tight text-muted sm:text-sm">{primaryAllocation.label}</div>
+              <div className="break-words text-[0.85rem] font-bold leading-tight text-white sm:text-2xl sm:font-semibold">{primaryAllocation.value.toLocaleString()}</div>
             </div>
             <div className="glass-panel min-w-0 rounded-2xl border border-white/10 p-2 sm:p-5">
               <Users className="mb-2 h-4 w-4 text-cyan sm:mb-3 sm:h-5 sm:w-5" />
@@ -358,7 +365,7 @@ export default function CreatorNFTCampaignDetail() {
                   </button>
                 </form>
               </div>
-            ) : campaign.follow_accounts?.length || campaign.retweet_links?.length || campaign.telegram_tasks?.length ? (
+            ) : campaign.follow_accounts?.length || campaign.retweet_links?.length || campaign.comment_links?.length || campaign.engagement_links?.length || campaign.telegram_tasks?.length ? (
               <div className="space-y-6">
                 {campaign.follow_accounts?.length ? (
                   <div className="space-y-3">
@@ -452,6 +459,112 @@ export default function CreatorNFTCampaignDetail() {
                                     : !canVerifyTasks
                                       ? 'bg-white/5 text-muted border border-white/10 cursor-not-allowed'
                                     : 'bg-cyan text-black hover:bg-cyan/90'
+                                } disabled:opacity-80`}
+                              >
+                                {isVerifying ? <Loader2 className="w-4 h-4 animate-spin" /> : isVerified ? <CheckCircle2 className="w-4 h-4" /> : null}
+                                {isVerifying ? 'Verifying...' : isVerified ? 'Verified' : campaignEnded ? 'Ended' : 'Verify'}
+                              </button>
+                            </div>
+                          </div>
+                          {taskErrors[key] ? <p className="text-xs text-red-400 mt-3">{taskErrors[key]}</p> : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : null}
+
+                {campaign.comment_links?.length ? (
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold uppercase tracking-wider text-muted">Like & Comment</h3>
+                    {campaign.comment_links.map((link) => {
+                      const key = taskKey('comment', link);
+                      const isVerified = hasJoined || verifiedTasks[key];
+                      const isVerifying = verifyingTask === key;
+
+                      return (
+                        <div
+                          key={link}
+                          className={`p-4 rounded-2xl bg-white/5 border transition-colors ${
+                            isVerified ? 'border-green-500/30 bg-green-500/5' : 'border-white/10 hover:border-cyan/30'
+                          }`}
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="min-w-0">
+                              <p className="text-white font-medium">Like and comment on required post</p>
+                              <p className="text-xs text-muted mt-1 break-all">{link}</p>
+                            </div>
+                            <div className="flex items-center gap-3 shrink-0">
+                              <a
+                                href={link}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="w-10 h-10 rounded-full border border-white/10 bg-white/5 text-cyan hover:border-cyan/30 inline-flex items-center justify-center transition-colors"
+                                aria-label="Open required X post"
+                              >
+                                <ExternalLink className="w-4 h-4" />
+                              </a>
+                              <button
+                                onClick={() => handleVerifyTask('comment', link)}
+                                disabled={isVerifying || isVerified || !canVerifyTasks}
+                                className={`px-4 py-2 rounded-full text-sm font-semibold inline-flex items-center gap-2 transition-colors ${
+                                  isVerified
+                                    ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                                    : !canVerifyTasks
+                                      ? 'bg-white/5 text-muted border border-white/10 cursor-not-allowed'
+                                      : 'bg-cyan text-black hover:bg-cyan/90'
+                                } disabled:opacity-80`}
+                              >
+                                {isVerifying ? <Loader2 className="w-4 h-4 animate-spin" /> : isVerified ? <CheckCircle2 className="w-4 h-4" /> : null}
+                                {isVerifying ? 'Verifying...' : isVerified ? 'Verified' : campaignEnded ? 'Ended' : 'Verify'}
+                              </button>
+                            </div>
+                          </div>
+                          {taskErrors[key] ? <p className="text-xs text-red-400 mt-3">{taskErrors[key]}</p> : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : null}
+
+                {campaign.engagement_links?.length ? (
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold uppercase tracking-wider text-muted">Like, Retweet & Comment</h3>
+                    {campaign.engagement_links.map((link) => {
+                      const key = taskKey('engagement', link);
+                      const isVerified = hasJoined || verifiedTasks[key];
+                      const isVerifying = verifyingTask === key;
+
+                      return (
+                        <div
+                          key={link}
+                          className={`p-4 rounded-2xl bg-white/5 border transition-colors ${
+                            isVerified ? 'border-green-500/30 bg-green-500/5' : 'border-white/10 hover:border-cyan/30'
+                          }`}
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="min-w-0">
+                              <p className="text-white font-medium">Like, retweet, and comment on required post</p>
+                              <p className="text-xs text-muted mt-1 break-all">{link}</p>
+                            </div>
+                            <div className="flex items-center gap-3 shrink-0">
+                              <a
+                                href={link}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="w-10 h-10 rounded-full border border-white/10 bg-white/5 text-cyan hover:border-cyan/30 inline-flex items-center justify-center transition-colors"
+                                aria-label="Open required X post"
+                              >
+                                <ExternalLink className="w-4 h-4" />
+                              </a>
+                              <button
+                                onClick={() => handleVerifyTask('engagement', link)}
+                                disabled={isVerifying || isVerified || !canVerifyTasks}
+                                className={`px-4 py-2 rounded-full text-sm font-semibold inline-flex items-center gap-2 transition-colors ${
+                                  isVerified
+                                    ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                                    : !canVerifyTasks
+                                      ? 'bg-white/5 text-muted border border-white/10 cursor-not-allowed'
+                                      : 'bg-cyan text-black hover:bg-cyan/90'
                                 } disabled:opacity-80`}
                               >
                                 {isVerifying ? <Loader2 className="w-4 h-4 animate-spin" /> : isVerified ? <CheckCircle2 className="w-4 h-4" /> : null}

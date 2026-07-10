@@ -41,6 +41,8 @@ export default function AdminNFTCampaignNew() {
   const [backgroundImagePreview, setBackgroundImagePreview] = useState('');
   const [followAccounts, setFollowAccounts] = useState<string[]>(['']);
   const [retweetLinks, setRetweetLinks] = useState<string[]>(['']);
+  const [commentLinks, setCommentLinks] = useState<string[]>(['']);
+  const [engagementLinks, setEngagementLinks] = useState<string[]>(['']);
   const [telegramTasks, setTelegramTasks] = useState<string[]>(['']);
   const [telegramStatuses, setTelegramStatuses] = useState<Record<string, TelegramGroupStatus>>({});
   const [telegramStatusLoading, setTelegramStatusLoading] = useState(false);
@@ -49,7 +51,9 @@ export default function AdminNFTCampaignNew() {
     title: '',
     goal: '',
     overview: '',
+    allocation_type: 'wl',
     budget: '',
+    total_gtd: '',
     max_content_submissions: '5',
     min_sorsa_score: '150',
     start_date: '',
@@ -64,6 +68,13 @@ export default function AdminNFTCampaignNew() {
     setFormData(prev => ({
       ...prev,
       budget: String(Math.max(0, Number(prev.budget || 0) + delta))
+    }));
+  };
+
+  const adjustTotalGtd = (delta: number) => {
+    setFormData(prev => ({
+      ...prev,
+      total_gtd: String(Math.max(0, Number(prev.total_gtd || 0) + delta))
     }));
   };
 
@@ -120,6 +131,30 @@ export default function AdminNFTCampaignNew() {
     setRetweetLinks(prev => prev.length === 1 ? [''] : prev.filter((_, itemIndex) => itemIndex !== index));
   };
 
+  const updateCommentLink = (index: number, value: string) => {
+    setCommentLinks(prev => prev.map((item, itemIndex) => itemIndex === index ? value : item));
+  };
+
+  const addCommentLink = () => {
+    setCommentLinks(prev => prev.length >= 2 ? prev : [...prev, '']);
+  };
+
+  const removeCommentLink = (index: number) => {
+    setCommentLinks(prev => prev.length === 1 ? [''] : prev.filter((_, itemIndex) => itemIndex !== index));
+  };
+
+  const updateEngagementLink = (index: number, value: string) => {
+    setEngagementLinks(prev => prev.map((item, itemIndex) => itemIndex === index ? value : item));
+  };
+
+  const addEngagementLink = () => {
+    setEngagementLinks(prev => prev.length >= 2 ? prev : [...prev, '']);
+  };
+
+  const removeEngagementLink = (index: number) => {
+    setEngagementLinks(prev => prev.length === 1 ? [''] : prev.filter((_, itemIndex) => itemIndex !== index));
+  };
+
   const updateTelegramTask = (index: number, value: string) => {
     setTelegramTasks(prev => prev.map((item, itemIndex) => itemIndex === index ? value : item));
   };
@@ -162,8 +197,9 @@ export default function AdminNFTCampaignNew() {
   const goToStepTwo = () => {
     setError('');
     setSuccess('');
-    if (!formData.title.trim() || !formData.goal.trim() || !formData.budget) {
-      setError('Campaign title, goal, and Total WL are required before continuing.');
+    const selectedTotal = formData.allocation_type === 'gtd' ? formData.total_gtd : formData.budget;
+    if (!formData.title.trim() || !formData.goal.trim() || !selectedTotal) {
+      setError(`Campaign title, goal, and ${formData.allocation_type === 'gtd' ? 'Total GTD' : 'Total WL'} are required before continuing.`);
       return;
     }
     setStep(2);
@@ -174,7 +210,9 @@ export default function AdminNFTCampaignNew() {
       title: '',
       goal: '',
       overview: '',
+      allocation_type: 'wl',
       budget: '',
+      total_gtd: '',
       max_content_submissions: '5',
       min_sorsa_score: '150',
       start_date: '',
@@ -185,6 +223,8 @@ export default function AdminNFTCampaignNew() {
     setBackgroundImagePreview('');
     setFollowAccounts(['']);
     setRetweetLinks(['']);
+    setCommentLinks(['']);
+    setEngagementLinks(['']);
     setTelegramTasks(['']);
     setTelegramStatuses({});
     setStep(1);
@@ -202,6 +242,12 @@ export default function AdminNFTCampaignNew() {
     const cleanedRetweetLinks = Array.from(
       new Set<string>(retweetLinks.map(link => link.trim()).filter(Boolean))
     ).slice(0, 2);
+    const cleanedCommentLinks = Array.from(
+      new Set<string>(commentLinks.map(link => link.trim()).filter(Boolean))
+    ).slice(0, 2);
+    const cleanedEngagementLinks = Array.from(
+      new Set<string>(engagementLinks.map(link => link.trim()).filter(Boolean))
+    ).slice(0, 2);
     const cleanedTelegramTasks = Array.from(
       new Set<string>(telegramTasks.map(cleanTelegramChatId).filter(Boolean))
     ).slice(0, 3);
@@ -214,6 +260,8 @@ export default function AdminNFTCampaignNew() {
         overview: formData.overview.trim(),
         categories: ['NFT'],
         budget: Number(formData.budget || 0),
+        allocation_type: formData.allocation_type as 'wl' | 'gtd',
+        total_gtd: Number(formData.total_gtd || 0),
         min_sorsa_score: Number(formData.min_sorsa_score || 0),
         image_url: imagePreview || null,
         background_image_url: backgroundImagePreview || null,
@@ -221,6 +269,8 @@ export default function AdminNFTCampaignNew() {
         max_content_submissions: campaignType === 'content' ? Math.min(5, Math.max(1, Number(formData.max_content_submissions || 5))) : null,
         follow_accounts: cleanedFollowAccounts,
         retweet_links: campaignType === 'raffle' ? cleanedRetweetLinks : [],
+        comment_links: campaignType === 'raffle' ? cleanedCommentLinks : [],
+        engagement_links: campaignType === 'raffle' ? cleanedEngagementLinks : [],
         telegram_tasks: campaignType === 'raffle' ? cleanedTelegramTasks.map(chatId => ({
           chat_id: chatId,
           title: telegramStatuses[chatId]?.title || null
@@ -362,15 +412,51 @@ export default function AdminNFTCampaignNew() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="md:col-span-2 space-y-3">
+                      <label className="text-sm font-medium text-white">Primary Allocation</label>
+                      <div className="inline-flex rounded-xl bg-black/50 border border-white/10 p-1">
+                        {[
+                          { value: 'wl', label: 'WL' },
+                          { value: 'gtd', label: 'GTD' }
+                        ].map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, allocation_type: option.value }))}
+                            className={`px-5 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                              formData.allocation_type === option.value
+                                ? 'bg-purple-500 text-white'
+                                : 'text-muted hover:text-white hover:bg-white/5'
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-white">Total WL</label>
                       <div className="flex items-center rounded-xl bg-black/50 border border-white/10 focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all overflow-hidden">
-                        <input type="number" min="0" name="budget" value={formData.budget} onChange={handleInputChange} required placeholder="2500" className="w-full px-4 py-3 bg-transparent text-white placeholder:text-white/20 focus:outline-none [color-scheme:dark]" />
+                        <input type="number" min="0" name="budget" value={formData.budget} onChange={handleInputChange} required={formData.allocation_type === 'wl'} placeholder="2500" className="w-full px-4 py-3 bg-transparent text-white placeholder:text-white/20 focus:outline-none [color-scheme:dark]" />
                         <div className="flex items-center border-l border-white/10">
                           <button type="button" onClick={() => adjustTotalWl(-1)} className="w-11 h-12 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors" aria-label="Decrease Total WL">
                             <Minus className="w-4 h-4" />
                           </button>
                           <button type="button" onClick={() => adjustTotalWl(1)} className="w-11 h-12 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors border-l border-white/10" aria-label="Increase Total WL">
+                            <Plus className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-white">Total GTD</label>
+                      <div className="flex items-center rounded-xl bg-black/50 border border-white/10 focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all overflow-hidden">
+                        <input type="number" min="0" name="total_gtd" value={formData.total_gtd} onChange={handleInputChange} required={formData.allocation_type === 'gtd'} placeholder="500" className="w-full px-4 py-3 bg-transparent text-white placeholder:text-white/20 focus:outline-none [color-scheme:dark]" />
+                        <div className="flex items-center border-l border-white/10">
+                          <button type="button" onClick={() => adjustTotalGtd(-1)} className="w-11 h-12 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors" aria-label="Decrease Total GTD">
+                            <Minus className="w-4 h-4" />
+                          </button>
+                          <button type="button" onClick={() => adjustTotalGtd(1)} className="w-11 h-12 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors border-l border-white/10" aria-label="Increase Total GTD">
                             <Plus className="w-4 h-4" />
                           </button>
                         </div>
@@ -548,6 +634,50 @@ export default function AdminNFTCampaignNew() {
                             <div key={index} className="flex items-center gap-3">
                               <input value={link} onChange={(e) => updateRetweetLink(index, e.target.value)} placeholder="https://x.com/account/status/..." className="flex-1 px-4 py-3 rounded-xl bg-black/50 border border-white/10 text-white placeholder:text-white/20 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all" />
                               <button type="button" onClick={() => removeRetweetLink(index)} className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 text-muted hover:text-white hover:bg-white/10 flex items-center justify-center">
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <label className="text-sm font-medium text-white">Like & Comment Tasks</label>
+                            <p className="text-xs text-muted mt-1">Add up to 2 X post links creators must like and comment on to join.</p>
+                          </div>
+                          <button type="button" onClick={addCommentLink} disabled={commentLinks.length >= 2} className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm font-medium text-white hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-2">
+                            <Plus className="w-4 h-4" /> Add
+                          </button>
+                        </div>
+                        <div className="space-y-3">
+                          {commentLinks.map((link, index) => (
+                            <div key={index} className="flex items-center gap-3">
+                              <input value={link} onChange={(e) => updateCommentLink(index, e.target.value)} placeholder="https://x.com/account/status/..." className="flex-1 px-4 py-3 rounded-xl bg-black/50 border border-white/10 text-white placeholder:text-white/20 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all" />
+                              <button type="button" onClick={() => removeCommentLink(index)} className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 text-muted hover:text-white hover:bg-white/10 flex items-center justify-center">
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <label className="text-sm font-medium text-white">Like, Retweet & Comment Tasks</label>
+                            <p className="text-xs text-muted mt-1">Add up to 2 X post links creators must like, retweet, and comment on to join.</p>
+                          </div>
+                          <button type="button" onClick={addEngagementLink} disabled={engagementLinks.length >= 2} className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm font-medium text-white hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-2">
+                            <Plus className="w-4 h-4" /> Add
+                          </button>
+                        </div>
+                        <div className="space-y-3">
+                          {engagementLinks.map((link, index) => (
+                            <div key={index} className="flex items-center gap-3">
+                              <input value={link} onChange={(e) => updateEngagementLink(index, e.target.value)} placeholder="https://x.com/account/status/..." className="flex-1 px-4 py-3 rounded-xl bg-black/50 border border-white/10 text-white placeholder:text-white/20 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all" />
+                              <button type="button" onClick={() => removeEngagementLink(index)} className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 text-muted hover:text-white hover:bg-white/10 flex items-center justify-center">
                                 <X className="w-4 h-4" />
                               </button>
                             </div>

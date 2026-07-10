@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, Target, Zap, Clock, Users, DollarSign, CheckCircle2, ChevronRight, ExternalLink, X, Loader2, AlertCircle, Send } from 'lucide-react';
+import { ArrowLeft, Target, Zap, Clock, Users, DollarSign, CheckCircle2, ChevronRight, ExternalLink, X, Loader2, AlertCircle, Send, MessageCircle } from 'lucide-react';
 import CreatorSidebar from '../components/CreatorSidebar';
 import CreatorTopBar from '../components/CreatorTopBar';
 import LinkifiedText from '../components/LinkifiedText';
@@ -103,8 +103,8 @@ export default function CreatorCampaignDetail() {
         setParticipationId(newParticipation.id);
       }
       setIsJoinModalOpen(false);
-    } catch {
-      setVerificationError('Unable to verify');
+    } catch (err: any) {
+      setVerificationError(err.message || 'Unable to verify');
     } finally {
       setIsVerifying(false);
     }
@@ -129,6 +129,11 @@ export default function CreatorCampaignDetail() {
   }
   const userSorsaScore = creatorProfile?.sorsa_score ?? 0;
   const hasWalletAddress = Boolean(creatorProfile?.wallet_address);
+  const telegramTasks = campaign.additional_requirements?.telegram_enabled
+    ? campaign.additional_requirements?.telegram_tasks || []
+    : [];
+  const requiresTelegram = telegramTasks.length > 0;
+  const hasTelegramConnected = Boolean(creatorProfile?.telegram_chat_id);
 
   // Determine required score
   const requiredScore = campaign.min_sorsa_score || 0;
@@ -324,6 +329,14 @@ export default function CreatorCampaignDetail() {
                       Follow @{cleanBrandHandle || 'Brand'} on X
                     </p>
                   </div>
+                  {requiresTelegram && (
+                    <div className="flex items-start gap-3">
+                      <MessageCircle className="mt-0.5 w-4 h-4 text-cyan shrink-0" />
+                      <p className="text-white text-sm md:text-base font-medium">
+                        Join {telegramTasks[0]?.title || 'the brand Telegram group'}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </motion.div>
 
@@ -387,10 +400,10 @@ export default function CreatorCampaignDetail() {
                   return (
                     <div className="space-y-3">
                       <button
-                        onClick={() => meetsScoreRequirement && hasWalletAddress && !campaignEnded && setIsJoinModalOpen(true)}
-                        disabled={!meetsScoreRequirement || !hasWalletAddress || campaignEnded}
+                        onClick={() => meetsScoreRequirement && hasWalletAddress && (!requiresTelegram || hasTelegramConnected) && !campaignEnded && setIsJoinModalOpen(true)}
+                        disabled={!meetsScoreRequirement || !hasWalletAddress || (requiresTelegram && !hasTelegramConnected) || campaignEnded}
                         className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all duration-300 ${
-                          meetsScoreRequirement && hasWalletAddress && !campaignEnded
+                          meetsScoreRequirement && hasWalletAddress && (!requiresTelegram || hasTelegramConnected) && !campaignEnded
                             ? 'bg-cyan text-black hover:scale-[1.02] shadow-[0_0_20px_rgba(0,212,255,0.3)] hover:shadow-[0_0_30px_rgba(0,212,255,0.5)]'
                             : 'bg-white/5 text-muted border border-white/10 cursor-not-allowed'
                         }`}
@@ -410,6 +423,11 @@ export default function CreatorCampaignDetail() {
                       {!hasWalletAddress && (
                         <p className="text-yellow-400 text-xs text-center font-medium">
                           Add a wallet address to your creator profile before joining campaigns.
+                        </p>
+                      )}
+                      {requiresTelegram && !hasTelegramConnected && (
+                        <p className="text-yellow-400 text-xs text-center font-medium">
+                          Connect Telegram in Creator Settings before joining this campaign.
                         </p>
                       )}
                     </div>
@@ -452,7 +470,7 @@ export default function CreatorCampaignDetail() {
 
                 <div className="space-y-6">
                   <p className="text-muted text-sm leading-relaxed">
-                    To join the <span className="text-white font-medium">{campaign.title}</span> campaign, you need to follow the brand on X. We will verify this using the Sorsa API.
+                    To join the <span className="text-white font-medium">{campaign.title}</span> campaign, complete the required actions. We will verify them before joining.
                   </p>
 
                   <div className="bg-white/5 rounded-xl border border-white/10 p-4 flex items-center justify-between">
@@ -475,6 +493,20 @@ export default function CreatorCampaignDetail() {
                       Follow <ExternalLink className="w-3.5 h-3.5" />
                     </button>
                   </div>
+
+                  {requiresTelegram && (
+                    <div className="bg-white/5 rounded-xl border border-white/10 p-4 flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-cyan/10 border border-cyan/20 text-cyan flex items-center justify-center">
+                          <MessageCircle className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <p className="text-white font-medium">{telegramTasks[0]?.title || 'Telegram group'}</p>
+                          <p className="text-xs text-muted">{hasTelegramConnected ? 'Telegram account connected' : 'Connect Telegram in Creator Settings'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {verificationError && (
                     <motion.div
