@@ -10,6 +10,7 @@ import {
   type Hex
 } from 'viem';
 import { campaignEscrowAbi, createCampaignTypes, erc20Abi } from './escrowAbi';
+import { requireSupabase } from './supabase';
 
 export interface EscrowLaunchAuthorization {
   campaignId: Hex;
@@ -87,6 +88,14 @@ function getLaunchReadyEndpoint() {
 function getDraftEndpoint() {
   if (!launchEndpoint) return null;
   return launchEndpoint.replace(/\/campaigns\/launch\/?$/, '/campaigns/drafts');
+}
+
+async function getBackendAccessToken(accessToken?: string) {
+  if (accessToken) return accessToken;
+  const supabase = requireSupabase();
+  const { data, error } = await supabase.auth.getSession();
+  if (error) throw new Error(error.message || 'Could not read current session.');
+  return data.session?.access_token || null;
 }
 
 export async function assertEscrowLaunchBackendReady() {
@@ -267,12 +276,17 @@ export async function launchCampaignThroughEscrow(
     throw new Error('Missing VITE_ESCROW_LAUNCH_ENDPOINT. Configure the trusted backend endpoint that locks escrow before inserting campaigns.');
   }
 
+  const backendAccessToken = await getBackendAccessToken(accessToken);
+  if (!backendAccessToken) {
+    throw new Error('Missing auth session. Please refresh and sign in again.');
+  }
+
   const response = await fetch(launchEndpoint, {
     method: 'POST',
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
+      Authorization: `Bearer ${backendAccessToken}`
     },
     body: JSON.stringify(request)
   });
@@ -312,12 +326,17 @@ export async function saveCampaignDraftThroughBackend(
     throw new Error('Missing VITE_ESCROW_LAUNCH_ENDPOINT. Configure the trusted backend endpoint for campaign drafts.');
   }
 
+  const backendAccessToken = await getBackendAccessToken(accessToken);
+  if (!backendAccessToken) {
+    throw new Error('Missing auth session. Please refresh and sign in again.');
+  }
+
   const response = await fetch(draftEndpoint, {
     method: 'POST',
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
+      Authorization: `Bearer ${backendAccessToken}`
     },
     body: JSON.stringify({ campaign, draftCampaignId })
   });
