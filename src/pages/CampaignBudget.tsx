@@ -431,9 +431,9 @@ export default function CampaignBudget() {
                       required
                       checked={agreed}
                       onChange={(e) => setAgreed(e.target.checked)}
-                      className="peer appearance-none w-5 h-5 rounded border border-white/20 bg-black/50 checked:bg-cyan checked:border-cyan transition-colors"
+                      className="peer appearance-none w-5 h-5 rounded-full border border-white/20 bg-transparent checked:bg-cyan checked:border-cyan transition-colors duration-200"
                     />
-                    <svg className="absolute inset-0 m-auto w-3 h-3 text-black opacity-0 peer-checked:opacity-100 pointer-events-none" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <svg className="absolute inset-0 m-auto w-3 h-3 text-white opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity duration-200" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M1 5L4.5 8.5L13 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </div>
