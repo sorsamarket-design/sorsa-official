@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Plus, Edit2, Megaphone, ExternalLink, Loader2, CheckCircle2 } from 'lucide-react';
+import { Plus, Edit2, Megaphone, ExternalLink, Loader2, ToggleLeft, ToggleRight } from 'lucide-react';
 import BrandSidebar from '../components/BrandSidebar';
 import TopBar from '../components/TopBar';
 import { XLogo } from '../components/XLogo';
@@ -89,7 +89,7 @@ export default function BrandProfiles() {
                       className="w-16 h-16 rounded-2xl object-cover border border-white/20 shadow-lg"
                       referrerPolicy="no-referrer"
                     />
-                    <div className="min-w-0">
+                    <div className="min-w-0 pr-12 md:pr-0">
                       <h3 className="truncate text-xl font-semibold text-white tracking-tight">{profile.company_name}</h3>
                       <div className="flex flex-col gap-1 mt-1">
                         {profile.twitter_handle && (
@@ -106,21 +106,24 @@ export default function BrandProfiles() {
                         )}
                       </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => selectProfile(profile.id)}
+                      aria-pressed={selectedProfileId === profile.id}
+                      aria-label={`${selectedProfileId === profile.id ? 'Current profile' : 'Use'} ${profile.company_name}`}
+                      className="absolute right-0 top-0 inline-flex h-10 w-10 items-center justify-center rounded-xl text-muted transition-colors hover:bg-white/5 md:hidden"
+                    >
+                      {selectedProfileId === profile.id ? (
+                        <ToggleRight className="h-8 w-8 text-[#5ac8f5]" />
+                      ) : (
+                        <ToggleLeft className="h-8 w-8 text-[#6b6b7a]" />
+                      )}
+                    </button>
                   </div>
 
                   <p className="text-sm text-muted leading-relaxed mb-8 flex-1 relative z-10 line-clamp-3">
                     {profile.description}
                   </p>
-
-                  <button
-                    type="button"
-                    onClick={() => selectProfile(profile.id)}
-                    disabled={selectedProfileId === profile.id}
-                    className={`relative z-10 mb-3 flex w-full items-center justify-center gap-2 rounded-full py-2.5 text-sm font-semibold transition-colors md:hidden ${selectedProfileId === profile.id ? 'border border-green-500/30 bg-green-500/10 text-green-300' : 'bg-cyan text-black hover:bg-cyan/90'}`}
-                  >
-                    {selectedProfileId === profile.id && <CheckCircle2 className="h-4 w-4" />}
-                    {selectedProfileId === profile.id ? 'Current' : 'Use'}
-                  </button>
 
                   <div className="grid grid-cols-2 gap-3 relative z-10 mt-auto">
                     <button 
