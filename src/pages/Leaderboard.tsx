@@ -10,11 +10,12 @@ import CreatorAvatar from '../components/CreatorAvatar';
 const appleEase = [0.16, 1, 0.3, 1] as const;
 
 type SortType = 'sorsaScore' | 'points' | 'campaignsCompleted';
-const MOBILE_PAGE_SIZE = 20;
+const LEADERBOARD_PAGE_SIZE = 20;
 
 export default function Leaderboard() {
   const [activeSort, setActiveSort] = useState<SortType>('sorsaScore');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [mobilePage, setMobilePage] = useState(1);
+  const [desktopPage, setDesktopPage] = useState(1);
   const listTopRef = useRef<HTMLDivElement | null>(null);
   const { leaderboard, loading, currentUserId } = useLeaderboard();
 
@@ -24,39 +25,71 @@ export default function Leaderboard() {
 
   const top3 = sortedLeaderboard.slice(0, 3);
   const rest = sortedLeaderboard.slice(3);
-  const totalPages = Math.max(1, Math.ceil(sortedLeaderboard.length / MOBILE_PAGE_SIZE));
+  const mobileTotalPages = Math.max(1, Math.ceil(sortedLeaderboard.length / LEADERBOARD_PAGE_SIZE));
+  const desktopTotalPages = Math.max(1, Math.ceil(rest.length / LEADERBOARD_PAGE_SIZE));
   const mobilePageItems = useMemo(() => {
-    const pageStart = (currentPage - 1) * MOBILE_PAGE_SIZE;
+    const pageStart = (mobilePage - 1) * LEADERBOARD_PAGE_SIZE;
 
     return sortedLeaderboard
-      .slice(pageStart, pageStart + MOBILE_PAGE_SIZE)
+      .slice(pageStart, pageStart + LEADERBOARD_PAGE_SIZE)
       .map((creator, index) => ({
         creator,
         rank: pageStart + index + 1,
       }))
       .filter(({ rank }) => rank > 3);
-  }, [currentPage, sortedLeaderboard]);
+  }, [mobilePage, sortedLeaderboard]);
+
+  const desktopPageItems = useMemo(() => {
+    const pageStart = (desktopPage - 1) * LEADERBOARD_PAGE_SIZE;
+
+    return rest
+      .slice(pageStart, pageStart + LEADERBOARD_PAGE_SIZE)
+      .map((creator, index) => ({
+        creator,
+        rank: pageStart + index + 4,
+      }));
+  }, [desktopPage, rest]);
 
   useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages);
+    if (mobilePage > mobileTotalPages) {
+      setMobilePage(mobileTotalPages);
     }
-  }, [currentPage, totalPages]);
+  }, [mobilePage, mobileTotalPages]);
+
+  useEffect(() => {
+    if (desktopPage > desktopTotalPages) {
+      setDesktopPage(desktopTotalPages);
+    }
+  }, [desktopPage, desktopTotalPages]);
 
   const handleSortChange = (sort: SortType) => {
     setActiveSort(sort);
-    setCurrentPage(1);
+    setMobilePage(1);
+    setDesktopPage(1);
   };
 
-  const goToPage = (page: number) => {
-    const nextPage = Math.min(Math.max(page, 1), totalPages);
-
-    if (nextPage === currentPage) return;
-
-    setCurrentPage(nextPage);
+  const scrollToListTop = () => {
     window.setTimeout(() => {
       listTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 0);
+  };
+
+  const goToMobilePage = (page: number) => {
+    const nextPage = Math.min(Math.max(page, 1), mobileTotalPages);
+
+    if (nextPage === mobilePage) return;
+
+    setMobilePage(nextPage);
+    scrollToListTop();
+  };
+
+  const goToDesktopPage = (page: number) => {
+    const nextPage = Math.min(Math.max(page, 1), desktopTotalPages);
+
+    if (nextPage === desktopPage) return;
+
+    setDesktopPage(nextPage);
+    scrollToListTop();
   };
 
   const getMedalColor = (index: number) => {
@@ -272,26 +305,26 @@ export default function Leaderboard() {
                       );
                     })}
                   </div>
-                  {totalPages > 1 && (
+                  {mobileTotalPages > 1 && (
                     <div className="md:hidden flex items-center justify-center gap-2 border-t border-white/10 p-3">
                       <button
                         type="button"
-                        onClick={() => goToPage(currentPage - 1)}
-                        disabled={currentPage === 1}
+                        onClick={() => goToMobilePage(mobilePage - 1)}
+                        disabled={mobilePage === 1}
                         aria-label="Previous leaderboard page"
                         className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-muted transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <ChevronLeft className="h-4 w-4" />
                       </button>
                       <div className="flex min-w-0 items-center gap-1 overflow-x-auto">
-                        {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+                        {Array.from({ length: mobileTotalPages }, (_, index) => index + 1).map((page) => (
                           <button
                             key={page}
                             type="button"
-                            onClick={() => goToPage(page)}
-                            aria-current={currentPage === page ? 'page' : undefined}
+                            onClick={() => goToMobilePage(page)}
+                            aria-current={mobilePage === page ? 'page' : undefined}
                             className={`h-8 min-w-8 rounded-lg px-2 text-xs font-semibold tabular-nums transition-colors ${
-                              currentPage === page
+                              mobilePage === page
                                 ? 'bg-cyan text-black'
                                 : 'border border-white/10 bg-white/5 text-muted hover:text-white'
                             }`}
@@ -302,8 +335,8 @@ export default function Leaderboard() {
                       </div>
                       <button
                         type="button"
-                        onClick={() => goToPage(currentPage + 1)}
-                        disabled={currentPage === totalPages}
+                        onClick={() => goToMobilePage(mobilePage + 1)}
+                        disabled={mobilePage === mobileTotalPages}
                         aria-label="Next leaderboard page"
                         className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-muted transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
                       >
@@ -336,8 +369,7 @@ export default function Leaderboard() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-white/5">
-                        {rest.map((creator, index) => {
-                          const rank = index + 4; // Since top 3 are extracted
+                        {desktopPageItems.map(({ creator, rank }) => {
                           const isCurrentUser = creator.id === currentUserId;
 
                           return (
@@ -370,6 +402,50 @@ export default function Leaderboard() {
                         })}
                       </tbody>
                     </table>
+                    {desktopTotalPages > 1 && (
+                      <div className="flex items-center justify-between gap-4 border-t border-white/10 px-6 py-4">
+                        <p className="text-sm text-muted">
+                          Showing {(desktopPage - 1) * LEADERBOARD_PAGE_SIZE + 4}-{Math.min(desktopPage * LEADERBOARD_PAGE_SIZE + 3, sortedLeaderboard.length)} of {sortedLeaderboard.length}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => goToDesktopPage(desktopPage - 1)}
+                            disabled={desktopPage === 1}
+                            aria-label="Previous leaderboard page"
+                            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-muted transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </button>
+                          <div className="flex items-center gap-1">
+                            {Array.from({ length: desktopTotalPages }, (_, index) => index + 1).map((page) => (
+                              <button
+                                key={page}
+                                type="button"
+                                onClick={() => goToDesktopPage(page)}
+                                aria-current={desktopPage === page ? 'page' : undefined}
+                                className={`h-9 min-w-9 rounded-lg px-3 text-sm font-semibold tabular-nums transition-colors ${
+                                  desktopPage === page
+                                    ? 'bg-cyan text-black'
+                                    : 'border border-white/10 bg-white/5 text-muted hover:text-white'
+                                }`}
+                              >
+                                {page}
+                              </button>
+                            ))}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => goToDesktopPage(desktopPage + 1)}
+                            disabled={desktopPage === desktopTotalPages}
+                            aria-label="Next leaderboard page"
+                            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-muted transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               )}
