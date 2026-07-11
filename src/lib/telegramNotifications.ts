@@ -16,6 +16,7 @@ export type TelegramStatus = {
 
 export type BrandTelegramGroup = {
   chat_id: string;
+  brand_profile_id?: string | null;
   chat_type?: string | null;
   title?: string | null;
   public_link?: string | null;
@@ -83,6 +84,18 @@ const telegramNotifications = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ brand_profile_id: brandProfileId, group_link: groupLink })
+    }, accessToken);
+  },
+
+  listAdminGroups(accessToken?: string): Promise<{ groups: BrandTelegramGroup[]; botUsername?: string | null }> {
+    return request('/admin/telegram-groups', {}, accessToken);
+  },
+
+  verifyAdminGroup(groupLink: string, accessToken?: string): Promise<{ group: BrandTelegramGroup; botUsername?: string | null }> {
+    return request('/admin/telegram-groups/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ group_link: groupLink })
     }, accessToken);
   }
 };

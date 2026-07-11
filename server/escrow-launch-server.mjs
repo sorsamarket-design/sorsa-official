@@ -1168,6 +1168,38 @@ async function verifyBrandTelegramGroupSetup(brandProfileId, groupLink) {
   return config;
 }
 
+async function verifyAdminTelegramGroupSetup(groupLink) {
+  const group = parsePublicTelegramGroupReference(groupLink);
+  let chat;
+  try {
+    chat = await telegramRequest('getChat', { chat_id: group.chatRef });
+  } catch (error) {
+    throw mapTelegramVerificationError(error, group.chatRef);
+  }
+
+  if (!['group', 'supergroup'].includes(String(chat?.type || '').toLowerCase())) {
+    throw Object.assign(new Error('Connect a public Telegram group. Channels are not supported for raffle join tasks.'), { status: 400 });
+  }
+
+  let botMember;
+  try {
+    botMember = await telegramRequest('getChatMember', {
+      chat_id: chat.id,
+      user_id: env.TELEGRAM_BOT_TOKEN.split(':')[0]
+    });
+  } catch (error) {
+    throw mapTelegramVerificationError(error, String(chat?.id || group.chatRef));
+  }
+
+  const config = await upsertTelegramGroupConfigFromChatMember(chat, botMember, null, {
+    public_link: group.publicLink
+  });
+  if (config?.bot_permission_status !== 'configured') {
+    throw Object.assign(new Error('The AtlasReach bot must be an admin in this Telegram group.'), { status: 403 });
+  }
+  return config;
+}
+
 async function verifyTelegramChatConfigured(chatId) {
   if (!env.TELEGRAM_BOT_TOKEN) {
     throw Object.assign(new Error('Telegram bot is not configured'), { status: 500 });
@@ -2541,6 +2573,55 @@ app.post('/admin/telegram-groups/status', async (req, res) => {
   } catch (error) {
     const status = error.status || 500;
     return res.status(status).json({ error: error.message || 'Telegram group status could not be loaded' });
+  }
+});
+
+app.get('/admin/telegram-groups', async (req, res) => {
+  try {
+    const user = await authenticate(req);
+    await assertAdmin(user.id);
+    const { data, error } = await supabase
+      .from('telegram_group_configs')
+      .select('chat_id, brand_profile_id, chat_type, title, public_link, bot_status, bot_permission_status, last_error, last_seen_at, updated_at')
+      .is('brand_profile_id', null)
+      .order('updated_at', { ascending: false })
+      .limit(20);
+    if (error) throw Object.assign(new Error(error.message), { status: 500 });
+
+    const groups = [];
+    for (const row of data || []) {
+      groups.push(await refreshTelegramGroupConfig(row));
+    }
+    return res.json({ groups, botUsername: env.TELEGRAM_BOT_USERNAME || null });
+  } catch (error) {
+    const status = error.status || 500;
+    return res.status(status).json({ error: error.message || 'Telegram groups could not be loaded' });
+  }
+});
+
+app.post('/admin/telegram-groups/verify', async (req, res) => {
+  try {
+    const user = await authenticate(req);
+    await assertAdmin(user.id);
+    const groupLink = String(req.body?.group_link || '').trim();
+    const group = await verifyAdminTelegramGroupSetup(groupLink);
+    return res.json({
+      group: {
+        chat_id: group.chat_id,
+        chat_type: group.chat_type,
+        title: group.title,
+        public_link: group.public_link,
+        bot_status: group.bot_status,
+        bot_permission_status: group.bot_permission_status,
+        last_error: group.last_error,
+        last_seen_at: group.last_seen_at,
+        updated_at: group.updated_at
+      },
+      botUsername: env.TELEGRAM_BOT_USERNAME || null
+    });
+  } catch (error) {
+    const status = error.status || 500;
+    return res.status(status).json({ error: error.message || 'Telegram group setup could not be verified' });
   }
 });
 

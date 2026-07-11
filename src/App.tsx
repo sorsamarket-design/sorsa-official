@@ -20,6 +20,7 @@ import AdminNFTApprovals from './pages/AdminNFTApprovals';
 import AdminNFTSubmissions from './pages/AdminNFTSubmissions';
 import AdminApprovals from './pages/AdminApprovals';
 import AdminTickets from './pages/AdminTickets';
+import AdminBotConfiguration from './pages/AdminBotConfiguration';
 import AdminLogin from './pages/AdminLogin';
 import CreatorProfile from './pages/CreatorProfile';
 import CreatorBrowse from './pages/CreatorBrowse';
@@ -109,6 +110,7 @@ function RouteLayout() {
         <Route path="/admin/raffles" element={<ProtectedRoute requiredRole="admin"><AdminRaffles /></ProtectedRoute>} />
         <Route path="/admin/raffles/:id" element={<ProtectedRoute requiredRole="admin"><AdminRaffles /></ProtectedRoute>} />
         <Route path="/admin/campaigns/new" element={<ProtectedRoute requiredRole="admin"><AdminNFTCampaignNew /></ProtectedRoute>} />
+        <Route path="/admin/bot-configuration" element={<ProtectedRoute requiredRole="admin"><AdminBotConfiguration /></ProtectedRoute>} />
         <Route path="/admin/approvals" element={<ProtectedRoute requiredRole="admin"><AdminApprovals /></ProtectedRoute>} />
         <Route path="/admin/nft-approvals" element={<ProtectedRoute requiredRole="admin"><AdminNFTApprovals /></ProtectedRoute>} />
         <Route path="/admin/nft-submissions" element={<ProtectedRoute requiredRole="admin"><AdminNFTSubmissions /></ProtectedRoute>} />

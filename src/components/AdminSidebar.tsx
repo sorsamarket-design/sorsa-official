@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { FileText, Inbox, LayoutDashboard, LogOut, Megaphone, PlusCircle, ShieldCheck, Sparkles, Ticket, X } from 'lucide-react';
+import { Bot, FileText, Inbox, LayoutDashboard, LogOut, Megaphone, PlusCircle, ShieldCheck, Sparkles, Ticket, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
 
@@ -28,6 +28,7 @@ export default function AdminSidebar() {
     { icon: Megaphone, label: 'Campaigns', path: '/admin/campaigns' },
     { icon: Ticket, label: 'Raffle', path: '/admin/raffles' },
     { icon: PlusCircle, label: 'Create Campaign', path: '/admin/campaigns/new' },
+    { icon: Bot, label: 'Bot Configuration', path: '/admin/bot-configuration' },
     { icon: ShieldCheck, label: 'Approvals', path: '/admin/approvals' },
     { icon: Sparkles, label: 'NFT Approvals', path: '/admin/nft-approvals' },
     { icon: FileText, label: 'NFT Submissions', path: '/admin/nft-submissions' },
