@@ -79,6 +79,10 @@ function RouteLayout() {
 
   return (
     <div className={routeFrameClassName}>
+      {/* Paints the strip behind the iOS status bar while scrolled - see
+          .statusbar-cap in index.css for why this must be a sticky element
+          in the scroll flow rather than part of the fixed topbars. */}
+      <div aria-hidden="true" className="statusbar-cap" />
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />

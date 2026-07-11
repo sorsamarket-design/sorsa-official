@@ -139,24 +139,35 @@ body::before {
     padding-top: env(safe-area-inset-top);
   }
 
-  /* In regular (non-standalone) iOS Safari, env(safe-area-inset-top) is 0, yet
-     scrolling collapses the browser toolbar and lets page content slide up
-     behind the status bar - above these fixed top-0 bars, which are pinned to
-     the top of the layout viewport, not the screen. This paints a solid cap
-     extending upward from each bar so that strip always shows the app
-     background instead of scrolled content. pointer-events: none keeps the
-     (offscreen) cap from ever swallowing taps. */
-  .app-topbar::before,
-  .creator-page-controls::before,
-  .admin-page-controls::before {
+  /* Once the page has scrolled, iOS Safari 26 fills the strip behind the
+     status bar by compositing real page pixels from the scroll layer - the
+     content just above the viewport. position: fixed elements are not part
+     of the scroll layer (a first attempt at capping this bleed with a
+     ::before extending up from the fixed topbars painted nothing there), but
+     position: sticky elements are. This zero-height sticky (rendered once in
+     App.tsx's RouteLayout, at the top of the scroll flow) pins to the
+     viewport top and paints a solid block upward, so the pixels Safari
+     composites behind the status bar are always the app background instead
+     of scrolled content. z-index lifts it above page content in the scroll
+     layer; the fixed topbars (z-45) still win inside the viewport, and the
+     block itself is entirely above the viewport so it is never visible
+     directly. */
+  .statusbar-cap {
+    position: sticky;
+    top: 0;
+    height: 0;
+    z-index: 44;
+    pointer-events: none;
+  }
+
+  .statusbar-cap::before {
     content: '';
     position: absolute;
     left: 0;
     right: 0;
-    bottom: 100%;
-    height: 100vh;
+    bottom: 0;
+    height: 150px;
     background: #0A0A1E;
-    pointer-events: none;
   }
 
   /* Same reasoning as above but for the bottom edge: the mobile sidebar drawers
@@ -570,11 +581,21 @@ body::before {
     padding-top: calc(4.625rem + env(safe-area-inset-top));
   }
 
-  html,
+  html {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  /* clip instead of hidden: same horizontal clipping, but hidden would turn
+     body/#root into scroll containers, which would capture the .statusbar-cap
+     sticky below - it must pin against the document viewport, the thing that
+     actually scrolls. Older engines without overflow: clip fall back to
+     hidden (the cap is a Safari-26-only concern anyway). */
   body,
   #root {
     max-width: 100%;
     overflow-x: hidden;
+    overflow-x: clip;
   }
 
   .app-sidebar {
