@@ -11,7 +11,7 @@ export default function CreatorTopBar({ embedded = false }: CreatorTopBarProps) 
 
   return (
     <div
-      className={`creator-page-controls fixed inset-x-0 top-0 z-40 h-16 bg-[#0A0A1E] md:hidden ${
+      className={`creator-page-controls fixed inset-x-0 top-0 z-[45] h-16 bg-[#0A0A1E] md:hidden ${
         embedded ? '' : 'mx-auto'
       }`}
     >
