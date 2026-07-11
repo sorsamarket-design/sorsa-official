@@ -50,9 +50,9 @@ const Navbar = () => {
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.8, ease: appleEase }}
-      className={`landing-navbar fixed top-0 left-0 right-0 z-50 transition-all duration-500 flex justify-center ${isScrolled ? 'py-4 px-4' : 'py-6 px-6'}`}
+      className={`landing-navbar fixed top-0 left-0 right-0 z-50 bg-black transition-all duration-500 flex justify-center ${isScrolled ? 'py-4 px-4' : 'py-6 px-6'}`}
     >
-      <div className={`transition-all duration-500 w-full max-w-7xl mx-auto flex items-center justify-between ${isScrolled ? 'bg-black/70 backdrop-blur-2xl border border-white/10 rounded-full py-3 px-6' : 'bg-transparent'}`}>
+      <div className={`transition-all duration-500 w-full max-w-7xl mx-auto flex items-center justify-between ${isScrolled ? 'bg-black backdrop-blur-2xl border border-white/10 rounded-full py-3 px-6' : 'bg-black'}`}>
         <a href="#top" aria-label="Back to top" className="-my-1.5 flex min-h-11 items-center gap-1.5 py-1.5 text-xl font-semibold tracking-tight text-white">
           <img src="/AtlasReachIcon.png" alt="Logo" className="h-3.5 w-auto shrink-0 object-contain" />
           <div>AtlasReach</div>
@@ -84,7 +84,7 @@ const Navbar = () => {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 right-0 bg-[#050505]/95 backdrop-blur-3xl border-b border-white/10 p-6 flex flex-col space-y-4 mt-2 rounded-b-3xl">
+        <div className="md:hidden absolute top-full left-0 right-0 bg-[#050505] backdrop-blur-3xl border-b border-white/10 p-6 flex flex-col space-y-4 mt-2 rounded-b-3xl">
           <a href="#how-it-works" className="text-white font-medium" onClick={() => setMobileMenuOpen(false)}>How It Works</a>
           <a href="#for-brands" className="text-white font-medium" onClick={() => setMobileMenuOpen(false)}>For Brands</a>
           <a href="#for-creators" className="text-white font-medium" onClick={() => setMobileMenuOpen(false)}>For Creators</a>

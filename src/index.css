@@ -93,7 +93,7 @@ body::before {
 
 .app-topbar-glass {
   background:
-    linear-gradient(90deg, rgba(10, 10, 30, 0.97), rgba(10, 10, 30, 0.9)) !important;
+    linear-gradient(90deg, #0A0A1E, #0A0A1E) !important;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   box-shadow:
