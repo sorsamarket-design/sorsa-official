@@ -66,7 +66,11 @@ export default function BrandAuthCallback() {
             .from('profiles')
             .update({
               full_name: fullName,
-              avatar_url: avatarUrl,
+              // Only overwrite avatar_url when this session's OAuth metadata
+              // actually included one - the provider omitting it intermittently
+              // (missing scope/consent, provider hiccup) shouldn't wipe out a
+              // previously-good avatar on every subsequent login.
+              ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
               updated_at: new Date().toISOString(),
             })
             .eq('id', user.id);

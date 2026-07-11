@@ -1,7 +1,7 @@
 import React from 'react';
 import { getInitialsAvatarUrl, normalizeAvatarUrl } from '../lib/avatars';
 
-type CreatorAvatarProps = React.ImgHTMLAttributes<HTMLImageElement> & {
+type CreatorAvatarProps = Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'src' | 'name'> & {
   src?: string | null;
   name?: string | null;
 };

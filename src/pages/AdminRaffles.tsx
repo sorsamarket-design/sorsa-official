@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { AlertCircle, ArrowLeft, Calendar, Clock, Loader2, Sparkles, Star, Ticket, Users } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Calendar, Clock, Download, Loader2, Sparkles, Star, Ticket, Users } from 'lucide-react';
 import AdminSidebar from '../components/AdminSidebar';
 import AdminTopBar from '../components/AdminTopBar';
 import LinkifiedText from '../components/LinkifiedText';
@@ -42,6 +42,19 @@ function nftCampaignStatusLabel(status?: string | null) {
   if (status === 'draft') return 'Live';
   if (status === 'completed') return 'Past';
   return status || 'Live';
+}
+
+function escapeCsvValue(value: string | number | null | undefined) {
+  const text = String(value ?? '');
+  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+function safeCsvFilename(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'raffle-winners';
 }
 
 export default function AdminRaffles() {
@@ -133,6 +146,25 @@ export default function AdminRaffles() {
     }
   };
 
+  const handleDownloadWinnersCsv = () => {
+    if (!campaign || winners.length === 0) return;
+
+    const headers = ['X Account', 'Wallet Address'];
+    const rows = winners.map((winner) => [
+      winner.x_account ? `@${winner.x_account.replace(/^@/, '')}` : '',
+      winner.wallet_address || ''
+    ]);
+    const csvLines = [headers, ...rows].map((row) => row.map(escapeCsvValue).join(','));
+    const blob = new Blob([`${csvLines.join('\n')}\n`], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${safeCsvFilename(campaign.title)}-winners.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] flex">
@@ -268,9 +300,21 @@ export default function AdminRaffles() {
               </div>
 
               <section className="glass-panel rounded-[2rem] overflow-hidden border border-white/10">
-                <div className="p-6 border-b border-white/10 flex items-center justify-between gap-4">
+                <div className="p-6 border-b border-white/10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <h2 className="text-xl font-semibold text-white">Raffle Results</h2>
-                  <span className="text-sm text-muted">{winners.length} selected</span>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="text-sm text-muted">{winners.length} selected</span>
+                    {winners.length ? (
+                      <button
+                        type="button"
+                        onClick={handleDownloadWinnersCsv}
+                        className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition-colors hover:border-purple-400/40 hover:bg-purple-500/10"
+                      >
+                        <Download className="h-4 w-4 text-purple-300" />
+                        Download CSV
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse whitespace-nowrap">

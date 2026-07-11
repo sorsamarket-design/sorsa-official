@@ -8,7 +8,8 @@ const appleEase = [0.16, 1, 0.3, 1] as const;
 
 import { useCreatorProfile } from '../hooks/useCreatorProfile';
 import { useAuth } from '../context/AuthContext';
-import { getInitialsAvatarUrl, normalizeAvatarUrl } from '../lib/avatars';
+import { resolveCreatorAvatarUrl } from '../lib/avatars';
+import CreatorAvatar from '../components/CreatorAvatar';
 import { getCreatorPastCampaignHistory, type CreatorCampaignHistoryItem } from '../lib/creatorCampaignHistory';
 
 export default function CreatorProfile() {
@@ -61,11 +62,11 @@ export default function CreatorProfile() {
             <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
               <div className="flex min-w-0 flex-1 flex-row items-start gap-4 md:gap-8">
                 <div className="relative shrink-0 group">
-                  <img
-                    src={normalizeAvatarUrl(profile?.avatar_url) || normalizeAvatarUrl(user?.user_metadata?.avatar_url) || getInitialsAvatarUrl(profile?.x_handle || 'Creator')}
+                  <CreatorAvatar
+                    src={resolveCreatorAvatarUrl(profile?.avatar_url, user?.user_metadata?.avatar_url)}
+                    name={profile?.x_handle || 'Creator'}
                     alt={profile?.full_name || profile?.x_handle || 'Creator'}
                     className="h-24 w-24 rounded-2xl border border-white/10 object-cover sm:h-32 sm:w-32 md:h-40 md:w-40"
-                    referrerPolicy="no-referrer"
                   />
                 </div>
 

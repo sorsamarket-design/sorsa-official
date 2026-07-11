@@ -15,7 +15,8 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useCreatorProfile } from '../hooks/useCreatorProfile';
 import { useLockBodyScroll } from '../hooks/useLockBodyScroll';
-import { getInitialsAvatarUrl, normalizeAvatarUrl } from '../lib/avatars';
+import { resolveCreatorAvatarUrl } from '../lib/avatars';
+import CreatorAvatar from './CreatorAvatar';
 
 const navigationGroups = [
   [
@@ -62,10 +63,7 @@ export default function CreatorSidebar() {
     user?.user_metadata?.full_name ||
     'Creator';
   const displayHandle = handle.startsWith('@') ? handle : `@${handle}`;
-  const avatar =
-    normalizeAvatarUrl(profile?.avatar_url) ||
-    normalizeAvatarUrl(user?.user_metadata?.avatar_url) ||
-    getInitialsAvatarUrl(handle);
+  const avatar = resolveCreatorAvatarUrl(profile?.avatar_url, user?.user_metadata?.avatar_url);
 
   return (
     <>
@@ -137,11 +135,11 @@ export default function CreatorSidebar() {
             onClick={() => navigate('/creator/profile')}
             className="app-profile-card flex w-full items-center gap-2.5 rounded-lg border border-white/10 bg-white/[0.035] p-2.5 text-left"
           >
-            <img
+            <CreatorAvatar
               src={avatar}
+              name={handle}
               alt="Creator"
               className="h-9 w-9 shrink-0 rounded-full border border-white/20 object-cover"
-              referrerPolicy="no-referrer"
             />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-white">{displayHandle}</p>

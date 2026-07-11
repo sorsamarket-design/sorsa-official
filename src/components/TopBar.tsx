@@ -3,7 +3,7 @@ import { ChevronDown, Bell, Menu, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useBrandProfiles } from '../hooks/useBrandProfiles';
-import { getInitialsAvatarUrl, normalizeAvatarUrl } from '../lib/avatars';
+import CreatorAvatar from './CreatorAvatar';
 
 export default function TopBar() {
   const { user } = useAuth();
@@ -26,7 +26,6 @@ export default function TopBar() {
   }, []);
 
   const toggleSidebar = () => document.dispatchEvent(new CustomEvent('toggleSidebar'));
-  const avatar = normalizeAvatarUrl(user?.user_metadata?.avatar_url) || getInitialsAvatarUrl(user?.email || 'User');
 
   return (
     <header className="app-topbar h-[4.625rem] fixed top-0 right-0 left-0 md:left-64 bg-[#0A0A1E] z-[45]">
@@ -100,7 +99,12 @@ export default function TopBar() {
           )}
         </div>
         <div className="hidden sm:block w-9 h-9 rounded-full bg-gradient-to-tr from-cyan to-blue-500 p-[1px] cursor-pointer hover:scale-105 transition-transform">
-          <img src={avatar} alt="User Avatar" className="w-full h-full rounded-full object-cover border-2 border-[#0A0A1E]" referrerPolicy="no-referrer" />
+          <CreatorAvatar
+            src={user?.user_metadata?.avatar_url}
+            name={user?.email || 'User'}
+            alt="User Avatar"
+            className="w-full h-full rounded-full object-cover border-2 border-[#0A0A1E]"
+          />
         </div>
       </div>
       </div>
