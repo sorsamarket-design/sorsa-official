@@ -124,6 +124,17 @@ body::before {
     height: calc(4rem + env(safe-area-inset-top));
   }
 
+
+  .app-topbar-glass,
+  .creator-topbar-glass,
+  .admin-topbar-glass {
+    background:
+      linear-gradient(180deg, rgba(14, 14, 38, 0.98), rgba(10, 10, 30, 0.96)),
+      #0A0A1E !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
   .landing-navbar {
     padding-top: env(safe-area-inset-top);
   }
