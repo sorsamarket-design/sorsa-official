@@ -26,7 +26,7 @@ export default function Leaderboard() {
   const top3 = sortedLeaderboard.slice(0, 3);
   const rest = sortedLeaderboard.slice(3);
   const mobileTotalPages = Math.max(1, Math.ceil(sortedLeaderboard.length / LEADERBOARD_PAGE_SIZE));
-  const desktopTotalPages = Math.max(1, Math.ceil(rest.length / LEADERBOARD_PAGE_SIZE));
+  const desktopTotalPages = mobileTotalPages;
   const mobilePageItems = useMemo(() => {
     const pageStart = (mobilePage - 1) * LEADERBOARD_PAGE_SIZE;
 
@@ -42,13 +42,14 @@ export default function Leaderboard() {
   const desktopPageItems = useMemo(() => {
     const pageStart = (desktopPage - 1) * LEADERBOARD_PAGE_SIZE;
 
-    return rest
+    return sortedLeaderboard
       .slice(pageStart, pageStart + LEADERBOARD_PAGE_SIZE)
       .map((creator, index) => ({
         creator,
-        rank: pageStart + index + 4,
-      }));
-  }, [desktopPage, rest]);
+        rank: pageStart + index + 1,
+      }))
+      .filter(({ rank }) => rank > 3);
+  }, [desktopPage, sortedLeaderboard]);
 
   useEffect(() => {
     if (mobilePage > mobileTotalPages) {
