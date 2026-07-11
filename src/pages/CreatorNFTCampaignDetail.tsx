@@ -283,7 +283,7 @@ export default function CreatorNFTCampaignDetail() {
             <div className="glass-panel min-w-0 rounded-2xl border border-white/10 p-2 sm:p-5">
               <Clock className="mb-2 h-4 w-4 text-cyan sm:mb-3 sm:h-5 sm:w-5" />
               <div className="text-[0.6rem] leading-tight text-muted sm:text-sm">Time Left</div>
-              <div className="break-words text-[0.85rem] font-bold leading-tight text-white sm:text-2xl sm:font-semibold">
+              <div className="whitespace-nowrap text-[0.68rem] font-bold leading-tight text-white tabular-nums sm:text-lg sm:font-semibold lg:text-base xl:text-lg">
                 {formatCampaignCountdown(campaign.end_date, now)}
               </div>
             </div>

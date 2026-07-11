@@ -685,6 +685,11 @@ function normalizeNftCampaignBody(body, userId, brandProfile) {
   if (allocationType === 'wl' && budget <= 0) throw Object.assign(new Error('Total WL is required when WL is selected'), { status: 400 });
   if (allocationType === 'gtd' && totalGtd <= 0) throw Object.assign(new Error('Total GTD is required when GTD is selected'), { status: 400 });
   if (allocationType === 'fcfs' && totalFcfs <= 0) throw Object.assign(new Error('Total FCFS is required when FCFS is selected'), { status: 400 });
+  const selectedAllocationTotal = allocationType === 'gtd'
+    ? totalGtd
+    : allocationType === 'fcfs'
+      ? totalFcfs
+      : budget;
   const nftMetadata = {
     nft: true,
     image_url: imageUrl,
@@ -711,9 +716,9 @@ function normalizeNftCampaignBody(body, userId, brandProfile) {
     language: JSON.stringify(nftMetadata),
     categories: Array.isArray(campaign.categories) ? campaign.categories : ['NFT'],
     overview,
-    budget,
+    budget: selectedAllocationTotal,
     platform_fee: 0,
-    net_budget: budget,
+    net_budget: selectedAllocationTotal,
     status: 'draft',
     start_date: campaign.start_date || null,
     end_date: campaign.end_date || null,

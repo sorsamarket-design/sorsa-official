@@ -210,7 +210,7 @@ export default function AdminNFTSubmissions() {
                 <div className="glass-panel rounded-2xl p-5 border border-white/10">
                   <Calendar className="w-5 h-5 text-purple-300 mb-3" />
                   <div className="text-sm text-muted">Time Left</div>
-                  <div className="text-2xl font-semibold text-white">{formatCampaignCountdown(campaign.end_date, now)}</div>
+                  <div className="whitespace-nowrap text-lg font-semibold text-white tabular-nums">{formatCampaignCountdown(campaign.end_date, now)}</div>
                 </div>
               </div>
 

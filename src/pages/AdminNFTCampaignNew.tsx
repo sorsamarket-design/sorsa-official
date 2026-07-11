@@ -376,13 +376,19 @@ export default function AdminNFTCampaignNew() {
         }
       }
 
+      const selectedAllocationTotal = formData.allocation_type === 'gtd'
+        ? Number(formData.total_gtd || 0)
+        : formData.allocation_type === 'fcfs'
+          ? Number(formData.total_fcfs || 0)
+          : Number(formData.budget || 0);
+
       await createNftCampaign({
         title: formData.title.trim(),
         goal: formData.goal.trim(),
         campaign_type: campaignType,
         overview: formData.overview.trim(),
         categories: ['NFT'],
-        budget: Number(formData.budget || 0),
+        budget: selectedAllocationTotal,
         allocation_type: formData.allocation_type as 'wl' | 'gtd' | 'fcfs',
         total_gtd: Number(formData.total_gtd || 0),
         total_fcfs: Number(formData.total_fcfs || 0),
