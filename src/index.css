@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg: #000000;
+  --color-bg: #0A0A1E;
   --color-surface: #0a0a0a;
   --color-surface-glass: rgba(255, 255, 255, 0.03);
   --color-cyan: #00D4FF;
@@ -13,6 +13,7 @@
 }
 
 html {
+  background-color: var(--color-bg);
   scroll-behavior: smooth;
   scroll-padding-top: 112px;
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
