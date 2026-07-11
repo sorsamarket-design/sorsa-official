@@ -43,7 +43,8 @@ const env = {
   PAYOUT_POLL_INTERVAL_SECONDS: process.env.PAYOUT_POLL_INTERVAL_SECONDS || '300',
   PAYOUT_MAX_PAYMENTS_PER_TX: process.env.PAYOUT_MAX_PAYMENTS_PER_TX || '50',
   SUBMISSION_WINDOW_NOTIFICATIONS_ENABLED: process.env.SUBMISSION_WINDOW_NOTIFICATIONS_ENABLED !== 'false',
-  SUBMISSION_WINDOW_POLL_INTERVAL_SECONDS: process.env.SUBMISSION_WINDOW_POLL_INTERVAL_SECONDS || '300'
+  SUBMISSION_WINDOW_POLL_INTERVAL_SECONDS: process.env.SUBMISSION_WINDOW_POLL_INTERVAL_SECONDS || '300',
+  NFT_X_TASK_VERIFICATION_BYPASS_ENABLED: process.env.NFT_X_TASK_VERIFICATION_BYPASS_ENABLED !== 'false'
 };
 
 const requiredEnv = [
@@ -3347,6 +3348,7 @@ app.post('/nft-campaigns/:campaignId/verify-task', async (req, res) => {
     if (!creatorHandle) {
       throw Object.assign(new Error('Add your X handle to your creator profile before verifying tasks'), { status: 403 });
     }
+
     if (taskType === 'follow') {
       const targetAccount = cleanHandle(taskValue);
       const requiredFollowAccounts = Array.isArray(nftCampaign.follow_accounts)
@@ -3354,6 +3356,9 @@ app.post('/nft-campaigns/:campaignId/verify-task', async (req, res) => {
         : [];
       if (!requiredFollowAccounts.includes(targetAccount)) {
         throw Object.assign(new Error('This follow task is not part of the campaign'), { status: 400 });
+      }
+      if (env.NFT_X_TASK_VERIFICATION_BYPASS_ENABLED) {
+        return res.json({ verified: true, type: 'follow', value: targetAccount, bypassed: true });
       }
 
       const followResult = await callSorsa('/check-follow', {
@@ -3380,6 +3385,9 @@ app.post('/nft-campaigns/:campaignId/verify-task', async (req, res) => {
       if (!requiredCommentLinks.includes(tweetLink)) {
         throw Object.assign(new Error('This Like & Comment task is not part of the campaign'), { status: 400 });
       }
+      if (env.NFT_X_TASK_VERIFICATION_BYPASS_ENABLED) {
+        return res.json({ verified: true, type: 'comment', value: tweetLink, bypassed: true });
+      }
 
       const commented = await verifySorsaComment(tweetLink, creatorHandle);
       if (!commented) {
@@ -3396,6 +3404,9 @@ app.post('/nft-campaigns/:campaignId/verify-task', async (req, res) => {
         : [];
       if (!requiredEngagementLinks.includes(tweetLink)) {
         throw Object.assign(new Error('This Like, Retweet & Comment task is not part of the campaign'), { status: 400 });
+      }
+      if (env.NFT_X_TASK_VERIFICATION_BYPASS_ENABLED) {
+        return res.json({ verified: true, type: 'engagement', value: tweetLink, bypassed: true });
       }
 
       const [retweeted, commented] = await Promise.all([
@@ -3415,6 +3426,9 @@ app.post('/nft-campaigns/:campaignId/verify-task', async (req, res) => {
       : [];
     if (!requiredRetweetLinks.includes(tweetLink)) {
       throw Object.assign(new Error('This Like & Retweet task is not part of the campaign'), { status: 400 });
+    }
+    if (env.NFT_X_TASK_VERIFICATION_BYPASS_ENABLED) {
+      return res.json({ verified: true, type: 'retweet', value: tweetLink, bypassed: true });
     }
 
     const retweeted = await verifySorsaRetweet(tweetLink, creatorHandle);
@@ -3461,6 +3475,10 @@ app.post('/nft-campaigns/:campaignId/join', async (req, res) => {
     }
 
     const nftCampaign = withNftCampaignMetadata(campaign);
+    if (isNftRaffleType(campaign.campaign_type) && !cleanHandle(creator.x_handle)) {
+      throw Object.assign(new Error('Add your X handle to your creator profile before joining this NFT raffle'), { status: 403 });
+    }
+
     const { data: existing, error: existingError } = await supabase
       .from('campaign_participants')
       .select('id, status, joined_at')
@@ -3477,6 +3495,7 @@ app.post('/nft-campaigns/:campaignId/join', async (req, res) => {
       throw Object.assign(new Error(`You need a Sorsa Score of at least ${requiredScore} to join this NFT campaign`), { status: 403 });
     }
 
+    const xTaskVerificationBypassed = env.NFT_X_TASK_VERIFICATION_BYPASS_ENABLED;
     const requiredFollowAccounts = Array.isArray(nftCampaign.follow_accounts)
       ? nftCampaign.follow_accounts.map((account) => cleanHandle(account)).filter(Boolean).slice(0, 3)
       : [];
@@ -3486,18 +3505,20 @@ app.post('/nft-campaigns/:campaignId/join', async (req, res) => {
         throw Object.assign(new Error('Add your X handle to your creator profile before joining this campaign'), { status: 403 });
       }
 
-      for (const account of requiredFollowAccounts) {
-        const followResult = await callSorsa('/check-follow', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            username_1: account,
-            username_2: creatorHandle
-          })
-        });
+      if (!xTaskVerificationBypassed) {
+        for (const account of requiredFollowAccounts) {
+          const followResult = await callSorsa('/check-follow', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              username_1: account,
+              username_2: creatorHandle
+            })
+          });
 
-        if (followResult?.follow !== true) {
-          throw Object.assign(new Error(`Follow @${account} on X before joining this NFT campaign`), { status: 403 });
+          if (followResult?.follow !== true) {
+            throw Object.assign(new Error(`Follow @${account} on X before joining this NFT campaign`), { status: 403 });
+          }
         }
       }
     }
@@ -3511,10 +3532,12 @@ app.post('/nft-campaigns/:campaignId/join', async (req, res) => {
         throw Object.assign(new Error('Add your X handle to your creator profile before joining this campaign'), { status: 403 });
       }
 
-      for (const tweetLink of requiredRetweetLinks) {
-        const retweeted = await verifySorsaRetweet(tweetLink, creatorHandle);
-        if (!retweeted) {
-          throw Object.assign(new Error('Like and retweet all required X posts before joining this NFT campaign'), { status: 403 });
+      if (!xTaskVerificationBypassed) {
+        for (const tweetLink of requiredRetweetLinks) {
+          const retweeted = await verifySorsaRetweet(tweetLink, creatorHandle);
+          if (!retweeted) {
+            throw Object.assign(new Error('Like and retweet all required X posts before joining this NFT campaign'), { status: 403 });
+          }
         }
       }
     }
@@ -3528,10 +3551,12 @@ app.post('/nft-campaigns/:campaignId/join', async (req, res) => {
         throw Object.assign(new Error('Add your X handle to your creator profile before joining this campaign'), { status: 403 });
       }
 
-      for (const tweetLink of requiredCommentLinks) {
-        const commented = await verifySorsaComment(tweetLink, creatorHandle);
-        if (!commented) {
-          throw Object.assign(new Error('Like and comment on all required X posts before joining this NFT campaign'), { status: 403 });
+      if (!xTaskVerificationBypassed) {
+        for (const tweetLink of requiredCommentLinks) {
+          const commented = await verifySorsaComment(tweetLink, creatorHandle);
+          if (!commented) {
+            throw Object.assign(new Error('Like and comment on all required X posts before joining this NFT campaign'), { status: 403 });
+          }
         }
       }
     }
@@ -3545,13 +3570,15 @@ app.post('/nft-campaigns/:campaignId/join', async (req, res) => {
         throw Object.assign(new Error('Add your X handle to your creator profile before joining this campaign'), { status: 403 });
       }
 
-      for (const tweetLink of requiredEngagementLinks) {
-        const [retweeted, commented] = await Promise.all([
-          verifySorsaRetweet(tweetLink, creatorHandle),
-          verifySorsaComment(tweetLink, creatorHandle)
-        ]);
-        if (!retweeted || !commented) {
-          throw Object.assign(new Error('Like, retweet, and comment on all required X posts before joining this NFT campaign'), { status: 403 });
+      if (!xTaskVerificationBypassed) {
+        for (const tweetLink of requiredEngagementLinks) {
+          const [retweeted, commented] = await Promise.all([
+            verifySorsaRetweet(tweetLink, creatorHandle),
+            verifySorsaComment(tweetLink, creatorHandle)
+          ]);
+          if (!retweeted || !commented) {
+            throw Object.assign(new Error('Like, retweet, and comment on all required X posts before joining this NFT campaign'), { status: 403 });
+          }
         }
       }
     }
