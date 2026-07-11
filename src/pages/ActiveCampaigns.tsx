@@ -66,6 +66,7 @@ export default function ActiveCampaigns() {
   return (
     <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] font-sans selection:bg-cyan/30 flex">
       <CreatorSidebar />
+      <CreatorTopBar embedded />
       <main className="creator-page-main flex-1 md:ml-64 p-4 md:p-8">
         <div className="max-w-5xl mx-auto space-y-8">
 
@@ -94,7 +95,6 @@ export default function ActiveCampaigns() {
 
             {/* Toggle */}
             <div className="flex items-center gap-4">
-              <CreatorTopBar embedded />
               <button
                 onClick={loadData}
                 className="p-2 rounded-xl bg-white/5 border border-white/10 text-muted hover:text-cyan transition-colors"

@@ -151,6 +151,7 @@ export default function CreatorSettings() {
   return (
     <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] font-sans selection:bg-cyan/30 flex">
       <CreatorSidebar />
+      <CreatorTopBar embedded />
       <main className="creator-page-main flex-1 md:ml-64 p-4 md:p-8">
         <div className="max-w-4xl mx-auto space-y-8">
           <div className="flex items-start justify-between gap-4">
@@ -162,7 +163,6 @@ export default function CreatorSettings() {
                 Manage your account preferences and connected services.
               </motion.p>
             </div>
-            <CreatorTopBar embedded />
           </div>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: appleEase, delay: 0.2 }} className="flex flex-col md:flex-row gap-8">

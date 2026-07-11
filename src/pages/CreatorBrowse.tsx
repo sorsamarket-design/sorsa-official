@@ -121,6 +121,7 @@ export default function CreatorBrowse() {
   return (
     <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] font-sans selection:bg-cyan/30 flex">
       <CreatorSidebar />
+      <CreatorTopBar embedded />
       <main className="creator-page-main flex-1 md:ml-64 p-4 md:p-8">
         <div className="max-w-7xl mx-auto space-y-8">
 
@@ -148,7 +149,6 @@ export default function CreatorBrowse() {
             </div>
 
             <div className="flex items-center gap-3 self-start md:self-center">
-              <CreatorTopBar embedded />
               {/* Toggle */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
