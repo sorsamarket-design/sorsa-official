@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { AlertCircle, ArrowLeft, Calendar, Clock, Download, Loader2, Sparkles, Star, Ticket, Users } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Calendar, Clock, ExternalLink, Loader2, Sparkles, Star, Ticket, Users } from 'lucide-react';
 import AdminSidebar from '../components/AdminSidebar';
 import AdminTopBar from '../components/AdminTopBar';
 import LinkifiedText from '../components/LinkifiedText';
@@ -44,19 +44,27 @@ function nftCampaignStatusLabel(status?: string | null) {
   return status || 'Live';
 }
 
-function escapeCsvValue(value: string | number | null | undefined) {
-  const text = String(value ?? '');
-  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+function formatSpreadsheetCell(value: string | number | null | undefined) {
+  return String(value ?? '').replace(/[\t\r\n]+/g, ' ').trim();
 }
 
-function safeCsvFilename(value: string) {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '') || 'raffle-winners';
-}
+async function copySpreadsheetText(text: string) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
 
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.setAttribute('readonly', 'true');
+  textarea.style.position = 'fixed';
+  textarea.style.left = '-9999px';
+  document.body.appendChild(textarea);
+  textarea.select();
+  const copied = document.execCommand('copy');
+  textarea.remove();
+  if (!copied) throw new Error('Clipboard copy failed');
+}
 export default function AdminRaffles() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -68,6 +76,7 @@ export default function AdminRaffles() {
   const [finalizedAt, setFinalizedAt] = useState<string | null>(null);
   const [finalizing, setFinalizing] = useState(false);
   const [finalizeError, setFinalizeError] = useState('');
+  const [sheetCopyStatus, setSheetCopyStatus] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'live' | 'past'>('live');
@@ -146,25 +155,29 @@ export default function AdminRaffles() {
     }
   };
 
-  const handleDownloadWinnersCsv = () => {
+  const handleOpenWinnersSpreadsheet = async () => {
     if (!campaign || winners.length === 0) return;
 
-    const headers = ['X Account', 'Wallet Address'];
-    const rows = winners.map((winner) => [
-      winner.x_account ? `@${winner.x_account.replace(/^@/, '')}` : '',
-      winner.wallet_address || ''
-    ]);
-    const csvLines = [headers, ...rows].map((row) => row.map(escapeCsvValue).join(','));
-    const blob = new Blob([`${csvLines.join('\n')}\n`], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${safeCsvFilename(campaign.title)}-winners.csv`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+    const rows = [
+      ['X Account', 'Wallet Address'],
+      ...winners.map((winner) => [
+        winner.x_account ? `@${winner.x_account.replace(/^@/, '')}` : '',
+        winner.wallet_address || ''
+      ])
+    ];
+    const spreadsheetText = rows.map((row) => row.map(formatSpreadsheetCell).join('\t')).join('\n');
+
+    const sheetWindow = window.open('https://sheets.new', '_blank', 'noopener,noreferrer');
+
+    try {
+      await copySpreadsheetText(spreadsheetText);
+      setSheetCopyStatus(sheetWindow ? 'Copied. Paste into the new Google Sheet.' : 'Copied. Open Google Sheets and paste.');
+      window.setTimeout(() => setSheetCopyStatus(''), 5000);
+    } catch {
+      setSheetCopyStatus('Could not copy automatically. Copy the X account and wallet columns manually.');
+    }
   };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] flex">
@@ -307,14 +320,15 @@ export default function AdminRaffles() {
                     {winners.length ? (
                       <button
                         type="button"
-                        onClick={handleDownloadWinnersCsv}
+                        onClick={handleOpenWinnersSpreadsheet}
                         className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition-colors hover:border-purple-400/40 hover:bg-purple-500/10"
                       >
-                        <Download className="h-4 w-4 text-purple-300" />
-                        Download CSV
+                        <ExternalLink className="h-4 w-4 text-purple-300" />
+                        Open Google Sheet
                       </button>
                     ) : null}
                   </div>
+                {sheetCopyStatus ? <p className="text-xs text-cyan sm:text-right">{sheetCopyStatus}</p> : null}
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse whitespace-nowrap">
