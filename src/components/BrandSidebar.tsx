@@ -80,7 +80,7 @@ export default function BrandSidebar() {
           })}
         </nav>
 
-        <div className="p-2.5 border-t border-white/10">
+        <div className="app-sidebar-footer p-2.5 border-t border-white/10">
           <div className="app-profile-card p-2.5 rounded-lg bg-white/[0.035] border border-white/10 flex items-center gap-2.5">
             <img
               src={user?.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.user_metadata?.full_name || user?.email || 'Brand User')}`}

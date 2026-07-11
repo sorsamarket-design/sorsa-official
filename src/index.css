@@ -112,6 +112,14 @@ body::before {
   .landing-navbar {
     padding-top: env(safe-area-inset-top);
   }
+
+  /* Same reasoning as above but for the bottom edge: the mobile sidebar drawers
+     are fixed h-screen panels with the profile card pinned to the bottom via
+     flexbox, so on devices with a home indicator that card would otherwise sit
+     flush against (or under) it. */
+  .app-sidebar-footer {
+    padding-bottom: calc(0.625rem + env(safe-area-inset-bottom));
+  }
 }
 
 /* Promotes these fixed bars to their own GPU compositing layer, same fix already

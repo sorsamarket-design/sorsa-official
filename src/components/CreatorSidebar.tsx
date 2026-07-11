@@ -131,7 +131,7 @@ export default function CreatorSidebar() {
           ))}
         </nav>
 
-        <div className="border-t border-white/10 p-2.5">
+        <div className="app-sidebar-footer border-t border-white/10 p-2.5">
           <button
             type="button"
             onClick={() => navigate('/creator/profile')}
