@@ -139,6 +139,26 @@ body::before {
     padding-top: env(safe-area-inset-top);
   }
 
+  /* In regular (non-standalone) iOS Safari, env(safe-area-inset-top) is 0, yet
+     scrolling collapses the browser toolbar and lets page content slide up
+     behind the status bar - above these fixed top-0 bars, which are pinned to
+     the top of the layout viewport, not the screen. This paints a solid cap
+     extending upward from each bar so that strip always shows the app
+     background instead of scrolled content. pointer-events: none keeps the
+     (offscreen) cap from ever swallowing taps. */
+  .app-topbar::before,
+  .creator-page-controls::before,
+  .admin-page-controls::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 100%;
+    height: 100vh;
+    background: #0A0A1E;
+    pointer-events: none;
+  }
+
   /* Same reasoning as above but for the bottom edge: the mobile sidebar drawers
      are fixed h-[100dvh] panels with the profile card pinned to the bottom via
      flexbox, so on devices with a home indicator that card would otherwise sit
