@@ -42,6 +42,7 @@ import Docs from './pages/Docs';
 import LegalPage from './pages/LegalPage';
 import NotFound from './pages/NotFound';
 import ProtectedRoute from './components/ProtectedRoute';
+import ScrollToTop from './components/ScrollToTop';
 import AuthCallback from './pages/AuthCallback';
 import BrandAuthCallback from './pages/BrandAuthCallback';
 import { useAuth } from './context/AuthContext';
@@ -145,6 +146,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <RouteLayout />
     </BrowserRouter>
   );
