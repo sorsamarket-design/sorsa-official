@@ -180,6 +180,20 @@ export type NftCampaign = NftCampaignPayload & {
   };
 };
 
+export type AdminRaffleListResult = {
+  campaigns: NftCampaign[];
+};
+
+export type AdminRaffleDetailResult = {
+  campaign: NftCampaign;
+  participants: any[];
+  stats: {
+    joined_count: number;
+    approved_count: number;
+    rejected_count: number;
+  };
+};
+
 export type RaffleWinner = {
   participant_id: string;
   creator_id: string;
@@ -283,7 +297,7 @@ export async function listCreatorNftParticipations() {
   }, '/nft-campaigns/mine');
 }
 
-export async function listAdminRaffles() {
+export async function listAdminRaffles(): Promise<AdminRaffleListResult> {
   return withBackendReadFallback(async () => {
     const supabase = requireSupabase();
     const { data, error } = await supabase
@@ -412,7 +426,7 @@ export async function updateAdminNftSubmissionStatus(id: string, status: 'approv
   });
 }
 
-export async function getAdminRaffle(id: string) {
+export async function getAdminRaffle(id: string): Promise<AdminRaffleDetailResult> {
   const path = `/admin/raffles/${encodeURIComponent(id)}`;
   return withBackendReadFallback(async () => {
     const supabase = requireSupabase();

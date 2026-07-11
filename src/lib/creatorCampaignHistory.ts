@@ -99,6 +99,6 @@ export async function getCreatorPastCampaignHistory(creatorId: string) {
 
   return (data || [])
     .map(withCampaignMetadata)
-    .filter(Boolean)
-    .filter(isPastCampaign) as CreatorCampaignHistoryItem[];
+    .filter((item): item is CreatorCampaignHistoryItem => Boolean(item))
+    .filter(isPastCampaign);
 }

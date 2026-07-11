@@ -5,9 +5,10 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 export const hasSupabaseConfig = Boolean(supabaseUrl && supabaseAnonKey);
 
+/** @type {import('@supabase/supabase-js').SupabaseClient} */
 export const supabase = hasSupabaseConfig
   ? createClient(supabaseUrl, supabaseAnonKey)
-  : null;
+  : /** @type {any} */ (null);
 
 export function requireSupabase() {
   if (!supabase) {

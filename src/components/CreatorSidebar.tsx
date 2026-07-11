@@ -79,7 +79,7 @@ export default function CreatorSidebar() {
       )}
 
       <aside
-        className={`app-sidebar creator-sidebar fixed left-0 top-0 z-50 flex h-screen w-64 flex-col border-r border-white/10 bg-[#0A0A1E] transition-transform duration-300 ${
+        className={`app-sidebar creator-sidebar fixed left-0 top-0 z-50 flex h-[100dvh] w-64 flex-col border-r border-white/10 bg-[#0A0A1E] transition-transform duration-300 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         } md:translate-x-0`}
       >
@@ -131,7 +131,7 @@ export default function CreatorSidebar() {
           ))}
         </nav>
 
-        <div className="border-t border-white/10 p-2.5">
+        <div className="app-sidebar-footer border-t border-white/10 p-2.5">
           <button
             type="button"
             onClick={() => navigate('/creator/profile')}

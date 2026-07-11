@@ -50,7 +50,7 @@ export default function AdminSidebar() {
         />
       )}
 
-      <aside className={`admin-sidebar w-64 h-screen bg-[#0A0A1E] border-r border-white/10 fixed left-0 top-0 flex flex-col z-50 transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
+      <aside className={`admin-sidebar w-64 h-[100dvh] bg-[#0A0A1E] border-r border-white/10 fixed left-0 top-0 flex flex-col z-50 transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
         <div className="h-16 px-4 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 bg-purple-500/20 border border-purple-500/20 rounded-lg flex items-center justify-center">
@@ -86,7 +86,7 @@ export default function AdminSidebar() {
           ))}
         </nav>
 
-        <div className="p-2.5 border-t border-white/10">
+        <div className="app-sidebar-footer p-2.5 border-t border-white/10">
           <div className="app-profile-card p-2.5 rounded-lg bg-white/[0.035] border border-white/10 flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-full bg-purple-500/20 flex items-center justify-center text-sm text-purple-400 font-bold">
               AD

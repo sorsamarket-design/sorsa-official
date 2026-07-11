@@ -2,6 +2,19 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { supabase, hasSupabaseConfig } from '../lib/supabase';
 import { destroyAppSession } from '../lib/appSession';
 
+/** @typedef {import('@supabase/supabase-js').User} SupabaseUser */
+/** @typedef {import('@supabase/supabase-js').Session} SupabaseSession */
+
+/**
+ * @typedef {Object} AuthContextValue
+ * @property {SupabaseUser | null} user
+ * @property {string | null} role
+ * @property {SupabaseSession | null} session
+ * @property {boolean} loading
+ * @property {() => Promise<void>} signOut
+ */
+
+/** @type {import('react').Context<AuthContextValue>} */
 const AuthContext = createContext({
   user: null,
   role: null,
@@ -11,9 +24,9 @@ const AuthContext = createContext({
 });
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [role, setRole] = useState(null);
-  const [session, setSession] = useState(null);
+  const [user, setUser] = useState(/** @type {SupabaseUser | null} */ (null));
+  const [role, setRole] = useState(/** @type {string | null} */ (null));
+  const [session, setSession] = useState(/** @type {SupabaseSession | null} */ (null));
   const [loading, setLoading] = useState(true);
   const userIdRef = useRef(null);
 

@@ -191,7 +191,7 @@ export default function CreatorNFTCampaignDetail() {
             <div className="w-full aspect-[3/1] bg-white/5 border-b border-white/10 relative overflow-hidden">
               {campaign.background_image_url || campaign.image_url ? (
                 <img
-                  src={campaign.background_image_url || campaign.image_url}
+                  src={(campaign.background_image_url || campaign.image_url) ?? undefined}
                   alt=""
                   className="w-full h-full object-cover"
                 />

@@ -63,27 +63,27 @@ export default function AdminRaffles() {
     setLoading(true);
     setError('');
 
-    const request = id ? getAdminRaffle(id) : listAdminRaffles();
-    request
-      .then((result) => {
-        if (!isMounted) return;
-        if (id) {
+    const request = id
+      ? getAdminRaffle(id).then((result) => {
+          if (!isMounted) return;
           setCampaign(result.campaign);
           setParticipants(result.participants || []);
           setStats(result.stats || { joined_count: 0, approved_count: 0, rejected_count: 0 });
           setWinners(result.campaign?.raffle_results || []);
           setFinalizedAt(result.campaign?.raffle_finalized_at || null);
-        } else {
+        })
+      : listAdminRaffles().then((result) => {
+          if (!isMounted) return;
           setCampaigns(result.campaigns || []);
-        }
-      })
+        });
+
+    request
       .catch((err) => {
         if (isMounted) setError(err.message || 'Raffle campaigns could not be loaded.');
       })
       .finally(() => {
         if (isMounted) setLoading(false);
       });
-
     return () => {
       isMounted = false;
     };
