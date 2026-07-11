@@ -4,7 +4,7 @@ export function getCampaignEndTime(endDate?: string | null) {
   if (!endDate) return null;
 
   if (DATE_ONLY_PATTERN.test(endDate)) {
-    return new Date(`${endDate}T23:59:59`).getTime();
+    return new Date(`${endDate}T23:59:59Z`).getTime();
   }
 
   const time = new Date(endDate).getTime();

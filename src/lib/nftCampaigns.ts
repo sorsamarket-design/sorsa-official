@@ -1,5 +1,6 @@
 import { requireSupabase } from './supabase';
 import { getBackendBase } from './appSession';
+import { getCampaignEndTime } from './campaignTime';
 
 async function getNftBackendAccessToken(forceRefresh = false) {
   const supabase = requireSupabase();
@@ -89,12 +90,6 @@ function withNftCampaignMetadata(campaign: any) {
     raffle_results: Array.isArray(metadata.raffle_results) ? metadata.raffle_results : [],
     raffle_finalized_at: metadata.raffle_finalized_at || null
   };
-}
-
-function getCampaignEndTime(endDate?: string | null) {
-  if (!endDate) return null;
-  const time = new Date(endDate).getTime();
-  return Number.isNaN(time) ? null : time;
 }
 
 function emptyStats() {
