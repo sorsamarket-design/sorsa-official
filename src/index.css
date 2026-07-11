@@ -83,6 +83,14 @@ body::before {
    transparent/black seam behind the notch. .app-topbar keeps a solid
    background-color (set inline in TopBar.tsx) as a fallback that's never
    see-through, even if this blur layer has issues. */
+.app-topbar-glass,
+.creator-topbar-glass {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
 .app-topbar-glass {
   background:
     linear-gradient(90deg, rgba(10, 10, 30, 0.97), rgba(10, 10, 30, 0.9)) !important;
