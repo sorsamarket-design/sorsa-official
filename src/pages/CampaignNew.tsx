@@ -122,7 +122,8 @@ export default function CampaignNew() {
         telegram_tasks: additionalTelegramEnabled && brandTelegramGroup?.bot_permission_status === 'configured'
           ? [{
               chat_id: brandTelegramGroup.chat_id,
-              title: brandTelegramGroup.title || null
+              title: brandTelegramGroup.title || null,
+              public_link: brandTelegramGroup.public_link || null
             }]
           : []
       },

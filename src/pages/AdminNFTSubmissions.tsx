@@ -5,7 +5,7 @@ import { ArrowLeft, Calendar, ExternalLink, FileText, Loader2, Search, Sparkles,
 import AdminSidebar from '../components/AdminSidebar';
 import AdminTopBar from '../components/AdminTopBar';
 import { getAdminNftContentCampaign, listAdminNftContentCampaigns, type NftCampaign } from '../lib/nftCampaigns';
-import { formatCampaignTimeLeft, getCampaignEndTime } from '../lib/campaignTime';
+import { formatCampaignCountdown, getCampaignEndTime } from '../lib/campaignTime';
 
 const appleEase = [0.16, 1, 0.3, 1] as const;
 
@@ -25,10 +25,10 @@ type CampaignParticipant = {
   creator_profile?: CreatorProfile | null;
 };
 
-function isPastCampaign(campaign: NftCampaign) {
+function isPastCampaign(campaign: NftCampaign, now = Date.now()) {
   if (campaign?.status === 'completed') return true;
   const endTime = getCampaignEndTime(campaign?.end_date);
-  return Boolean(endTime && endTime <= Date.now());
+  return Boolean(endTime && endTime <= now);
 }
 
 function formatDate(value?: string | null) {
@@ -61,6 +61,7 @@ export default function AdminNFTSubmissions() {
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'live' | 'past'>('live');
   const [searchQuery, setSearchQuery] = useState('');
+  const [now, setNow] = useState(() => Date.now());
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -87,17 +88,22 @@ export default function AdminNFTSubmissions() {
     fetchData();
   }, [id]);
 
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
   const visibleCampaigns = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     return campaigns.filter((item) => {
-      const past = isPastCampaign(item);
+      const past = isPastCampaign(item, now);
       const matchesTab = activeTab === 'past' ? past : !past;
       const matchesSearch = !query ||
         item.title?.toLowerCase().includes(query) ||
         item.goal?.toLowerCase().includes(query);
       return matchesTab && matchesSearch;
     });
-  }, [activeTab, campaigns, searchQuery]);
+  }, [activeTab, campaigns, searchQuery, now]);
 
   const submissionsByParticipant = useMemo(() => {
     const map = new Map<string, any>();
@@ -204,7 +210,7 @@ export default function AdminNFTSubmissions() {
                 <div className="glass-panel rounded-2xl p-5 border border-white/10">
                   <Calendar className="w-5 h-5 text-purple-300 mb-3" />
                   <div className="text-sm text-muted">Time Left</div>
-                  <div className="text-2xl font-semibold text-white">{formatCampaignTimeLeft(campaign.end_date)}</div>
+                  <div className="text-2xl font-semibold text-white">{formatCampaignCountdown(campaign.end_date, now)}</div>
                 </div>
               </div>
 
@@ -400,7 +406,7 @@ export default function AdminNFTSubmissions() {
                           </div>
                           <div className="rounded-xl bg-white/5 border border-white/10 p-2.5">
                             <Calendar className="w-3.5 h-3.5 text-purple-300 mb-1.5" />
-                            <p className="text-xs font-semibold text-white">{formatCampaignTimeLeft(item.end_date)}</p>
+                            <p className="text-xs font-semibold text-white">{formatCampaignCountdown(item.end_date, now)}</p>
                             <p className="text-[9px] text-muted uppercase tracking-wider">Left</p>
                           </div>
                         </div>

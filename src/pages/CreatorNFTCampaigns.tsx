@@ -5,7 +5,7 @@ import { Clock, Loader2, Sparkles, Ticket, Users } from 'lucide-react';
 import CreatorSidebar from '../components/CreatorSidebar';
 import CreatorTopBar from '../components/CreatorTopBar';
 import { getNftCampaignPrimaryAllocation, listNftCampaigns } from '../lib/nftCampaigns';
-import { formatCampaignTimeLeft, getCampaignEndTime } from '../lib/campaignTime';
+import { formatCampaignCountdown, getCampaignEndTime } from '../lib/campaignTime';
 
 function nftCampaignTypeLabel(type: string) {
   if (type === 'raffle' || type === 'fcfs') return 'Raffle';
@@ -18,6 +18,7 @@ export default function CreatorNFTCampaigns() {
   const [activeTab, setActiveTab] = useState<'live' | 'past'>('live');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     let isMounted = true;
@@ -38,10 +39,15 @@ export default function CreatorNFTCampaigns() {
     };
   }, []);
 
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
   const isPastCampaign = (campaign: any) => {
     if (campaign.status === 'completed') return true;
     const endTime = getCampaignEndTime(campaign.end_date);
-    return Boolean(endTime && endTime <= Date.now());
+    return Boolean(endTime && endTime <= now);
   };
   const visibleCampaigns = campaigns.filter((campaign) =>
     activeTab === 'past' ? isPastCampaign(campaign) : !isPastCampaign(campaign)
@@ -153,15 +159,9 @@ export default function CreatorNFTCampaigns() {
                       </div>
                       <div className="min-w-0">
                         <h3 className="font-semibold text-white group-hover:text-cyan transition-colors line-clamp-1">{campaign.title}</h3>
-                        <p className="text-sm text-muted line-clamp-1">{campaign.goal || 'NFT Campaign'}</p>
+                        <p className="text-sm text-muted line-clamp-2">{campaign.goal || 'NFT Campaign'}</p>
                       </div>
                     </div>
-                  </div>
-
-                  <div className="mb-4">
-                    <p className="text-sm text-muted line-clamp-2 leading-relaxed">
-                      {campaign.overview}
-                    </p>
                   </div>
 
                   <div className="flex flex-wrap gap-2 mb-6">
@@ -192,7 +192,7 @@ export default function CreatorNFTCampaigns() {
                       </div>
                       <div className="text-sm font-semibold text-white flex items-center gap-1 group-hover:text-cyan transition-colors">
                         <Clock className="w-4 h-4 text-muted" />
-                        {formatCampaignTimeLeft(campaign.end_date)}
+                        {formatCampaignCountdown(campaign.end_date, now)}
                       </div>
                     </div>
                   </div>

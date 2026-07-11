@@ -101,6 +101,7 @@ export default function AdminNFTCampaignNew() {
     allocation_type: 'wl',
     budget: '',
     total_gtd: '',
+    total_fcfs: '',
     max_content_submissions: '5',
     min_sorsa_score: '150',
     start_date: '',
@@ -124,6 +125,13 @@ export default function AdminNFTCampaignNew() {
     setFormData(prev => ({
       ...prev,
       total_gtd: String(Math.max(0, Number(prev.total_gtd || 0) + delta))
+    }));
+  };
+
+  const adjustTotalFcfs = (delta: number) => {
+    setFormData(prev => ({
+      ...prev,
+      total_fcfs: String(Math.max(0, Number(prev.total_fcfs || 0) + delta))
     }));
   };
 
@@ -264,9 +272,18 @@ export default function AdminNFTCampaignNew() {
   const goToStepTwo = () => {
     setError('');
     setSuccess('');
-    const selectedTotal = formData.allocation_type === 'gtd' ? formData.total_gtd : formData.budget;
+    const allocationLabels = {
+      wl: 'Total WL',
+      gtd: 'Total GTD',
+      fcfs: 'Total FCFS'
+    } as const;
+    const selectedTotal = formData.allocation_type === 'gtd'
+      ? formData.total_gtd
+      : formData.allocation_type === 'fcfs'
+        ? formData.total_fcfs
+        : formData.budget;
     if (!formData.title.trim() || !formData.goal.trim() || !selectedTotal) {
-      setError(`Campaign title, goal, and ${formData.allocation_type === 'gtd' ? 'Total GTD' : 'Total WL'} are required before continuing.`);
+      setError(`Campaign title, goal, and ${allocationLabels[formData.allocation_type as keyof typeof allocationLabels] || 'Total WL'} are required before continuing.`);
       return;
     }
     setStep(2);
@@ -280,6 +297,7 @@ export default function AdminNFTCampaignNew() {
       allocation_type: 'wl',
       budget: '',
       total_gtd: '',
+      total_fcfs: '',
       max_content_submissions: '5',
       min_sorsa_score: '150',
       start_date: '',
@@ -322,7 +340,7 @@ export default function AdminNFTCampaignNew() {
     ).slice(0, 3);
 
     try {
-      const resolvedTelegramTasks: { chat_id: string; title: string | null }[] = [];
+      const resolvedTelegramTasks: { chat_id: string; title: string | null; public_link: string | null }[] = [];
       const seenTelegramChatIds = new Set<string>();
       if (campaignType === 'raffle') {
         for (const taskInput of telegramTaskInputs) {
@@ -337,7 +355,8 @@ export default function AdminNFTCampaignNew() {
           seenTelegramChatIds.add(chatId);
           resolvedTelegramTasks.push({
             chat_id: chatId,
-            title: group?.title || null
+            title: group?.title || null,
+            public_link: group?.public_link || (!isTelegramChatId(taskInput) ? taskInput : null)
           });
         }
       }
@@ -364,8 +383,9 @@ export default function AdminNFTCampaignNew() {
         overview: formData.overview.trim(),
         categories: ['NFT'],
         budget: Number(formData.budget || 0),
-        allocation_type: formData.allocation_type as 'wl' | 'gtd',
+        allocation_type: formData.allocation_type as 'wl' | 'gtd' | 'fcfs',
         total_gtd: Number(formData.total_gtd || 0),
+        total_fcfs: Number(formData.total_fcfs || 0),
         min_sorsa_score: Number(formData.min_sorsa_score || 0),
         image_url: imagePreview || null,
         background_image_url: backgroundImagePreview || null,
@@ -519,7 +539,8 @@ export default function AdminNFTCampaignNew() {
                       <div className="inline-flex rounded-xl bg-black/50 border border-white/10 p-1">
                         {[
                           { value: 'wl', label: 'WL' },
-                          { value: 'gtd', label: 'GTD' }
+                          { value: 'gtd', label: 'GTD' },
+                          { value: 'fcfs', label: 'FCFS' }
                         ].map((option) => (
                           <button
                             key={option.value}
@@ -559,6 +580,20 @@ export default function AdminNFTCampaignNew() {
                             <Minus className="w-4 h-4" />
                           </button>
                           <button type="button" onClick={() => adjustTotalGtd(1)} className="w-11 h-12 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors border-l border-white/10" aria-label="Increase Total GTD">
+                            <Plus className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-white">Total FCFS</label>
+                      <div className="flex items-center rounded-xl bg-black/50 border border-white/10 focus-within:border-purple-500 focus-within:ring-1 focus-within:ring-purple-500 transition-all overflow-hidden">
+                        <input type="number" min="0" name="total_fcfs" value={formData.total_fcfs} onChange={handleInputChange} required={formData.allocation_type === 'fcfs'} placeholder="100" className="w-full px-4 py-3 bg-transparent text-white placeholder:text-white/20 focus:outline-none [color-scheme:dark]" />
+                        <div className="flex items-center border-l border-white/10">
+                          <button type="button" onClick={() => adjustTotalFcfs(-1)} className="w-11 h-12 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors" aria-label="Decrease Total FCFS">
+                            <Minus className="w-4 h-4" />
+                          </button>
+                          <button type="button" onClick={() => adjustTotalFcfs(1)} className="w-11 h-12 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors border-l border-white/10" aria-label="Increase Total FCFS">
                             <Plus className="w-4 h-4" />
                           </button>
                         </div>

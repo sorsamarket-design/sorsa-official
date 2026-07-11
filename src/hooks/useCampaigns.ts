@@ -43,7 +43,7 @@ export interface Campaign {
   brand_wallet?: string | null;
   additional_requirements?: {
     telegram_enabled?: boolean;
-    telegram_tasks?: { chat_id: string; title?: string | null }[];
+    telegram_tasks?: { chat_id: string; title?: string | null; public_link?: string | null }[];
   } | null;
 }
 

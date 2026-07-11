@@ -133,6 +133,7 @@ export default function CreatorCampaignDetail() {
     ? campaign.additional_requirements?.telegram_tasks || []
     : [];
   const requiresTelegram = telegramTasks.length > 0;
+  const telegramJoinLink = telegramTasks[0]?.public_link || null;
   const hasTelegramConnected = Boolean(creatorProfile?.telegram_chat_id);
 
   // Determine required score
@@ -274,6 +275,29 @@ export default function CreatorCampaignDetail() {
                 </div>
               </motion.div>
 
+              {campaignBrief.spotlightRequests.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, ease: appleEase, delay: 0.15 }}
+                  className="glass-panel rounded-[2rem] p-8 border border-white/10"
+                >
+                  <h2 className="text-xl font-semibold text-white mb-6">Spotlight Requests</h2>
+                  <div className="space-y-4">
+                    {campaignBrief.spotlightRequests.map((request, index) => (
+                      <div key={`${request}-${index}`} className="flex items-start gap-3">
+                        <div className="mt-1 w-5 h-5 rounded-full bg-cyan/10 flex items-center justify-center shrink-0">
+                          <Target className="w-3 h-3 text-cyan" />
+                        </div>
+                        <p className="text-white text-sm md:text-base leading-relaxed">
+                          <LinkifiedText text={request} />
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+
               {/* Campaign Goals */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -289,16 +313,6 @@ export default function CreatorCampaignDetail() {
                       </div>
                       <p className="text-white text-sm md:text-base leading-relaxed">{campaign.goal}</p>
                     </div>
-                    {campaignBrief.spotlightRequests.map((request, index) => (
-                      <div key={`${request}-${index}`} className="flex items-start gap-3">
-                        <div className="mt-1 w-5 h-5 rounded-full bg-cyan/10 flex items-center justify-center shrink-0">
-                          <Target className="w-3 h-3 text-cyan" />
-                        </div>
-                        <p className="text-white text-sm md:text-base leading-relaxed">
-                          <LinkifiedText text={request} />
-                        </p>
-                      </div>
-                    ))}
                 </div>
               </motion.div>
 
@@ -332,9 +346,20 @@ export default function CreatorCampaignDetail() {
                   {requiresTelegram && (
                     <div className="flex items-start gap-3">
                       <MessageCircle className="mt-0.5 w-4 h-4 text-cyan shrink-0" />
-                      <p className="text-white text-sm md:text-base font-medium">
-                        Join {telegramTasks[0]?.title || 'the brand Telegram group'}
-                      </p>
+                      {telegramJoinLink ? (
+                        <a
+                          href={telegramJoinLink}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-white text-sm md:text-base font-medium hover:text-cyan transition-colors inline-flex items-center gap-1.5"
+                        >
+                          Join {telegramTasks[0]?.title || 'the brand Telegram group'} <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      ) : (
+                        <p className="text-white text-sm md:text-base font-medium">
+                          Join {telegramTasks[0]?.title || 'the brand Telegram group'}
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -505,6 +530,16 @@ export default function CreatorCampaignDetail() {
                           <p className="text-xs text-muted">{hasTelegramConnected ? 'Telegram account connected' : 'Connect Telegram in Creator Settings'}</p>
                         </div>
                       </div>
+                      {telegramJoinLink ? (
+                        <a
+                          href={telegramJoinLink}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan/10 text-cyan hover:bg-cyan/20 text-sm font-medium transition-colors border border-cyan/20"
+                        >
+                          Join <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      ) : null}
                     </div>
                   )}
 

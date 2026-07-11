@@ -6,7 +6,7 @@ import CreatorSidebar from '../components/CreatorSidebar';
 import CreatorTopBar from '../components/CreatorTopBar';
 import LinkifiedText from '../components/LinkifiedText';
 import { getNftCampaign, getNftCampaignPrimaryAllocation, joinNftCampaign, submitNftCampaignContent, verifyNftCampaignTask, type NftCampaign } from '../lib/nftCampaigns';
-import { formatCampaignTimeLeft, getCampaignEndTime } from '../lib/campaignTime';
+import { formatCampaignCountdown, getCampaignEndTime } from '../lib/campaignTime';
 import { useCreatorProfile } from '../hooks/useCreatorProfile';
 
 const appleEase = [0.16, 1, 0.3, 1] as const;
@@ -57,6 +57,7 @@ export default function CreatorNFTCampaignDetail() {
   const [submittingContent, setSubmittingContent] = useState(false);
   const [submissionSuccess, setSubmissionSuccess] = useState('');
   const [submissionError, setSubmissionError] = useState('');
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     let isMounted = true;
@@ -69,6 +70,8 @@ export default function CreatorNFTCampaignDetail() {
         setParticipation(result.participation || null);
         if (result.participation && result.participation.status !== 'rejected') {
           setVerifiedTasks(verifiedTaskMap(result.campaign));
+        } else {
+          setVerifiedTasks(result.verified_tasks || {});
         }
       })
       .catch((err) => {
@@ -82,6 +85,11 @@ export default function CreatorNFTCampaignDetail() {
       isMounted = false;
     };
   }, [id]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const handleJoin = async () => {
     if (!id) return;
@@ -144,7 +152,7 @@ export default function CreatorNFTCampaignDetail() {
   const hasJoined = Boolean(participation && participation.status !== 'rejected');
   const isContent = isContentCampaign(campaign.campaign_type);
   const campaignEndTime = getCampaignEndTime(campaign.end_date);
-  const campaignEnded = campaign.status === 'completed' || Boolean(campaignEndTime && campaignEndTime <= Date.now());
+  const campaignEnded = campaign.status === 'completed' || Boolean(campaignEndTime && campaignEndTime <= now);
   const canVerifyTasks = !campaignEnded;
   const hasWalletAddress = Boolean(creatorProfile?.wallet_address);
   const primaryAllocation = getNftCampaignPrimaryAllocation(campaign);
@@ -276,7 +284,7 @@ export default function CreatorNFTCampaignDetail() {
               <Clock className="mb-2 h-4 w-4 text-cyan sm:mb-3 sm:h-5 sm:w-5" />
               <div className="text-[0.6rem] leading-tight text-muted sm:text-sm">Time Left</div>
               <div className="break-words text-[0.85rem] font-bold leading-tight text-white sm:text-2xl sm:font-semibold">
-                {formatCampaignTimeLeft(campaign.end_date)}
+                {formatCampaignCountdown(campaign.end_date, now)}
               </div>
             </div>
           </div>
@@ -586,6 +594,7 @@ export default function CreatorNFTCampaignDetail() {
                       const key = taskKey('telegram', task.chat_id);
                       const isVerified = hasJoined || verifiedTasks[key];
                       const isVerifying = verifyingTask === key;
+                      const joinLink = task.public_link || null;
 
                       return (
                         <div
@@ -600,9 +609,25 @@ export default function CreatorNFTCampaignDetail() {
                               <p className="text-xs text-muted mt-1 break-all">{task.title || task.chat_id}</p>
                             </div>
                             <div className="flex items-center gap-3 shrink-0">
-                              <div className="w-10 h-10 rounded-full border border-white/10 bg-white/5 text-cyan inline-flex items-center justify-center">
-                                <MessageCircle className="w-4 h-4" />
-                              </div>
+                              {joinLink ? (
+                                <a
+                                  href={joinLink}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="px-4 py-2 rounded-full text-sm font-semibold inline-flex items-center gap-2 bg-white/5 text-white border border-white/10 hover:bg-white/10 transition-colors"
+                                >
+                                  Join <ExternalLink className="w-4 h-4" />
+                                </a>
+                              ) : (
+                                <div className="w-10 h-10 rounded-full border border-white/10 bg-white/5 text-cyan inline-flex items-center justify-center">
+                                  <MessageCircle className="w-4 h-4" />
+                                </div>
+                              )}
+                              {!joinLink ? null : (
+                                <div className="hidden sm:inline-flex w-10 h-10 rounded-full border border-white/10 bg-white/5 text-cyan items-center justify-center">
+                                  <MessageCircle className="w-4 h-4" />
+                                </div>
+                              )}
                               <button
                                 onClick={() => handleVerifyTask('telegram', task.chat_id)}
                                 disabled={isVerifying || isVerified || !canVerifyTasks}

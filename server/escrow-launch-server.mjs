@@ -256,7 +256,8 @@ function normalizeTelegramTasks(tasks) {
     seen.add(chatId);
     normalized.push({
       chat_id: chatId,
-      title: typeof task?.title === 'string' && task.title.trim() ? task.title.trim() : null
+      title: typeof task?.title === 'string' && task.title.trim() ? task.title.trim() : null,
+      public_link: typeof task?.public_link === 'string' && task.public_link.trim() ? task.public_link.trim() : null
     });
   }
   return normalized.slice(0, 3);
@@ -272,6 +273,44 @@ function normalizeAdditionalRequirements(requirements) {
 
 function getCampaignTelegramTasks(campaign) {
   return normalizeAdditionalRequirements(campaign?.additional_requirements).telegram_tasks;
+}
+
+function nftTaskKey(taskType, taskValue) {
+  return `${String(taskType || '').trim().toLowerCase()}:${String(taskValue || '').trim()}`;
+}
+
+async function getNftTaskVerificationMap(campaignId, creatorId) {
+  const { data, error } = await supabase
+    .from('nft_task_verifications')
+    .select('task_type, task_value, verified_at')
+    .eq('campaign_id', campaignId)
+    .eq('creator_id', creatorId);
+  if (error) {
+    console.warn('Could not load NFT task verifications:', error.message || error);
+    return {};
+  }
+  const verified = {};
+  for (const row of data || []) {
+    verified[nftTaskKey(row.task_type, row.task_value)] = true;
+  }
+  return verified;
+}
+
+async function recordNftTaskVerification(campaignId, creatorId, taskType, taskValue, details = {}) {
+  const payload = {
+    campaign_id: campaignId,
+    creator_id: creatorId,
+    task_type: String(taskType || '').trim().toLowerCase(),
+    task_value: String(taskValue || '').trim(),
+    verification_details: details || {},
+    verified_at: new Date().toISOString()
+  };
+  const { error } = await supabase
+    .from('nft_task_verifications')
+    .upsert(payload, { onConflict: 'campaign_id,creator_id,task_type,task_value' });
+  if (error) {
+    console.warn('Could not save NFT task verification:', error.message || error);
+  }
 }
 
 function telegramBotPermissionStatus(member, chatType) {
@@ -373,7 +412,7 @@ async function getTelegramGroupConfigMap(chatIds) {
   if (!ids.length) return map;
   const { data, error } = await supabase
     .from('telegram_group_configs')
-    .select('chat_id, chat_type, title, bot_status, bot_permission_status, bot_permissions, last_error, last_seen_at, updated_at')
+    .select('chat_id, chat_type, title, public_link, bot_status, bot_permission_status, bot_permissions, last_error, last_seen_at, updated_at')
     .in('chat_id', ids);
   if (error) {
     console.warn('Could not read Telegram group configs:', error.message || error);
@@ -597,7 +636,9 @@ function normalizeNftCampaignBody(body, userId, brandProfile) {
   const overview = String(campaign.overview || '').trim();
   const budget = Number(campaign.budget || 0);
   const totalGtd = Number(campaign.total_gtd || 0);
-  const allocationType = String(campaign.allocation_type || '').toLowerCase() === 'gtd' ? 'gtd' : 'wl';
+  const totalFcfs = Number(campaign.total_fcfs || 0);
+  const rawAllocationType = String(campaign.allocation_type || '').toLowerCase();
+  const allocationType = ['gtd', 'fcfs'].includes(rawAllocationType) ? rawAllocationType : 'wl';
   const minSorsaScore = Math.max(0, Math.min(1000, Number(campaign.min_sorsa_score || 0)));
   const imageUrl = typeof campaign.image_url === 'string' && campaign.image_url.trim() ? campaign.image_url.trim() : null;
   const backgroundImageUrl = typeof campaign.background_image_url === 'string' && campaign.background_image_url.trim()
@@ -640,14 +681,17 @@ function normalizeNftCampaignBody(body, userId, brandProfile) {
   if (!overview) throw Object.assign(new Error('Campaign brief is required'), { status: 400 });
   if (budget < 0) throw Object.assign(new Error('Total WL must be a positive number'), { status: 400 });
   if (totalGtd < 0) throw Object.assign(new Error('Total GTD must be a positive number'), { status: 400 });
+  if (totalFcfs < 0) throw Object.assign(new Error('Total FCFS must be a positive number'), { status: 400 });
   if (allocationType === 'wl' && budget <= 0) throw Object.assign(new Error('Total WL is required when WL is selected'), { status: 400 });
   if (allocationType === 'gtd' && totalGtd <= 0) throw Object.assign(new Error('Total GTD is required when GTD is selected'), { status: 400 });
+  if (allocationType === 'fcfs' && totalFcfs <= 0) throw Object.assign(new Error('Total FCFS is required when FCFS is selected'), { status: 400 });
   const nftMetadata = {
     nft: true,
     image_url: imageUrl,
     background_image_url: backgroundImageUrl,
     allocation_type: allocationType,
     total_gtd: totalGtd,
+    total_fcfs: totalFcfs,
     max_creators: maxCreators,
     max_content_submissions: maxContentSubmissions,
     follow_accounts: Array.from(new Set(followAccounts)),
@@ -691,8 +735,9 @@ function withNftCampaignMetadata(campaign) {
     ...campaign,
     image_url: metadata.image_url || null,
     background_image_url: metadata.background_image_url || null,
-    allocation_type: metadata.allocation_type === 'gtd' ? 'gtd' : 'wl',
+    allocation_type: ['gtd', 'fcfs'].includes(metadata.allocation_type) ? metadata.allocation_type : 'wl',
     total_gtd: metadata.total_gtd ?? null,
+    total_fcfs: metadata.total_fcfs ?? null,
     max_creators: metadata.max_creators ?? null,
     max_content_submissions: metadata.max_content_submissions ?? null,
     follow_accounts: Array.isArray(metadata.follow_accounts) ? metadata.follow_accounts : [],
@@ -2563,6 +2608,7 @@ app.post('/admin/telegram-groups/status', async (req, res) => {
           chat_id: chatId,
           chat_type: config?.chat_type || null,
           title: config?.title || null,
+          public_link: config?.public_link || null,
           bot_status: config?.bot_status || null,
           bot_permission_status: config?.bot_permission_status || 'unknown',
           last_error: config?.last_error || null,
@@ -3102,9 +3148,19 @@ app.post('/admin/raffles/:campaignId/finalize', async (req, res) => {
       });
     }
 
-    const totalWl = Math.floor(Number(campaign.budget || 0));
-    if (!Number.isFinite(totalWl) || totalWl < 1) {
-      throw Object.assign(new Error('Total WL must be at least 1 before finalizing this raffle'), { status: 400 });
+    const allocationType = raffleCampaign.allocation_type === 'gtd' || raffleCampaign.allocation_type === 'fcfs'
+      ? raffleCampaign.allocation_type
+      : 'wl';
+    const allocationTotal = Math.floor(Number(
+      allocationType === 'gtd'
+        ? raffleCampaign.total_gtd || 0
+        : allocationType === 'fcfs'
+          ? raffleCampaign.total_fcfs || 0
+          : campaign.budget || 0
+    ));
+    const allocationLabel = allocationType === 'gtd' ? 'Total GTD' : allocationType === 'fcfs' ? 'Total FCFS' : 'Total WL';
+    if (!Number.isFinite(allocationTotal) || allocationTotal < 1) {
+      throw Object.assign(new Error(`${allocationLabel} must be at least 1 before finalizing this raffle`), { status: 400 });
     }
 
     const eligibleParticipants = (participants || []).filter((participant) => participant.creator_profile);
@@ -3112,7 +3168,7 @@ app.post('/admin/raffles/:campaignId/finalize', async (req, res) => {
       throw Object.assign(new Error('No eligible joined creators found for this raffle'), { status: 400 });
     }
 
-    const winners = pickRandomItems(eligibleParticipants, Math.min(totalWl, eligibleParticipants.length)).map((participant) => ({
+    const winners = pickRandomItems(eligibleParticipants, Math.min(allocationTotal, eligibleParticipants.length)).map((participant) => ({
       participant_id: participant.id,
       creator_id: participant.creator_id,
       name: participant.creator_profile?.full_name || participant.creator_profile?.x_handle || 'Creator',
@@ -3272,7 +3328,10 @@ app.get('/nft-campaigns/:campaignId', async (req, res) => {
     ]);
     if (error || !campaign) throw Object.assign(new Error('NFT campaign not found'), { status: 404 });
     if (participationError) throw Object.assign(new Error(participationError.message), { status: 500 });
-    const statsMap = await getNftCampaignStatsMap([campaign.id]);
+    const [statsMap, taskVerifications] = await Promise.all([
+      getNftCampaignStatsMap([campaign.id]),
+      getNftTaskVerificationMap(campaign.id, user.id)
+    ]);
 
     return res.json({
       campaign: {
@@ -3283,7 +3342,8 @@ app.get('/nft-campaigns/:campaignId', async (req, res) => {
           rejected_count: 0
         }
       },
-      participation: participation || null
+      participation: participation || null,
+      verified_tasks: taskVerifications
     });
   } catch (error) {
     const status = error.status || 500;
@@ -3328,6 +3388,11 @@ app.post('/nft-campaigns/:campaignId/verify-task', async (req, res) => {
     }
 
     const nftCampaign = withNftCampaignMetadata(campaign);
+    const returnVerifiedTask = async (type, value, extra = {}) => {
+      await recordNftTaskVerification(campaignId, user.id, type, value, extra);
+      return res.json({ verified: true, type, value, ...extra });
+    };
+
     if (taskType === 'telegram') {
       const chatId = telegramTaskKey(taskValue);
       const requiredTelegramTasks = normalizeTelegramTasks(nftCampaign.telegram_tasks);
@@ -3341,7 +3406,7 @@ app.post('/nft-campaigns/:campaignId/verify-task', async (req, res) => {
       if (!result.verified) {
         throw Object.assign(new Error('Join the required Telegram group, then verify again'), { status: 403 });
       }
-      return res.json({ verified: true, type: 'telegram', value: chatId, member_status: result.status });
+      return returnVerifiedTask('telegram', chatId, { member_status: result.status });
     }
 
     const creatorHandle = cleanHandle(creator.x_handle);
@@ -3358,7 +3423,7 @@ app.post('/nft-campaigns/:campaignId/verify-task', async (req, res) => {
         throw Object.assign(new Error('This follow task is not part of the campaign'), { status: 400 });
       }
       if (env.NFT_X_TASK_VERIFICATION_BYPASS_ENABLED) {
-        return res.json({ verified: true, type: 'follow', value: targetAccount, bypassed: true });
+        return returnVerifiedTask('follow', targetAccount, { bypassed: true });
       }
 
       const followResult = await callSorsa('/check-follow', {
@@ -3374,7 +3439,7 @@ app.post('/nft-campaigns/:campaignId/verify-task', async (req, res) => {
         throw Object.assign(new Error(`Follow @${targetAccount} on X, then verify again`), { status: 403 });
       }
 
-      return res.json({ verified: true, type: 'follow', value: targetAccount });
+      return returnVerifiedTask('follow', targetAccount);
     }
 
     if (taskType === 'comment') {
@@ -3386,7 +3451,7 @@ app.post('/nft-campaigns/:campaignId/verify-task', async (req, res) => {
         throw Object.assign(new Error('This Like & Comment task is not part of the campaign'), { status: 400 });
       }
       if (env.NFT_X_TASK_VERIFICATION_BYPASS_ENABLED) {
-        return res.json({ verified: true, type: 'comment', value: tweetLink, bypassed: true });
+        return returnVerifiedTask('comment', tweetLink, { bypassed: true });
       }
 
       const commented = await verifySorsaComment(tweetLink, creatorHandle);
@@ -3394,7 +3459,7 @@ app.post('/nft-campaigns/:campaignId/verify-task', async (req, res) => {
         throw Object.assign(new Error('Like and comment on this X post, then verify again'), { status: 403 });
       }
 
-      return res.json({ verified: true, type: 'comment', value: tweetLink });
+      return returnVerifiedTask('comment', tweetLink);
     }
 
     if (taskType === 'engagement') {
@@ -3406,7 +3471,7 @@ app.post('/nft-campaigns/:campaignId/verify-task', async (req, res) => {
         throw Object.assign(new Error('This Like, Retweet & Comment task is not part of the campaign'), { status: 400 });
       }
       if (env.NFT_X_TASK_VERIFICATION_BYPASS_ENABLED) {
-        return res.json({ verified: true, type: 'engagement', value: tweetLink, bypassed: true });
+        return returnVerifiedTask('engagement', tweetLink, { bypassed: true });
       }
 
       const [retweeted, commented] = await Promise.all([
@@ -3417,7 +3482,7 @@ app.post('/nft-campaigns/:campaignId/verify-task', async (req, res) => {
         throw Object.assign(new Error('Like, retweet, and comment on this X post, then verify again'), { status: 403 });
       }
 
-      return res.json({ verified: true, type: 'engagement', value: tweetLink });
+      return returnVerifiedTask('engagement', tweetLink);
     }
 
     const tweetLink = taskValue;
@@ -3428,7 +3493,7 @@ app.post('/nft-campaigns/:campaignId/verify-task', async (req, res) => {
       throw Object.assign(new Error('This Like & Retweet task is not part of the campaign'), { status: 400 });
     }
     if (env.NFT_X_TASK_VERIFICATION_BYPASS_ENABLED) {
-      return res.json({ verified: true, type: 'retweet', value: tweetLink, bypassed: true });
+      return returnVerifiedTask('retweet', tweetLink, { bypassed: true });
     }
 
     const retweeted = await verifySorsaRetweet(tweetLink, creatorHandle);
@@ -3436,7 +3501,7 @@ app.post('/nft-campaigns/:campaignId/verify-task', async (req, res) => {
       throw Object.assign(new Error('Like and retweet this X post, then verify again'), { status: 403 });
     }
 
-    return res.json({ verified: true, type: 'retweet', value: tweetLink });
+    return returnVerifiedTask('retweet', tweetLink);
   } catch (error) {
     const status = error.status || 500;
     return res.status(status).json({ error: error.message || 'Task could not be verified' });

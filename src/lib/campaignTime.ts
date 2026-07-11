@@ -35,6 +35,29 @@ export function formatCampaignTimeLeft(endDate?: string | null) {
   return `${minutes}m left`;
 }
 
+export function formatCampaignCountdown(endDate?: string | null, now = Date.now()) {
+  const end = getCampaignEndTime(endDate);
+  if (!end) return 'No end date';
+
+  const diff = end - now;
+  if (diff <= 0) return 'Ended';
+
+  const totalSeconds = Math.max(0, Math.floor(diff / 1000));
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const pad = (value: number) => String(value).padStart(2, '0');
+
+  if (days > 0) {
+    return `${days}d ${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s`;
+  }
+  if (hours > 0) {
+    return `${hours}h ${pad(minutes)}m ${pad(seconds)}s`;
+  }
+  return `${minutes}m ${pad(seconds)}s`;
+}
+
 export function formatCampaignTimeline(endDate?: string | null, releaseAt?: string | null) {
   const end = getCampaignEndTime(endDate);
   if (!end) {

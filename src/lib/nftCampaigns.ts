@@ -78,8 +78,9 @@ function withNftCampaignMetadata(campaign: any) {
     ...campaign,
     image_url: metadata.image_url || null,
     background_image_url: metadata.background_image_url || null,
-    allocation_type: metadata.allocation_type === 'gtd' ? 'gtd' : 'wl',
+    allocation_type: ['gtd', 'fcfs'].includes(metadata.allocation_type) ? metadata.allocation_type : 'wl',
     total_gtd: metadata.total_gtd ?? null,
+    total_fcfs: metadata.total_fcfs ?? null,
     max_creators: metadata.max_creators ?? null,
     max_content_submissions: metadata.max_content_submissions ?? null,
     follow_accounts: Array.isArray(metadata.follow_accounts) ? metadata.follow_accounts : [],
@@ -98,6 +99,28 @@ function emptyStats() {
     approved_count: 0,
     rejected_count: 0
   };
+}
+
+function nftTaskKey(taskType: string, taskValue: string) {
+  return `${String(taskType || '').trim().toLowerCase()}:${String(taskValue || '').trim()}`;
+}
+
+async function getNftTaskVerificationMap(campaignId: string, creatorId: string) {
+  const supabase = requireSupabase();
+  const { data, error } = await supabase
+    .from('nft_task_verifications')
+    .select('task_type, task_value')
+    .eq('campaign_id', campaignId)
+    .eq('creator_id', creatorId);
+  if (error) {
+    console.warn('NFT task verifications unavailable:', error.message || error);
+    return {};
+  }
+  const verified: Record<string, boolean> = {};
+  for (const row of data || []) {
+    verified[nftTaskKey(row.task_type, row.task_value)] = true;
+  }
+  return verified;
 }
 
 async function getCurrentUserId() {
@@ -166,8 +189,9 @@ export type NftCampaignPayload = {
   overview: string;
   categories: string[];
   budget: number;
-  allocation_type?: 'wl' | 'gtd';
+  allocation_type?: 'wl' | 'gtd' | 'fcfs';
   total_gtd?: number | null;
+  total_fcfs?: number | null;
   min_sorsa_score: number | null;
   image_url: string | null;
   background_image_url: string | null;
@@ -182,18 +206,23 @@ export type NftCampaignPayload = {
   end_date: string | null;
 };
 
-export function getNftCampaignPrimaryAllocation(campaign: Pick<NftCampaignPayload, 'allocation_type' | 'budget' | 'total_gtd'>) {
-  const useGtd = campaign.allocation_type === 'gtd';
+export function getNftCampaignPrimaryAllocation(campaign: Pick<NftCampaignPayload, 'allocation_type' | 'budget' | 'total_gtd' | 'total_fcfs'>) {
+  const allocationType = campaign.allocation_type === 'gtd' || campaign.allocation_type === 'fcfs'
+    ? campaign.allocation_type
+    : 'wl';
+  const useGtd = allocationType === 'gtd';
+  const useFcfs = allocationType === 'fcfs';
   return {
-    label: useGtd ? 'Total GTD' : 'Total WL',
-    suffix: useGtd ? 'GTD' : 'WL',
-    value: Number(useGtd ? campaign.total_gtd || 0 : campaign.budget || 0)
+    label: useFcfs ? 'Total FCFS' : useGtd ? 'Total GTD' : 'Total WL',
+    suffix: useFcfs ? 'FCFS' : useGtd ? 'GTD' : 'WL',
+    value: Number(useFcfs ? campaign.total_fcfs || 0 : useGtd ? campaign.total_gtd || 0 : campaign.budget || 0)
   };
 }
 
 export type TelegramTask = {
   chat_id: string;
   title?: string | null;
+  public_link?: string | null;
 };
 
 export type TelegramGroupStatus = TelegramTask & {
@@ -545,13 +574,17 @@ export async function getNftCampaign(id: string) {
     if (error || !campaign) throw error || new Error('NFT campaign not found');
     if (participationError) throw participationError;
 
-    const statsMap = await getNftCampaignStatsMap([campaign.id]);
+    const [statsMap, verifiedTasks] = await Promise.all([
+      getNftCampaignStatsMap([campaign.id]),
+      getNftTaskVerificationMap(campaign.id, userId)
+    ]);
     return {
       campaign: {
         ...withNftCampaignMetadata(campaign),
         stats: statsMap.get(campaign.id) || emptyStats()
       },
-      participation: participation || null
+      participation: participation || null,
+      verified_tasks: verifiedTasks
     };
   }, path);
 }
