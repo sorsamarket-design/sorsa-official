@@ -2,13 +2,16 @@ import { requireSupabase } from './supabase';
 import { getBackendBase } from './appSession';
 
 async function requestNftCampaigns(path: string, options: RequestInit = {}) {
-  requireSupabase();
+  const supabase = requireSupabase();
+  const { data } = await supabase.auth.getSession();
+  const accessToken = data.session?.access_token;
   const response = await fetch(`${getBackendBase()}${path}`, {
     ...options,
     credentials: 'include',
     headers: {
       ...(options.headers || {}),
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
     }
   });
   const body = await response.json().catch(() => null);
