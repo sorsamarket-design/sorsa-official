@@ -26,6 +26,38 @@ function isTelegramChatId(value: string) {
   return /^-?\d+$/.test(value.trim());
 }
 
+function telegramPublicReferenceKey(value: string) {
+  const raw = value.trim();
+  if (!raw || isTelegramChatId(raw) || /t\.me\/(\+|joinchat\/)/i.test(raw)) return '';
+  const match = raw.match(/(?:https?:\/\/)?(?:www\.)?(?:t\.me|telegram\.me)\/([A-Za-z0-9_]+)/i);
+  const username = (match ? match[1] : raw.replace(/^@/, '')).split(/[/?#]/)[0].trim();
+  return /^[A-Za-z0-9_]{5,}$/.test(username) ? username.toLowerCase() : '';
+}
+
+function telegramStatusKeys(input: string, group?: TelegramGroupStatus | null) {
+  const keys = new Set<string>();
+  const raw = cleanTelegramChatId(input);
+  if (raw) keys.add(raw);
+  const inputUsername = telegramPublicReferenceKey(raw);
+  if (inputUsername) {
+    keys.add(inputUsername);
+    keys.add(`@${inputUsername}`);
+    keys.add(`https://t.me/${inputUsername}`);
+  }
+  if (group?.chat_id) keys.add(String(group.chat_id));
+  if (group?.public_link) {
+    const publicLink = cleanTelegramChatId(group.public_link);
+    const groupUsername = telegramPublicReferenceKey(publicLink);
+    keys.add(publicLink);
+    if (groupUsername) {
+      keys.add(groupUsername);
+      keys.add(`@${groupUsername}`);
+      keys.add(`https://t.me/${groupUsername}`);
+    }
+  }
+  return Array.from(keys);
+}
+
 function combineDateAndTime(date: string, time: string, fallback: string | null = null) {
   if (!date) return null;
   if (!time) return fallback ?? date;
@@ -186,7 +218,9 @@ export default function AdminNFTCampaignNew() {
   const refreshTelegramStatuses = async (verifyPublicLinks = false) => {
     const references = Array.from(new Set(telegramTasks.map(cleanTelegramChatId).filter(Boolean))).slice(0, 3);
     const chatIds = references.filter(isTelegramChatId);
-    const publicLinks = verifyPublicLinks ? references.filter(value => !isTelegramChatId(value)) : [];
+    const publicLinks = verifyPublicLinks
+      ? references.filter(value => !isTelegramChatId(value) && telegramPublicReferenceKey(value))
+      : [];
     if (!chatIds.length && !publicLinks.length) {
       setTelegramStatuses({});
       return;
@@ -197,13 +231,16 @@ export default function AdminNFTCampaignNew() {
       if (chatIds.length) {
         const result = await getAdminTelegramGroupStatuses(chatIds);
         for (const group of result.groups || []) {
-          next[group.chat_id] = group;
+          for (const key of telegramStatusKeys(group.chat_id, group)) {
+            next[key] = group;
+          }
         }
       }
       for (const link of publicLinks) {
         const result = await telegramNotifications.verifyAdminGroup(link, session?.access_token);
-        next[link] = result.group;
-        next[result.group.chat_id] = result.group;
+        for (const key of telegramStatusKeys(link, result.group)) {
+          next[key] = result.group;
+        }
       }
       setTelegramStatuses(prev => ({ ...prev, ...next }));
     } catch (err: any) {
@@ -215,7 +252,11 @@ export default function AdminNFTCampaignNew() {
 
   useEffect(() => {
     if (campaignType !== 'raffle') return;
-    const timer = window.setTimeout(() => refreshTelegramStatuses(false), 500);
+    const hasPublicReference = telegramTasks.some(task => {
+      const cleaned = cleanTelegramChatId(task);
+      return cleaned && !isTelegramChatId(cleaned) && telegramPublicReferenceKey(cleaned);
+    });
+    const timer = window.setTimeout(() => refreshTelegramStatuses(hasPublicReference), 500);
     return () => window.clearTimeout(timer);
   }, [campaignType, telegramTasks, session?.access_token]);
 
@@ -776,7 +817,9 @@ export default function AdminNFTCampaignNew() {
                         <div className="space-y-3">
                           {telegramTasks.map((chatId, index) => {
                             const cleanedChatId = cleanTelegramChatId(chatId);
-                            const status = cleanedChatId ? telegramStatuses[cleanedChatId] : null;
+                            const status = cleanedChatId
+                              ? telegramStatusKeys(cleanedChatId).map(key => telegramStatuses[key]).find(Boolean) || null
+                              : null;
                             const isConfigured = status?.bot_permission_status === 'configured';
 
                             return (

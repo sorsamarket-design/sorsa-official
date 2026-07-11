@@ -160,6 +160,7 @@ export type TelegramTask = {
 
 export type TelegramGroupStatus = TelegramTask & {
   chat_type?: string | null;
+  public_link?: string | null;
   bot_status?: string | null;
   bot_permission_status?: string | null;
   last_error?: string | null;
