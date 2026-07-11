@@ -104,7 +104,11 @@ body::before {
    landing-navbar has no fixed height, so padding is enough there. No notch height is
    ever hardcoded - env() reads it from the browser/device at render time. */
 @media (max-width: 47.999rem) {
-  .app-topbar,
+  .app-topbar {
+    padding-top: env(safe-area-inset-top);
+    height: calc(4.625rem + env(safe-area-inset-top));
+  }
+
   .creator-page-controls {
     padding-top: env(safe-area-inset-top);
     height: calc(4rem + env(safe-area-inset-top));
@@ -189,7 +193,7 @@ body::before {
 
   .app-sidebar ~ main {
     margin-left: 13rem !important;
-    margin-top: 4rem !important;
+    margin-top: 4.625rem !important;
     padding: 1.25rem 1.5rem !important;
     background:
       radial-gradient(circle at 22% 0%, rgba(123, 47, 255, 0.035), transparent 26rem),
@@ -510,6 +514,10 @@ body::before {
 @media (max-width: 47.999rem) {
   .workspace-route-frame {
     padding-top: calc(4rem + env(safe-area-inset-top));
+  }
+
+  .workspace-route-frame.workspace-route-frame--brand {
+    padding-top: calc(4.625rem + env(safe-area-inset-top));
   }
 
   html,

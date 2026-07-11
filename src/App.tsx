@@ -65,12 +65,17 @@ function CampaignsRedirect() {
 
 function RouteLayout() {
   const location = useLocation();
-  const hasWorkspaceMobileNavbar =
-    location.pathname.startsWith('/brand/') ||
-    location.pathname.startsWith('/creator/');
+  const isBrandRoute = location.pathname.startsWith('/brand/');
+  const isCreatorRoute = location.pathname.startsWith('/creator/');
+
+  const routeFrameClassName = isBrandRoute
+    ? 'workspace-route-frame workspace-route-frame--brand'
+    : isCreatorRoute
+      ? 'workspace-route-frame'
+      : undefined;
 
   return (
-    <div className={hasWorkspaceMobileNavbar ? 'workspace-route-frame' : undefined}>
+    <div className={routeFrameClassName}>
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />

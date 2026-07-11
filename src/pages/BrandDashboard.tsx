@@ -33,7 +33,7 @@ export default function BrandDashboard() {
   return (
     <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] font-sans selection:bg-cyan/30 flex">
       <BrandSidebar /><TopBar />
-      <main className="flex-1 md:ml-64 mt-20 p-4 md:p-8"><div className="max-w-6xl mx-auto">
+      <main className="flex-1 md:ml-64 mt-[5.625rem] p-4 md:p-8"><div className="max-w-6xl mx-auto">
         <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between mb-8 sm:mb-10">
           <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: appleEase }} className="text-3xl font-semibold tracking-tight text-white">Dashboard</motion.h1>
           <motion.button initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: appleEase, delay: 0.1 }} onClick={() => navigate('/brand/campaigns/new')} className="w-full sm:w-auto px-5 sm:px-6 py-3 rounded-full bg-cyan text-black font-semibold flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform duration-300"><Plus className="w-5 h-5" />Create Campaign</motion.button>

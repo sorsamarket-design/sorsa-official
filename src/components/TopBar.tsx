@@ -29,7 +29,7 @@ export default function TopBar() {
   const avatar = normalizeAvatarUrl(user?.user_metadata?.avatar_url) || getInitialsAvatarUrl(user?.email || 'User');
 
   return (
-    <header className="app-topbar h-16 fixed top-0 right-0 left-0 md:left-64 bg-[#0A0A1E] z-40">
+    <header className="app-topbar h-[4.625rem] fixed top-0 right-0 left-0 md:left-64 bg-[#0A0A1E] z-40">
       {/* Glass effect lives on its own absolutely-positioned layer, separate from
           the fixed positioning element above - iOS Safari (26+) doesn't reliably
           composite backdrop-filter directly on a fixed element that extends into
