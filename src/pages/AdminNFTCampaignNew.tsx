@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ArrowLeft, Calendar, CheckCircle2, Image, Loader2, MessageCircle, Minus, Plus, Sparkles, Users, X } from 'lucide-react';
+import { ArrowLeft, Calendar, CheckCircle2, Clock, Image, Loader2, MessageCircle, Minus, Plus, Sparkles, Users, X } from 'lucide-react';
 import AdminSidebar from '../components/AdminSidebar';
 import { createNftCampaign, getAdminTelegramGroupStatuses, type NftCampaignType, type TelegramGroupStatus } from '../lib/nftCampaigns';
 import { useAuth } from '../context/AuthContext';
@@ -24,6 +24,13 @@ function cleanTelegramChatId(value: string) {
 
 function isTelegramChatId(value: string) {
   return /^-?\d+$/.test(value.trim());
+}
+
+function combineDateAndTime(date: string, time: string, fallback: string | null = null) {
+  if (!date) return null;
+  if (!time) return fallback ?? date;
+  const localDate = new Date(`${date}T${time}:00`);
+  return Number.isNaN(localDate.getTime()) ? date : localDate.toISOString();
 }
 
 function telegramStatusLabel(status?: string | null) {
@@ -64,7 +71,9 @@ export default function AdminNFTCampaignNew() {
     max_content_submissions: '5',
     min_sorsa_score: '150',
     start_date: '',
-    end_date: ''
+    end_date: '',
+    start_time: '',
+    end_time: ''
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -232,7 +241,9 @@ export default function AdminNFTCampaignNew() {
       max_content_submissions: '5',
       min_sorsa_score: '150',
       start_date: '',
-      end_date: ''
+      end_date: '',
+      start_time: '',
+      end_time: ''
     });
     setCampaignType('raffle');
     setImagePreview('');
@@ -289,6 +300,21 @@ export default function AdminNFTCampaignNew() {
         }
       }
 
+      const startDateTime = campaignType === 'raffle'
+        ? combineDateAndTime(formData.start_date, formData.start_time)
+        : formData.start_date || null;
+      const endDateTime = campaignType === 'raffle'
+        ? combineDateAndTime(formData.end_date, formData.end_time, formData.end_date || null)
+        : formData.end_date || null;
+
+      if (campaignType === 'raffle' && formData.start_date && formData.end_date && startDateTime && endDateTime) {
+        const startMs = new Date(startDateTime).getTime();
+        const endMs = new Date(endDateTime).getTime();
+        if (!Number.isNaN(startMs) && !Number.isNaN(endMs) && endMs <= startMs) {
+          throw new Error('Raffle end date and hour must be after the start date and hour.');
+        }
+      }
+
       await createNftCampaign({
         title: formData.title.trim(),
         goal: formData.goal.trim(),
@@ -308,8 +334,8 @@ export default function AdminNFTCampaignNew() {
         comment_links: campaignType === 'raffle' ? cleanedCommentLinks : [],
         engagement_links: campaignType === 'raffle' ? cleanedEngagementLinks : [],
         telegram_tasks: resolvedTelegramTasks,
-        start_date: formData.start_date || null,
-        end_date: formData.end_date || null
+        start_date: startDateTime,
+        end_date: endDateTime
       });
 
       setSuccess('NFT campaign created. It will now appear on the creator NFT Campaigns page.');
@@ -506,6 +532,12 @@ export default function AdminNFTCampaignNew() {
                           <Calendar className="w-4 h-4" />
                         </button>
                       </div>
+                      {campaignType === 'raffle' && (
+                        <div className="relative">
+                          <input type="time" name="start_time" value={formData.start_time} onChange={handleInputChange} className="w-full px-4 py-3 pr-12 rounded-xl bg-black/50 border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all [color-scheme:dark]" aria-label="Start hour" />
+                          <Clock className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/55" />
+                        </div>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-white">End Date</label>
@@ -515,9 +547,17 @@ export default function AdminNFTCampaignNew() {
                           <Calendar className="w-4 h-4" />
                         </button>
                       </div>
+                      {campaignType === 'raffle' && (
+                        <div className="relative">
+                          <input type="time" name="end_time" value={formData.end_time} onChange={handleInputChange} className="w-full px-4 py-3 pr-12 rounded-xl bg-black/50 border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all [color-scheme:dark]" aria-label="End hour" />
+                          <Clock className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/55" />
+                        </div>
+                      )}
+                      {campaignType === 'raffle' && (
+                        <p className="text-xs text-muted">Choose an end hour for raffles that should close at a specific time.</p>
+                      )}
                     </div>
                   </div>
-
                   <div className="space-y-3">
                     <label className="text-sm font-medium text-white">Category</label>
                     <div className="inline-flex px-4 py-2 rounded-full text-sm font-medium border bg-purple-500/20 text-purple-300 border-purple-500/30">
