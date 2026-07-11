@@ -23,6 +23,8 @@ export default function AdminSidebar() {
 
   useLockBodyScroll(isOpen);
 
+  const closeSidebar = () => setIsOpen(false);
+
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/admin/dashboard' },
     { icon: Megaphone, label: 'Campaigns', path: '/admin/campaigns' },
@@ -36,6 +38,7 @@ export default function AdminSidebar() {
   ];
 
   const handleLogout = async () => {
+    closeSidebar();
     await signOut();
     navigate('/auth/admin', { replace: true });
   };
@@ -46,7 +49,7 @@ export default function AdminSidebar() {
       {isOpen && (
         <div 
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
-          onClick={() => setIsOpen(false)}
+          onClick={closeSidebar}
         />
       )}
 
@@ -60,7 +63,7 @@ export default function AdminSidebar() {
           </div>
           <button 
             className="md:hidden text-muted hover:text-white"
-            onClick={() => setIsOpen(false)}
+            onClick={closeSidebar}
           >
             <X className="w-6 h-6" />
           </button>
@@ -72,6 +75,7 @@ export default function AdminSidebar() {
               key={item.path}
               to={item.path}
               end
+              onClick={closeSidebar}
               className={({ isActive }) =>
                 `app-nav-link flex min-h-9 items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[13px] transition-all duration-200 ${
                   isActive

@@ -23,6 +23,8 @@ export default function BrandSidebar() {
 
   useLockBodyScroll(isOpen);
 
+  const closeSidebar = () => setIsOpen(false);
+
   const navLinks = [
     { name: 'Dashboard', path: '/brand/dashboard', icon: LayoutDashboard },
     { name: 'Brand Profiles', path: '/brand/profiles', icon: Briefcase },
@@ -37,7 +39,7 @@ export default function BrandSidebar() {
       {isOpen && (
         <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
-          onClick={() => setIsOpen(false)}
+          onClick={closeSidebar}
         />
       )}
 
@@ -45,14 +47,17 @@ export default function BrandSidebar() {
         <div className="h-16 px-4 flex items-center justify-between">
           <div
             className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity"
-            onClick={() => navigate('/')}
+            onClick={() => {
+              closeSidebar();
+              navigate('/');
+            }}
           >
             <img src="/AtlasReachIcon.png" alt="Logo" className="h-3 w-auto shrink-0 object-contain" />
             <span className="text-base font-semibold text-white tracking-tight">AtlasReach</span>
           </div>
           <button
             className="md:hidden text-muted hover:text-white"
-            onClick={() => setIsOpen(false)}
+            onClick={closeSidebar}
           >
             <X className="w-6 h-6" />
           </button>
@@ -66,7 +71,10 @@ export default function BrandSidebar() {
             return (
               <button
                 key={link.name}
-                onClick={() => navigate(link.path)}
+                onClick={() => {
+                  closeSidebar();
+                  navigate(link.path);
+                }}
                 className={`app-nav-link w-full flex min-h-9 items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[13px] transition-all duration-200 ${
                   isActive
                     ? 'bg-white/[0.075] text-cyan border border-white/[0.09]'

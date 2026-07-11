@@ -57,6 +57,8 @@ export default function CreatorSidebar() {
 
   useLockBodyScroll(isOpen);
 
+  const closeSidebar = () => setIsOpen(false);
+
   const handle =
     profile?.x_handle ||
     user?.user_metadata?.user_name ||
@@ -72,7 +74,7 @@ export default function CreatorSidebar() {
           type="button"
           aria-label="Close navigation"
           className="fixed inset-0 z-40 bg-black/65 backdrop-blur-sm md:hidden"
-          onClick={() => setIsOpen(false)}
+          onClick={closeSidebar}
         />
       )}
 
@@ -85,7 +87,10 @@ export default function CreatorSidebar() {
           <button
             type="button"
             className="flex min-h-11 items-center gap-1 rounded-xl text-left transition-opacity hover:opacity-80"
-            onClick={() => navigate('/')}
+            onClick={() => {
+              closeSidebar();
+              navigate('/');
+            }}
           >
             <img src="/AtlasReachIcon.png" alt="" className="h-3 w-auto shrink-0 object-contain" />
             <span className="text-base font-semibold tracking-tight text-white">AtlasReach</span>
@@ -95,7 +100,7 @@ export default function CreatorSidebar() {
             type="button"
             aria-label="Close navigation"
             className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-muted transition-colors hover:bg-white/5 hover:text-white md:hidden"
-            onClick={() => setIsOpen(false)}
+            onClick={closeSidebar}
           >
             <X className="h-5 w-5" />
           </button>
@@ -112,6 +117,7 @@ export default function CreatorSidebar() {
                   <NavLink
                     key={item.path}
                     to={item.path}
+                    onClick={closeSidebar}
                     className={({ isActive }) =>
                       `app-nav-link group flex min-h-9 items-center gap-2.5 rounded-lg border px-2.5 py-1.5 text-[13px] font-medium ${
                         isActive
@@ -132,7 +138,10 @@ export default function CreatorSidebar() {
         <div className="app-sidebar-footer border-t border-white/10 p-2.5">
           <button
             type="button"
-            onClick={() => navigate('/creator/profile')}
+            onClick={() => {
+              closeSidebar();
+              navigate('/creator/profile');
+            }}
             className="app-profile-card flex w-full items-center gap-2.5 rounded-lg border border-white/10 bg-white/[0.035] p-2.5 text-left"
           >
             <CreatorAvatar
