@@ -69,10 +69,11 @@ function RouteLayout() {
   const location = useLocation();
   const isBrandRoute = location.pathname.startsWith('/brand/');
   const isCreatorRoute = location.pathname.startsWith('/creator/');
+  const isAdminRoute = location.pathname.startsWith('/admin/');
 
   const routeFrameClassName = isBrandRoute
     ? 'workspace-route-frame workspace-route-frame--brand'
-    : isCreatorRoute
+    : isCreatorRoute || isAdminRoute
       ? 'workspace-route-frame'
       : undefined;
 

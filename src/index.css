@@ -84,7 +84,8 @@ body::before {
    background-color (set inline in TopBar.tsx) as a fallback that's never
    see-through, even if this blur layer has issues. */
 .app-topbar-glass,
-.creator-topbar-glass {
+.creator-topbar-glass,
+.admin-topbar-glass {
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
   -webkit-backface-visibility: hidden;
@@ -117,7 +118,8 @@ body::before {
     height: calc(4.625rem + env(safe-area-inset-top));
   }
 
-  .creator-page-controls {
+  .creator-page-controls,
+  .admin-page-controls {
     padding-top: env(safe-area-inset-top);
     height: calc(4rem + env(safe-area-inset-top));
   }
@@ -141,6 +143,7 @@ body::before {
    sliding past/through the bar instead of staying cleanly pinned on top of it. */
 .app-topbar,
 .creator-page-controls,
+.admin-page-controls,
 .landing-navbar {
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
