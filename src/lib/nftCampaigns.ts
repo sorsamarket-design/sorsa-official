@@ -1,10 +1,30 @@
 import { requireSupabase } from './supabase';
 import { getBackendBase } from './appSession';
 
-async function requestNftCampaigns(path: string, options: RequestInit = {}) {
+async function getNftBackendAccessToken(forceRefresh = false) {
   const supabase = requireSupabase();
-  const { data } = await supabase.auth.getSession();
-  const accessToken = data.session?.access_token;
+  if (forceRefresh) {
+    const { data, error } = await supabase.auth.refreshSession();
+    if (error) throw new Error(error.message || 'Could not refresh current session.');
+    return data.session?.access_token || null;
+  }
+
+  const { data, error } = await supabase.auth.getSession();
+  if (error) throw new Error(error.message || 'Could not read current session.');
+  const session = data.session;
+  if (!session) return null;
+
+  const expiresAtMs = session.expires_at ? session.expires_at * 1000 : 0;
+  if (expiresAtMs && expiresAtMs <= Date.now() + 60_000) {
+    return getNftBackendAccessToken(true);
+  }
+
+  return session.access_token || null;
+}
+
+async function requestNftCampaigns(path: string, options: RequestInit = {}) {
+  requireSupabase();
+  let accessToken = await getNftBackendAccessToken();
   const response = await fetch(`${getBackendBase()}${path}`, {
     ...options,
     credentials: 'include',
@@ -15,6 +35,26 @@ async function requestNftCampaigns(path: string, options: RequestInit = {}) {
     }
   });
   const body = await response.json().catch(() => null);
+
+  if (!response.ok && response.status === 401 && body?.error === 'Invalid session' && accessToken) {
+    accessToken = await getNftBackendAccessToken(true);
+    if (accessToken) {
+      const retryResponse = await fetch(`${getBackendBase()}${path}`, {
+        ...options,
+        credentials: 'include',
+        headers: {
+          ...(options.headers || {}),
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`
+        }
+      });
+      const retryBody = await retryResponse.json().catch(() => null);
+      if (!retryResponse.ok) {
+        throw new Error(retryBody?.error || 'NFT campaign request failed');
+      }
+      return retryBody;
+    }
+  }
 
   if (!response.ok) {
     throw new Error(body?.error || 'NFT campaign request failed');
