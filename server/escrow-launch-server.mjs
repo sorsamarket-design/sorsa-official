@@ -29,6 +29,7 @@ const env = {
   ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS || process.env.VITE_ALLOWED_ORIGINS,
   SORSA_API_BASE: process.env.SORSA_API_BASE || process.env.VITE_SORSA_API_BASE || 'https://api.sorsa.io/v3',
   SORSA_API_KEY: process.env.SORSA_API_KEY || process.env.VITE_SORSA_API_KEY,
+  SORSA_PROFILE_SYNC_ENABLED: process.env.SORSA_PROFILE_SYNC_ENABLED === 'true',
   SORSA_WEEKLY_SYNC_ENABLED: process.env.SORSA_WEEKLY_SYNC_ENABLED !== 'false',
   CREATOR_IDENTITY_SYNC_ENABLED: process.env.CREATOR_IDENTITY_SYNC_ENABLED !== 'false',
   CREATOR_IDENTITY_SYNC_INTERVAL_DAYS: process.env.CREATOR_IDENTITY_SYNC_INTERVAL_DAYS || '4',
@@ -1492,11 +1493,28 @@ function getNextSundayMidnightUtc(now = new Date()) {
 }
 
 async function syncCreatorProfileFromSorsa(profile) {
+  const previousScore = profile.sorsa_score == null ? null : Math.round(Number(profile.sorsa_score || 0));
   const xHandle = cleanHandle(profile.x_handle);
+
+  if (!env.SORSA_PROFILE_SYNC_ENABLED) {
+    console.log('Sorsa profile sync skipped; keeping stored creator score:', {
+      creatorId: profile.id,
+      xHandle: xHandle || null,
+      storedScore: previousScore,
+      reason: 'sorsa_profile_sync_disabled'
+    });
+    return {
+      synced: false,
+      frozen: true,
+      reason: 'sorsa_profile_sync_disabled',
+      previousScore,
+      newScore: previousScore
+    };
+  }
+
   if (!xHandle) return { synced: false, reason: 'missing_x_handle' };
 
   const startedAt = new Date();
-  const previousScore = profile.sorsa_score == null ? null : Math.round(Number(profile.sorsa_score || 0));
   console.log('Sorsa profile sync started:', {
     creatorId: profile.id,
     xHandle,
@@ -1757,6 +1775,11 @@ async function runWeeklySorsaProfileSync() {
 function scheduleWeeklySorsaProfileSync() {
   if (!env.SORSA_WEEKLY_SYNC_ENABLED) {
     console.log('Weekly Sorsa profile sync is disabled.');
+    return;
+  }
+
+  if (!env.SORSA_PROFILE_SYNC_ENABLED) {
+    console.log('Weekly Sorsa profile sync is frozen; stored creator scores will be kept.');
     return;
   }
 
@@ -3847,7 +3870,7 @@ app.post('/creator/sorsa/sync', async (req, res) => {
     }
 
     const result = await syncCreatorProfileFromSorsa(profile);
-    if (!result.synced) {
+    if (!result.synced && result.reason === 'missing_x_handle') {
       throw Object.assign(new Error('Add your X handle before syncing Sorsa score'), { status: 400 });
     }
 
@@ -3858,7 +3881,7 @@ app.post('/creator/sorsa/sync', async (req, res) => {
       .single();
     if (updatedError) throw Object.assign(new Error(updatedError.message), { status: 500 });
 
-    return res.json({ profile: updatedProfile });
+    return res.json({ profile: updatedProfile, sorsaSync: result });
   } catch (error) {
     const status = error.status || 500;
     return res.status(status).json({ error: error.message || 'Sorsa profile sync failed' });
