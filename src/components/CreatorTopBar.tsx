@@ -21,7 +21,7 @@ export default function CreatorTopBar({ embedded = false }: CreatorTopBarProps) 
           the safe area, which showed up as a transparent/black seam behind the
           notch. The bg-[#0A0A1E] on the fixed parent is a solid fallback so that
           region is never see-through even if the blur layer has issues. */}
-      <div className="creator-topbar-glass absolute inset-0 border-b border-white/10 bg-[#0A0A1E]/95 backdrop-blur-xl" />
+      <div className="absolute inset-0 border-b border-white/10 bg-[#0A0A1E]/95 backdrop-blur-xl" />
       <div className="relative flex h-full items-center gap-2 px-3">
         <button
           type="button"
