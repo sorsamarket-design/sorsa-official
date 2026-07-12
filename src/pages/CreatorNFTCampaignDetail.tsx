@@ -160,14 +160,23 @@ export default function CreatorNFTCampaignDetail() {
   const canVerifyTasks = !campaignEnded;
   const hasWalletAddress = Boolean(creatorProfile?.wallet_address);
   const primaryAllocation = getNftCampaignPrimaryAllocation(campaign);
-  const collectionDetails = [
+  const collectionDetailStats = [
     { label: 'Chain', value: campaign.collection_details?.chain },
     { label: 'Mint Date', value: campaign.collection_details?.mint_date },
     { label: 'Supply', value: campaign.collection_details?.supply },
     { label: 'Mint Price', value: campaign.collection_details?.mint_price }
-  ].filter((item) => String(item.value || '').trim());
+  ];
+  const collectionDetailCards = collectionDetailStats.map((item) => ({
+    ...item,
+    value: String(item.value || '').trim() || 'TBA'
+  }));
   const overviewText = String(campaign.overview || '').trim();
-  const overviewIsCollectionDetails = collectionDetails.length > 0 && overviewText.startsWith('Collection Details\n');
+  const defaultTaskAuditNote = "Note: We may check your tasks again anytime before the raffle ends. If you didn't finish all of them, your entry will be void.";
+  const campaignDetailsNote = overviewText
+    .split(/\n{2,}/)
+    .map((section) => section.trim())
+    .find((section) => /^Note:/i.test(section)) || defaultTaskAuditNote;
+  const overviewIsCollectionDetails = overviewText.startsWith('Collection Details\n');
 
   const handleSubmitContent = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -302,20 +311,19 @@ export default function CreatorNFTCampaignDetail() {
             </div>
           </div>
 
-          <section className="glass-panel rounded-[2rem] p-8 border border-white/10">
-            <h2 className="text-xl font-semibold text-white mb-4">Campaign Details</h2>
-            {collectionDetails.length ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                {collectionDetails.map((item) => (
-                  <div key={item.label} className="rounded-xl border border-white/10 bg-white/5 p-4">
-                    <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-muted">{item.label}</p>
-                    <p className="mt-1 text-sm font-semibold text-white">{item.value}</p>
-                  </div>
-                ))}
-              </div>
-            ) : null}
+          <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
+            <h2 className="mb-6 text-xl font-bold text-white">Campaign Details</h2>
+            <div className="grid grid-cols-2 gap-4">
+              {collectionDetailCards.map((item) => (
+                <div key={item.label} className="rounded-xl bg-black/20 p-5">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">{item.label}</p>
+                  <p className="mt-2 break-words text-xl font-bold text-white sm:text-2xl">{item.value}</p>
+                </div>
+              ))}
+            </div>
+            <p className="mt-6 text-muted leading-relaxed">{campaignDetailsNote}</p>
             {!overviewIsCollectionDetails && (
-              <div className="text-muted leading-relaxed whitespace-pre-line">
+              <div className="mt-6 text-muted leading-relaxed whitespace-pre-line">
                 <LinkifiedText text={overviewText || 'No campaign brief provided.'} />
               </div>
             )}

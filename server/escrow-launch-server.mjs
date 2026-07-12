@@ -1211,6 +1211,9 @@ function mapTelegramVerificationError(error, chatId) {
     const suffix = error.retryAfter ? ` Try again in ${error.retryAfter} seconds.` : ' Try again shortly.';
     return Object.assign(new Error(`Telegram rate limit reached.${suffix}`), { status: 429 });
   }
+  if (/PARTICIPANT_ID_INVALID|user not found|member not found|participant not found/i.test(description)) {
+    return Object.assign(new Error("You haven't joined the group yet"), { status: 403 });
+  }
   if (/chat not found/i.test(description)) {
     return Object.assign(new Error(`Telegram chat ${chatId} was not found. Add the bot to the group and refresh the task.`), { status: 404 });
   }
