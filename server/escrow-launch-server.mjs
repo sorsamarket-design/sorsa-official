@@ -639,6 +639,25 @@ function isNftContentType(campaignType) {
   return campaignType === 'content' || campaignType === 'all';
 }
 
+function formatNftAllocationTitle(title, allocationType) {
+  const label = ['gtd', 'fcfs'].includes(allocationType) ? allocationType.toUpperCase() : 'WL';
+  const cleanedTitle = String(title || '')
+    .trim()
+    .replace(/^\((?:WL|GTD|FCFS)\)\s*/i, '')
+    .replace(/\s*\((?:WL|GTD|FCFS)\)$/i, '')
+    .trim();
+  if (!cleanedTitle) return '';
+  return `${cleanedTitle} (${label})`;
+}
+
+function stripNftAllocationLabel(title) {
+  return String(title || '')
+    .trim()
+    .replace(/^\((?:WL|GTD|FCFS)\)\s*/i, '')
+    .replace(/\s*\((?:WL|GTD|FCFS)\)$/i, '')
+    .trim();
+}
+
 function normalizeNftCampaignBody(body, userId, brandProfile) {
   const campaign = body?.campaign;
   if (!campaign || typeof campaign !== 'object') {
@@ -650,7 +669,7 @@ function normalizeNftCampaignBody(body, userId, brandProfile) {
     throw Object.assign(new Error('NFT campaign type must be Raffle or Content'), { status: 400 });
   }
 
-  const title = String(campaign.title || '').trim();
+  const rawTitle = String(campaign.title || '').trim();
   const goal = String(campaign.goal || '').trim();
   const rawOverview = String(campaign.overview || '').trim();
   const budget = Number(campaign.budget || 0);
@@ -658,6 +677,7 @@ function normalizeNftCampaignBody(body, userId, brandProfile) {
   const totalFcfs = Number(campaign.total_fcfs || 0);
   const rawAllocationType = String(campaign.allocation_type || '').toLowerCase();
   const allocationType = ['gtd', 'fcfs'].includes(rawAllocationType) ? rawAllocationType : 'wl';
+  const title = formatNftAllocationTitle(rawTitle, allocationType);
   const minSorsaScore = Math.max(0, Math.min(1000, Number(campaign.min_sorsa_score || 0)));
   const imageUrl = typeof campaign.image_url === 'string' && campaign.image_url.trim() ? campaign.image_url.trim() : null;
   const backgroundImageUrl = typeof campaign.background_image_url === 'string' && campaign.background_image_url.trim()
@@ -1175,6 +1195,12 @@ async function sendTelegramPhoto(chatId, imageUrl, caption, buttonUrl = null, op
   return telegramRequest('sendPhoto', form);
 }
 
+function normalizeTelegramSupergroupChatId(chatId) {
+  const value = String(chatId || '').trim();
+  if (/^100\d{8,}$/.test(value)) return `-${value}`;
+  return value;
+}
+
 function telegramMembershipCacheKey(chatId, userId) {
   return `${telegramTaskKey(chatId)}:${telegramTaskKey(userId)}`;
 }
@@ -1448,6 +1474,7 @@ async function notifyRaffleWinnersGroup(campaign, winners) {
     return { sent: 0, skipped: 1, reason: 'missing_group_chat_id' };
   }
 
+  const raffleGroupChatId = normalizeTelegramSupergroupChatId(env.TELEGRAM_RAFFLE_GROUP_CHAT_ID);
   const caption = buildRaffleWinnersAnnouncement(campaign, winners);
   const imageUrl = campaign?.background_image_url || campaign?.image_url || null;
   const parsedThreadId = env.TELEGRAM_RAFFLE_GROUP_THREAD_ID
@@ -1457,14 +1484,51 @@ async function notifyRaffleWinnersGroup(campaign, winners) {
   const topicOptions = threadId ? { message_thread_id: threadId } : {};
   if (imageUrl) {
     try {
-      await sendTelegramPhoto(env.TELEGRAM_RAFFLE_GROUP_CHAT_ID, imageUrl, caption, null, topicOptions);
+      await sendTelegramPhoto(raffleGroupChatId, imageUrl, caption, null, topicOptions);
       return { sent: 1, skipped: 0, usedImage: true, threadId };
     } catch (error) {
       console.warn('Telegram raffle winners image failed, sending text fallback:', error.message || error);
     }
   }
 
-  await sendTelegramMessage(env.TELEGRAM_RAFFLE_GROUP_CHAT_ID, caption, topicOptions);
+  await sendTelegramMessage(raffleGroupChatId, caption, topicOptions);
+  return { sent: 1, skipped: 0, threadId };
+}
+
+function buildAdminNftLaunchAnnouncement(campaign) {
+  const campaignTitle = escapeTelegramHtml(stripNftAllocationLabel(campaign?.title) || campaign?.title || 'NFT campaign');
+  const campaignUrl = getCreatorCampaignUrl(campaign);
+  const allocationType = ['gtd', 'fcfs'].includes(campaign?.allocation_type) ? campaign.allocation_type : 'wl';
+  const allocationLabel = allocationType.toUpperCase();
+  const allocationSpots = Number(campaign?.budget || 0).toLocaleString();
+  const action = campaignUrl ? `\n\n${escapeTelegramHtml(campaignUrl)}` : '';
+
+  return `<b>AtlasReach X ${campaignTitle}</b>\n\n${allocationSpots} ${allocationLabel} Spots${action}`;
+}
+
+async function notifyAdminNftCampaignLaunch(campaign) {
+  if (!env.TELEGRAM_RAFFLE_GROUP_CHAT_ID) {
+    return { sent: 0, skipped: 1, reason: 'missing_group_chat_id' };
+  }
+
+  const chatId = normalizeTelegramSupergroupChatId(env.TELEGRAM_RAFFLE_GROUP_CHAT_ID);
+  const parsedThreadId = Number(process.env.TELEGRAM_NFT_LAUNCH_GROUP_THREAD_ID || 3);
+  const threadId = Number.isFinite(parsedThreadId) && parsedThreadId > 0 ? parsedThreadId : null;
+  const topicOptions = threadId ? { message_thread_id: threadId } : {};
+  const caption = buildAdminNftLaunchAnnouncement(campaign);
+  const imageUrl = campaign?.background_image_url || null;
+  const campaignUrl = getCreatorCampaignUrl(campaign);
+
+  if (imageUrl) {
+    try {
+      await sendTelegramPhoto(chatId, imageUrl, caption, campaignUrl, topicOptions);
+      return { sent: 1, skipped: 0, usedImage: true, threadId };
+    } catch (error) {
+      console.warn('Telegram admin NFT launch image failed, sending text fallback:', error.message || error);
+    }
+  }
+
+  await sendTelegramMessage(chatId, caption, topicOptions);
   return { sent: 1, skipped: 0, threadId };
 }
 
@@ -2953,8 +3017,16 @@ app.post('/admin/nft-campaigns', async (req, res) => {
       .single();
     if (error) throw Object.assign(new Error(error.message), { status: 500 });
 
+    const campaign = withNftCampaignMetadata(data);
+    const telegram = await notifyAdminNftCampaignLaunch(campaign).catch((error) => {
+      console.warn(`Admin NFT campaign Telegram launch announcement failed for campaign ${data.id}:`, error.message || error);
+      return { sent: 0, skipped: 0, failed: 1 };
+    });
+    console.log(`Admin NFT campaign Telegram launch announcement result for campaign ${data.id}:`, telegram);
+
     return res.status(201).json({
-      campaign: withNftCampaignMetadata(data)
+      campaign,
+      telegram
     });
   } catch (error) {
     const status = error.status || 500;
@@ -3286,6 +3358,7 @@ app.post('/admin/raffles/:campaignId/finalize', async (req, res) => {
       console.warn(`Raffle winners Telegram group announcement failed for campaign ${campaignId}:`, error.message || error);
       return { sent: 0, skipped: 0, failed: 1 };
     });
+    console.log(`Raffle winners Telegram group announcement result for campaign ${campaignId}:`, telegram);
 
     return res.json({
       winners,
