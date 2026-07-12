@@ -1407,7 +1407,7 @@ function getCreatorCampaignUrl(campaign) {
   const metadata = parseCampaignMetadata(campaign);
   const isNftCampaign = metadata.is_nft_campaign || campaign.campaign_type === 'raffle' || campaign.campaign_type === 'content';
   if (isNftCampaign) {
-    return `${env.FRONTEND_URL.replace(/\/$/, '')}/campaigns/${encodeURIComponent(getNftCampaignSlug(campaign))}`;
+    return `${env.FRONTEND_URL.replace(/\/$/, '')}/creator/nft-campaigns/${encodeURIComponent(getNftCampaignSlug(campaign))}`;
   }
   return `${env.FRONTEND_URL.replace(/\/$/, '')}/creator/campaigns/${encodeURIComponent(campaign.id)}`;
 }

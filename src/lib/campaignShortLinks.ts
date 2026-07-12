@@ -43,11 +43,11 @@ export function getCampaignSlug(campaign: CampaignLinkInput) {
 export function getCampaignShortPath(input: string | CampaignLinkInput) {
   if (typeof input === 'object' && input) {
     const slug = getCampaignSlug(input);
-    return slug ? `/campaigns/${slug}` : '/campaigns';
+    return slug ? `/creator/nft-campaigns/${slug}` : '/creator/nft-campaigns';
   }
 
   const code = getCampaignShortCode(input);
-  return code ? `/campaigns/${code}` : '/campaigns';
+  return code ? `/creator/nft-campaigns/${code}` : '/creator/nft-campaigns';
 }
 
 export function isCampaignUuid(value: string) {
