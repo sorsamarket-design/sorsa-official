@@ -92,26 +92,26 @@ export default function AdminDashboard() {
 
             <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-xl">
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
+                <table className="w-full min-w-[720px] text-left border-collapse">
                   <thead>
                     <tr className="border-b border-white/10 bg-white/5">
-                      <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted">Campaign</th>
-                      <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted">Creator</th>
-                      <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted">Submission Link</th>
-                      <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted">Time</th>
-                      <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted text-right">Actions</th>
+                      <th className="whitespace-nowrap px-2 py-4 text-[11px] font-bold uppercase tracking-wider text-muted sm:px-6 sm:text-xs">Campaign</th>
+                      <th className="whitespace-nowrap px-2 py-4 text-[11px] font-bold uppercase tracking-wider text-muted sm:px-6 sm:text-xs">Creator</th>
+                      <th className="whitespace-nowrap px-2 py-4 text-[11px] font-bold uppercase tracking-wider text-muted sm:px-6 sm:text-xs">Entry</th>
+                      <th className="whitespace-nowrap px-2 py-4 text-[11px] font-bold uppercase tracking-wider text-muted sm:px-6 sm:text-xs">Time</th>
+                      <th className="whitespace-nowrap px-2 py-4 text-right text-[11px] font-bold uppercase tracking-wider text-muted sm:px-6 sm:text-xs">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
                     {isLoading ? (
                       <tr>
-                        <td colSpan={5} className="px-6 py-12 text-center">
+                        <td colSpan={5} className="px-2 py-12 text-center sm:px-6">
                           <Loader2 className="w-8 h-8 text-cyan animate-spin mx-auto" />
                         </td>
                       </tr>
                     ) : submissions.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-6 py-12 text-center text-muted">
+                        <td colSpan={5} className="px-2 py-12 text-center text-muted sm:px-6">
                           <div className="flex flex-col items-center gap-2">
                             <CheckCircle2 className="w-8 h-8 text-green-400" />
                             <p>No pending submissions to review.</p>
@@ -121,10 +121,10 @@ export default function AdminDashboard() {
                     ) : (
                       submissions.map((sub) => (
                         <tr key={sub.id} className="group hover:bg-white/5 transition-colors">
-                          <td className="px-6 py-4">
+                          <td className="px-2 py-4 sm:px-6">
                             <div className="text-sm font-medium">{sub.campaign?.title}</div>
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-2 py-4 sm:px-6">
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center overflow-hidden">
                                 {sub.creator_profile?.avatar_url ? (
@@ -136,7 +136,7 @@ export default function AdminDashboard() {
                               <span className="text-sm">@{sub.creator_profile?.x_handle}</span>
                             </div>
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-2 py-4 sm:px-6">
                             <a 
                               href={sub.tweet_url} 
                               target="_blank" 
@@ -147,12 +147,12 @@ export default function AdminDashboard() {
                               {sub.tweet_url}
                             </a>
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-2 py-4 sm:px-6">
                             <div className="text-xs text-muted">
                               {new Date(sub.submitted_at).toLocaleString()}
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-right">
+                          <td className="px-2 py-4 text-right sm:px-6">
                             <div className="flex items-center justify-end gap-2">
                               {processingId === sub.id ? (
                                 <Loader2 className="w-5 h-5 animate-spin text-cyan" />
