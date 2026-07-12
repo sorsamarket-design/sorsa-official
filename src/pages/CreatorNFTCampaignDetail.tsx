@@ -353,7 +353,7 @@ export default function CreatorNFTCampaignDetail() {
                                 className={taskActionPillClass}
                               >
                                 Follow
-                                <ExternalLink className="w-4 h-4" />
+                                <ExternalLink className="w-4 h-4 text-cyan" />
                               </a>
                               <button
                                 onClick={() => handleVerifyTask('follow', account)}
@@ -428,7 +428,7 @@ export default function CreatorNFTCampaignDetail() {
                                 className={taskActionPillClass}
                               >
                                 Follow
-                                <ExternalLink className="w-4 h-4" />
+                                <ExternalLink className="w-4 h-4 text-cyan" />
                               </a>
                               <button
                                 onClick={() => handleVerifyTask('follow', account)}
@@ -481,7 +481,7 @@ export default function CreatorNFTCampaignDetail() {
                                 className={taskActionPillClass}
                               >
                                 Like & Retweet
-                                <ExternalLink className="w-4 h-4" />
+                                <ExternalLink className="w-4 h-4 text-cyan" />
                               </a>
                               <button
                                 onClick={() => handleVerifyTask('retweet', link)}
@@ -534,7 +534,7 @@ export default function CreatorNFTCampaignDetail() {
                                 className="w-10 h-10 rounded-full border border-white/10 bg-white/5 text-cyan hover:border-cyan/30 inline-flex items-center justify-center transition-colors"
                                 aria-label="Open required X post"
                               >
-                                <ExternalLink className="w-4 h-4" />
+                                <ExternalLink className="w-4 h-4 text-cyan" />
                               </a>
                               <button
                                 onClick={() => handleVerifyTask('comment', link)}
@@ -587,7 +587,7 @@ export default function CreatorNFTCampaignDetail() {
                                 className="w-10 h-10 rounded-full border border-white/10 bg-white/5 text-cyan hover:border-cyan/30 inline-flex items-center justify-center transition-colors"
                                 aria-label="Open required X post"
                               >
-                                <ExternalLink className="w-4 h-4" />
+                                <ExternalLink className="w-4 h-4 text-cyan" />
                               </a>
                               <button
                                 onClick={() => handleVerifyTask('engagement', link)}
@@ -641,7 +641,7 @@ export default function CreatorNFTCampaignDetail() {
                                   rel="noreferrer"
                                   className={taskActionPillClass}
                                 >
-                                  Join <ExternalLink className="w-4 h-4" />
+                                  Join <ExternalLink className="w-4 h-4 text-cyan" />
                                 </a>
                               ) : (
                                 <div className="w-10 h-10 rounded-full border border-white/10 bg-white/5 text-cyan inline-flex items-center justify-center">
