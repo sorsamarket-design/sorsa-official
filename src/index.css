@@ -213,7 +213,7 @@ body::before {
   z-index: 60 !important;
   isolation: isolate;
   contain: paint;
-  background-color: #000 !important;
+  background-color: transparent !important;
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
   -webkit-backface-visibility: hidden;
