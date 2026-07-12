@@ -59,6 +59,7 @@ export default function CreatorNFTCampaignDetail() {
   const [submissionSuccess, setSubmissionSuccess] = useState('');
   const [submissionError, setSubmissionError] = useState('');
   const [now, setNow] = useState(() => Date.now());
+  const taskActionPillClass = 'px-4 py-2 rounded-full text-sm font-semibold inline-flex items-center gap-2 bg-white/5 text-white border border-white/10 hover:bg-white/10 transition-colors';
 
   useEffect(() => {
     let isMounted = true;
@@ -349,6 +350,14 @@ export default function CreatorNFTCampaignDetail() {
                                 href={`https://x.com/${account}`}
                                 target="_blank"
                                 rel="noreferrer"
+                                className={taskActionPillClass}
+                              >
+                                Follow
+                              </a>
+                              <a
+                                href={`https://x.com/${account}`}
+                                target="_blank"
+                                rel="noreferrer"
                                 className="w-10 h-10 rounded-full border border-white/10 bg-white/5 text-cyan hover:border-cyan/30 inline-flex items-center justify-center transition-colors"
                                 aria-label={`Open @${account} on X`}
                               >
@@ -424,6 +433,14 @@ export default function CreatorNFTCampaignDetail() {
                                 href={`https://x.com/${account}`}
                                 target="_blank"
                                 rel="noreferrer"
+                                className={taskActionPillClass}
+                              >
+                                Follow
+                              </a>
+                              <a
+                                href={`https://x.com/${account}`}
+                                target="_blank"
+                                rel="noreferrer"
                                 className="w-10 h-10 rounded-full border border-white/10 bg-white/5 text-cyan hover:border-cyan/30 inline-flex items-center justify-center transition-colors"
                                 aria-label={`Open @${account} on X`}
                               >
@@ -473,6 +490,14 @@ export default function CreatorNFTCampaignDetail() {
                               <p className="text-xs text-muted mt-1 break-all">{link}</p>
                             </div>
                             <div className="flex items-center gap-3 shrink-0">
+                              <a
+                                href={link}
+                                target="_blank"
+                                rel="noreferrer"
+                                className={taskActionPillClass}
+                              >
+                                Like & Retweet
+                              </a>
                               <a
                                 href={link}
                                 target="_blank"
@@ -638,7 +663,7 @@ export default function CreatorNFTCampaignDetail() {
                                   href={joinLink}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className="px-4 py-2 rounded-full text-sm font-semibold inline-flex items-center gap-2 bg-white/5 text-white border border-white/10 hover:bg-white/10 transition-colors"
+                                  className={taskActionPillClass}
                                 >
                                   Join <ExternalLink className="w-4 h-4" />
                                 </a>
