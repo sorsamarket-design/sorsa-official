@@ -1492,7 +1492,7 @@ function getNextSundayMidnightUtc(now = new Date()) {
   return nextSunday;
 }
 
-async function syncCreatorProfileFromSorsa(profile) {
+async function syncCreatorProfileFromSorsa(profile, source = 'sorsa_profile_sync') {
   const previousScore = profile.sorsa_score == null ? null : Math.round(Number(profile.sorsa_score || 0));
   const xHandle = cleanHandle(profile.x_handle);
 
@@ -1501,6 +1501,7 @@ async function syncCreatorProfileFromSorsa(profile) {
       creatorId: profile.id,
       xHandle: xHandle || null,
       storedScore: previousScore,
+      source,
       reason: 'sorsa_profile_sync_disabled'
     });
     return {
@@ -1519,6 +1520,7 @@ async function syncCreatorProfileFromSorsa(profile) {
     creatorId: profile.id,
     xHandle,
     previousScore,
+    source,
     lastProfileSyncAt: profile.last_profile_sync_at || null
   });
 
@@ -1573,38 +1575,68 @@ async function syncCreatorProfileFromSorsa(profile) {
   const finalLocation = stats?.location || about?.country || null;
   const syncedAt = new Date().toISOString();
 
+  const { data: scoreHistoryRows, error: scoreHistoryError } = await supabase.rpc(
+    'update_creator_sorsa_score_with_history',
+    {
+      p_creator_id: profile.id,
+      p_new_score: score,
+      p_source: source,
+      p_synced_at: syncedAt,
+      p_metadata: {
+        xHandle,
+        followersCount: stats?.followers_count ?? null,
+        displayName: stats?.display_name ?? null,
+        reason: 'sorsa_profile_sync'
+      }
+    }
+  );
+  if (scoreHistoryError) {
+    console.warn('Sorsa profile sync failed during score history write:', {
+      creatorId: profile.id,
+      xHandle,
+      previousScore,
+      newScore: score,
+      source,
+      error: scoreHistoryError.message || scoreHistoryError
+    });
+    throw scoreHistoryError;
+  }
+
+  const scoreHistory = Array.isArray(scoreHistoryRows) ? scoreHistoryRows[0] : null;
+  const recordedPreviousScore = scoreHistory?.previous_score ?? previousScore;
+
   const { error } = await supabase
     .from('creator_profiles')
     .update({
-      sorsa_score: score,
       follower_count: stats?.followers_count ?? null,
       avatar_url: normalizeAvatarUrl(stats?.profile_image_url),
       bio: stats?.description ?? null,
       country: finalLocation,
-      full_name: stats?.display_name ?? null,
-      last_profile_sync_at: syncedAt
+      full_name: stats?.display_name ?? null
     })
     .eq('id', profile.id);
   if (error) {
     console.warn('Sorsa profile sync failed during profile update:', {
       creatorId: profile.id,
       xHandle,
-      previousScore,
+      previousScore: recordedPreviousScore,
       newScore: score,
+      source,
       error: error.message || error
     });
     throw error;
   }
 
   const durationMs = Date.now() - startedAt.getTime();
-  const scoreDelta = previousScore == null ? null : score - previousScore;
+  const scoreDelta = recordedPreviousScore == null ? null : score - recordedPreviousScore;
   if (scoreDelta != null && Math.abs(scoreDelta) >= 50) {
     console.warn('Sorsa profile score changed sharply:', {
       creatorId: profile.id,
       xHandle,
-      previousScore,
+      previousScore: recordedPreviousScore,
       newScore: score,
       delta: scoreDelta,
+      source,
       syncedAt
     });
   }
@@ -1612,15 +1644,17 @@ async function syncCreatorProfileFromSorsa(profile) {
   console.log('Sorsa profile sync completed:', {
     creatorId: profile.id,
     xHandle,
-    previousScore,
+    previousScore: recordedPreviousScore,
     newScore: score,
     delta: scoreDelta,
     followersCount: stats?.followers_count ?? null,
+    source,
+    scoreHistoryId: scoreHistory?.history_id ?? null,
     syncedAt,
     durationMs
   });
 
-  return { synced: true, previousScore, newScore: score };
+  return { synced: true, previousScore: recordedPreviousScore, newScore: score, scoreHistoryId: scoreHistory?.history_id ?? null };
 }
 
 function normalizeAvatarUrl(url) {
@@ -1753,7 +1787,7 @@ async function runWeeklySorsaProfileSync() {
         }
 
         try {
-          const result = await syncCreatorProfileFromSorsa(profile);
+          const result = await syncCreatorProfileFromSorsa(profile, 'weekly_sorsa_profile_sync');
           if (result.synced) synced += 1;
           else skipped += 1;
         } catch (error) {
@@ -3869,7 +3903,7 @@ app.post('/creator/sorsa/sync', async (req, res) => {
       throw Object.assign(new Error('Creator profile is required to sync Sorsa score'), { status: 403 });
     }
 
-    const result = await syncCreatorProfileFromSorsa(profile);
+    const result = await syncCreatorProfileFromSorsa(profile, 'creator_sorsa_sync');
     if (!result.synced && result.reason === 'missing_x_handle') {
       throw Object.assign(new Error('Add your X handle before syncing Sorsa score'), { status: 400 });
     }
