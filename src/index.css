@@ -197,12 +197,23 @@ body::before {
    sliding past/through the bar instead of staying cleanly pinned on top of it. */
 .app-topbar,
 .creator-page-controls,
-.admin-page-controls,
-.landing-navbar {
+.admin-page-controls {
   z-index: 60 !important;
   isolation: isolate;
   contain: paint;
   background-color: #0A0A1E !important;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+.landing-navbar {
+  z-index: 60 !important;
+  isolation: isolate;
+  contain: paint;
+  background-color: #000 !important;
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
   -webkit-backface-visibility: hidden;

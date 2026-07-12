@@ -603,6 +603,25 @@ const TeamSection = () => {
 };
 
 export default function Landing() {
+  useEffect(() => {
+    const themeMeta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    const previousThemeColor = themeMeta?.getAttribute('content');
+    const previousHtmlBackground = document.documentElement.style.backgroundColor;
+    const previousBodyBackground = document.body.style.backgroundColor;
+
+    themeMeta?.setAttribute('content', '#000000');
+    document.documentElement.style.backgroundColor = '#000000';
+    document.body.style.backgroundColor = '#000000';
+
+    return () => {
+      if (themeMeta && previousThemeColor) {
+        themeMeta.setAttribute('content', previousThemeColor);
+      }
+      document.documentElement.style.backgroundColor = previousHtmlBackground;
+      document.body.style.backgroundColor = previousBodyBackground;
+    };
+  }, []);
+
   const brandFeatures = [
     { icon: <ShieldCheck className="w-6 h-6 text-white" />, title: "Verified Creators", desc: "Every creator is vetted for authentic engagement and influence with the help of Sorsa." },
     { icon: <Target className="w-6 h-6 text-white" />, title: "Campaign Control", desc: "Set precise requirements, budgets, and objectives for your campaigns." },
