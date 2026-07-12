@@ -264,6 +264,21 @@ function normalizeTelegramTasks(tasks) {
   return normalized.slice(0, 3);
 }
 
+function buildCollectionDetailsDescription(details = {}) {
+  const rows = [
+    ['Chain', details.chain],
+    ['Mint Date', details.mint_date],
+    ['Supply', details.supply],
+    ['Mint Price', details.mint_price]
+  ]
+    .filter(([, value]) => String(value || '').trim())
+    .map(([label, value]) => `${label}: ${String(value).trim()}`);
+
+  return rows.length
+    ? `Collection Details\n${rows.join('\n')}`
+    : 'Collection details will be announced soon.';
+}
+
 function normalizeAdditionalRequirements(requirements) {
   const telegramTasks = normalizeTelegramTasks(requirements?.telegram_tasks);
   return {
@@ -634,7 +649,7 @@ function normalizeNftCampaignBody(body, userId, brandProfile) {
 
   const title = String(campaign.title || '').trim();
   const goal = String(campaign.goal || '').trim();
-  const overview = String(campaign.overview || '').trim();
+  const rawOverview = String(campaign.overview || '').trim();
   const budget = Number(campaign.budget || 0);
   const totalGtd = Number(campaign.total_gtd || 0);
   const totalFcfs = Number(campaign.total_fcfs || 0);
@@ -653,6 +668,7 @@ function normalizeNftCampaignBody(body, userId, brandProfile) {
         mint_price: String(campaign.collection_details.mint_price || '').trim()
       }
     : {};
+  const overview = rawOverview || (isNftRaffleType(campaignType) ? buildCollectionDetailsDescription(collectionDetails) : '');
   const maxCreators = null;
   const maxContentSubmissions = isNftContentType(campaignType)
     ? Math.max(1, Math.min(5, Number(campaign.max_content_submissions || 5)))

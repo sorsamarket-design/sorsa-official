@@ -161,15 +161,12 @@ export default function CreatorNFTCampaignDetail() {
   const primaryAllocation = getNftCampaignPrimaryAllocation(campaign);
   const collectionDetails = [
     { label: 'Chain', value: campaign.collection_details?.chain },
-    {
-      label: 'Mint Date',
-      value: campaign.collection_details?.mint_date
-        ? new Date(campaign.collection_details.mint_date).toLocaleDateString()
-        : ''
-    },
+    { label: 'Mint Date', value: campaign.collection_details?.mint_date },
     { label: 'Supply', value: campaign.collection_details?.supply },
     { label: 'Mint Price', value: campaign.collection_details?.mint_price }
   ].filter((item) => String(item.value || '').trim());
+  const overviewText = String(campaign.overview || '').trim();
+  const overviewIsCollectionDetails = collectionDetails.length > 0 && overviewText.startsWith('Collection Details\n');
 
   const handleSubmitContent = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -316,9 +313,11 @@ export default function CreatorNFTCampaignDetail() {
                 ))}
               </div>
             ) : null}
-            <div className="text-muted leading-relaxed whitespace-pre-line">
-              <LinkifiedText text={campaign.overview || 'No campaign brief provided.'} />
-            </div>
+            {!overviewIsCollectionDetails && (
+              <div className="text-muted leading-relaxed whitespace-pre-line">
+                <LinkifiedText text={overviewText || 'No campaign brief provided.'} />
+              </div>
+            )}
           </section>
 
           <section className="glass-panel rounded-[2rem] p-8 border border-white/10">

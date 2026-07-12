@@ -10,6 +10,9 @@ import telegramNotifications from '../lib/telegramNotifications';
 
 const appleEase = [0.16, 1, 0.3, 1] as const;
 const defaultRaffleGoal = 'Complete all tasks to enter raffle';
+const defaultRaffleFollowAccounts = ['atlasreachx'];
+const defaultRaffleTelegramTasks = ['https://t.me/AtlasReachX'];
+const collectionChainOptions = ['Ethereum', 'Base', 'Solana', 'Robinhood'];
 
 function cleanXHandle(value: string) {
   return value
@@ -67,6 +70,26 @@ function combineDateAndTime(date: string, time: string, fallback: string | null 
   return Number.isNaN(localDate.getTime()) ? date : localDate.toISOString();
 }
 
+function buildCollectionDetailsDescription(details: {
+  chain?: string;
+  mint_date?: string;
+  supply?: string;
+  mint_price?: string;
+}) {
+  const rows = [
+    ['Chain', details.chain],
+    ['Mint Date', details.mint_date],
+    ['Supply', details.supply],
+    ['Mint Price', details.mint_price]
+  ]
+    .filter(([, value]) => String(value || '').trim())
+    .map(([label, value]) => `${label}: ${String(value).trim()}`);
+
+  return rows.length
+    ? `Collection Details\n${rows.join('\n')}`
+    : 'Collection details will be announced soon.';
+}
+
 function telegramStatusLabel(status?: string | null) {
   if (status === 'configured') return 'Configured';
   if (status === 'needs_admin') return 'Bot needs admin';
@@ -87,11 +110,11 @@ export default function AdminNFTCampaignNew() {
   const [success, setSuccess] = useState('');
   const [imagePreview, setImagePreview] = useState('');
   const [backgroundImagePreview, setBackgroundImagePreview] = useState('');
-  const [followAccounts, setFollowAccounts] = useState<string[]>(['']);
+  const [followAccounts, setFollowAccounts] = useState<string[]>(defaultRaffleFollowAccounts);
   const [retweetLinks, setRetweetLinks] = useState<string[]>(['']);
   const [commentLinks, setCommentLinks] = useState<string[]>(['']);
   const [engagementLinks, setEngagementLinks] = useState<string[]>(['']);
-  const [telegramTasks, setTelegramTasks] = useState<string[]>(['']);
+  const [telegramTasks, setTelegramTasks] = useState<string[]>(defaultRaffleTelegramTasks);
   const [telegramStatuses, setTelegramStatuses] = useState<Record<string, TelegramGroupStatus>>({});
   const [telegramStatusLoading, setTelegramStatusLoading] = useState(false);
 
@@ -117,6 +140,33 @@ export default function AdminNFTCampaignNew() {
   const isWlAllocation = formData.allocation_type === 'wl';
   const isGtdAllocation = formData.allocation_type === 'gtd';
   const isFcfsAllocation = formData.allocation_type === 'fcfs';
+  const collectionDetailsPayload = {
+    chain: formData.collection_chain.trim(),
+    mint_date: formData.collection_mint_date.trim(),
+    supply: formData.collection_supply.trim(),
+    mint_price: formData.collection_mint_price.trim()
+  };
+  const raffleCollectionDescription = buildCollectionDetailsDescription(collectionDetailsPayload);
+
+  const handleCampaignTypeChange = (nextType: NftCampaignType) => {
+    setCampaignType(nextType);
+    if (nextType === 'raffle') {
+      setFollowAccounts(prev => {
+        const hasDefault = prev.some(account => cleanXHandle(account).toLowerCase() === defaultRaffleFollowAccounts[0]);
+        return hasDefault ? prev : [...defaultRaffleFollowAccounts, ...prev.filter(account => account.trim())].slice(0, 3);
+      });
+      setTelegramTasks(prev => {
+        const hasDefault = prev.some(task => cleanTelegramChatId(task).toLowerCase() === defaultRaffleTelegramTasks[0].toLowerCase());
+        return hasDefault ? prev : [...defaultRaffleTelegramTasks, ...prev.filter(task => task.trim())].slice(0, 3);
+      });
+      return;
+    }
+
+    setFollowAccounts(prev => {
+      const withoutDefaults = prev.filter(account => cleanXHandle(account).toLowerCase() !== defaultRaffleFollowAccounts[0]);
+      return withoutDefaults.length ? withoutDefaults : [''];
+    });
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -320,11 +370,11 @@ export default function AdminNFTCampaignNew() {
     setCampaignType('raffle');
     setImagePreview('');
     setBackgroundImagePreview('');
-    setFollowAccounts(['']);
+    setFollowAccounts(defaultRaffleFollowAccounts);
     setRetweetLinks(['']);
     setCommentLinks(['']);
     setEngagementLinks(['']);
-    setTelegramTasks(['']);
+    setTelegramTasks(defaultRaffleTelegramTasks);
     setTelegramStatuses({});
     setStep(1);
   };
@@ -336,7 +386,10 @@ export default function AdminNFTCampaignNew() {
     setSuccess('');
 
     const cleanedFollowAccounts = Array.from(
-      new Set<string>(followAccounts.map(cleanXHandle).filter(Boolean))
+      new Set<string>([
+        ...(campaignType === 'raffle' ? defaultRaffleFollowAccounts : []),
+        ...followAccounts
+      ].map(cleanXHandle).filter(Boolean))
     ).slice(0, 3);
     const cleanedRetweetLinks = Array.from(
       new Set<string>(retweetLinks.map(link => link.trim()).filter(Boolean))
@@ -348,7 +401,10 @@ export default function AdminNFTCampaignNew() {
       new Set<string>(engagementLinks.map(link => link.trim()).filter(Boolean))
     ).slice(0, 2);
     const telegramTaskInputs = Array.from(
-      new Set<string>(telegramTasks.map(cleanTelegramChatId).filter(Boolean))
+      new Set<string>([
+        ...(campaignType === 'raffle' ? defaultRaffleTelegramTasks : []),
+        ...telegramTasks
+      ].map(cleanTelegramChatId).filter(Boolean))
     ).slice(0, 3);
 
     try {
@@ -398,7 +454,7 @@ export default function AdminNFTCampaignNew() {
         title: formData.title.trim(),
         goal: formData.goal.trim(),
         campaign_type: campaignType,
-        overview: formData.overview.trim(),
+        overview: campaignType === 'raffle' ? raffleCollectionDescription : formData.overview.trim(),
         categories: ['NFT'],
         budget: selectedAllocationTotal,
         allocation_type: formData.allocation_type as 'wl' | 'gtd' | 'fcfs',
@@ -409,12 +465,7 @@ export default function AdminNFTCampaignNew() {
         background_image_url: backgroundImagePreview || null,
         max_creators: null,
         max_content_submissions: campaignType === 'content' ? Math.min(5, Math.max(1, Number(formData.max_content_submissions || 5))) : null,
-        collection_details: {
-          chain: formData.collection_chain.trim(),
-          mint_date: formData.collection_mint_date.trim(),
-          supply: formData.collection_supply.trim(),
-          mint_price: formData.collection_mint_price.trim()
-        },
+        collection_details: collectionDetailsPayload,
         follow_accounts: cleanedFollowAccounts,
         retweet_links: campaignType === 'raffle' ? cleanedRetweetLinks : [],
         comment_links: campaignType === 'raffle' ? cleanedCommentLinks : [],
@@ -510,7 +561,7 @@ export default function AdminNFTCampaignNew() {
                     <div className="grid grid-cols-2 gap-3 sm:gap-4">
                       <button
                         type="button"
-                        onClick={() => setCampaignType('raffle')}
+                        onClick={() => handleCampaignTypeChange('raffle')}
                         className={`aspect-square p-3 sm:p-6 rounded-2xl border-2 transition-all duration-200 flex flex-col items-center justify-center text-center gap-2 sm:gap-3 ${
                           campaignType === 'raffle'
                             ? 'border-purple-500 bg-purple-500/10'
@@ -528,7 +579,7 @@ export default function AdminNFTCampaignNew() {
 
                       <button
                         type="button"
-                        onClick={() => setCampaignType('content')}
+                        onClick={() => handleCampaignTypeChange('content')}
                         className={`aspect-square p-3 sm:p-6 rounded-2xl border-2 transition-all duration-200 flex flex-col items-center justify-center text-center gap-2 sm:gap-3 ${
                           campaignType === 'content'
                             ? 'border-cyan bg-cyan/10'
@@ -565,11 +616,26 @@ export default function AdminNFTCampaignNew() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <label className="text-xs font-medium uppercase tracking-wider text-muted">Chain</label>
-                        <input name="collection_chain" value={formData.collection_chain} onChange={handleInputChange} placeholder="e.g. Ethereum" className="w-full px-4 py-3 rounded-xl bg-black/50 border border-white/10 text-white placeholder:text-white/20 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all" />
+                        <div className="grid grid-cols-2 gap-2">
+                          {collectionChainOptions.map((chain) => (
+                            <button
+                              key={chain}
+                              type="button"
+                              onClick={() => setFormData(prev => ({ ...prev, collection_chain: chain }))}
+                              className={`h-11 rounded-xl border px-3 text-sm font-semibold transition-colors ${
+                                formData.collection_chain === chain
+                                  ? 'border-purple-500 bg-purple-500/15 text-white'
+                                  : 'border-white/10 bg-black/50 text-muted hover:border-white/20 hover:text-white'
+                              }`}
+                            >
+                              {chain}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                       <div className="space-y-2">
                         <label className="text-xs font-medium uppercase tracking-wider text-muted">Mint Date</label>
-                        <input type="date" name="collection_mint_date" value={formData.collection_mint_date} onChange={handleInputChange} className="w-full px-4 py-3 rounded-xl bg-black/50 border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all [color-scheme:dark]" />
+                        <textarea name="collection_mint_date" value={formData.collection_mint_date} onChange={handleInputChange} rows={3} placeholder="e.g. TBA, January 15, or allowlist mint first" className="w-full min-h-[84px] px-4 py-3 rounded-xl bg-black/50 border border-white/10 text-white placeholder:text-white/20 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all resize-none" />
                       </div>
                       <div className="space-y-2">
                         <label className="text-xs font-medium uppercase tracking-wider text-muted">Supply</label>
@@ -654,37 +720,35 @@ export default function AdminNFTCampaignNew() {
 
                   {campaignType === 'raffle' ? (
                     <div className="space-y-2">
-                      <div className="grid grid-cols-4 gap-2">
-                        <div className="min-w-0 space-y-1.5">
-                          <label className="block text-[11px] font-medium text-muted">Start</label>
-                          <div className="relative">
-                            <input ref={startDateRef} type="date" name="start_date" value={formData.start_date} onChange={handleInputChange} className="w-full h-11 min-w-0 rounded-xl bg-black/50 border border-white/10 px-2 pr-8 text-xs text-white placeholder:text-white/20 text-ellipsis overflow-hidden whitespace-nowrap focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:opacity-0" />
-                            <button type="button" onClick={() => openDatePicker(startDateRef.current)} className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md flex shrink-0 items-center justify-center text-white/75 hover:text-white hover:bg-white/10 transition-colors" aria-label="Open start date picker">
-                              <Calendar className="w-3.5 h-3.5 shrink-0" />
-                            </button>
+                      <div className="grid grid-cols-2 gap-3.5">
+                        <div className="min-w-0">
+                          <label className="mb-2 block text-[13px] font-medium text-muted">Start</label>
+                          <div className="flex flex-col gap-2">
+                            <div className="relative">
+                              <input ref={startDateRef} type="date" name="start_date" value={formData.start_date} onChange={handleInputChange} className="w-full h-11 min-w-0 rounded-xl bg-black/50 border border-white/10 px-2.5 pr-9 text-xs text-white placeholder:text-white/20 text-ellipsis overflow-hidden whitespace-nowrap focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:opacity-0" />
+                              <button type="button" onClick={() => openDatePicker(startDateRef.current)} className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md flex shrink-0 items-center justify-center text-white/75 hover:text-white hover:bg-white/10 transition-colors" aria-label="Open start date picker">
+                                <Calendar className="w-3.5 h-3.5 shrink-0" />
+                              </button>
+                            </div>
+                            <div className="relative">
+                              <input type="time" name="start_time" value={formData.start_time} onChange={handleInputChange} className="w-full h-11 min-w-0 rounded-xl bg-black/50 border border-white/10 px-2.5 pr-9 text-xs text-white placeholder:text-white/20 text-ellipsis overflow-hidden whitespace-nowrap focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all [color-scheme:dark]" aria-label="Start hour" />
+                              <Clock className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 shrink-0 text-white/55" />
+                            </div>
                           </div>
                         </div>
-                        <div className="min-w-0 space-y-1.5">
-                          <span className="block h-[17px]" aria-hidden="true" />
-                          <div className="relative">
-                            <input type="time" name="start_time" value={formData.start_time} onChange={handleInputChange} className="w-full h-11 min-w-0 rounded-xl bg-black/50 border border-white/10 px-2 pr-8 text-xs text-white placeholder:text-white/20 text-ellipsis overflow-hidden whitespace-nowrap focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all [color-scheme:dark]" aria-label="Start hour" />
-                            <Clock className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 shrink-0 text-white/55" />
-                          </div>
-                        </div>
-                        <div className="min-w-0 space-y-1.5">
-                          <label className="block text-[11px] font-medium text-muted">End</label>
-                          <div className="relative">
-                            <input ref={endDateRef} type="date" name="end_date" value={formData.end_date} onChange={handleInputChange} className="w-full h-11 min-w-0 rounded-xl bg-black/50 border border-white/10 px-2 pr-8 text-xs text-white placeholder:text-white/20 text-ellipsis overflow-hidden whitespace-nowrap focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:opacity-0" />
-                            <button type="button" onClick={() => openDatePicker(endDateRef.current)} className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md flex shrink-0 items-center justify-center text-white/75 hover:text-white hover:bg-white/10 transition-colors" aria-label="Open end date picker">
-                              <Calendar className="w-3.5 h-3.5 shrink-0" />
-                            </button>
-                          </div>
-                        </div>
-                        <div className="min-w-0 space-y-1.5">
-                          <span className="block h-[17px]" aria-hidden="true" />
-                          <div className="relative">
-                            <input type="time" name="end_time" value={formData.end_time} onChange={handleInputChange} className="w-full h-11 min-w-0 rounded-xl bg-black/50 border border-white/10 px-2 pr-8 text-xs text-white placeholder:text-white/20 text-ellipsis overflow-hidden whitespace-nowrap focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all [color-scheme:dark]" aria-label="End hour" />
-                            <Clock className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 shrink-0 text-white/55" />
+                        <div className="min-w-0">
+                          <label className="mb-2 block text-[13px] font-medium text-muted">End</label>
+                          <div className="flex flex-col gap-2">
+                            <div className="relative">
+                              <input ref={endDateRef} type="date" name="end_date" value={formData.end_date} onChange={handleInputChange} className="w-full h-11 min-w-0 rounded-xl bg-black/50 border border-white/10 px-2.5 pr-9 text-xs text-white placeholder:text-white/20 text-ellipsis overflow-hidden whitespace-nowrap focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:opacity-0" />
+                              <button type="button" onClick={() => openDatePicker(endDateRef.current)} className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md flex shrink-0 items-center justify-center text-white/75 hover:text-white hover:bg-white/10 transition-colors" aria-label="Open end date picker">
+                                <Calendar className="w-3.5 h-3.5 shrink-0" />
+                              </button>
+                            </div>
+                            <div className="relative">
+                              <input type="time" name="end_time" value={formData.end_time} onChange={handleInputChange} className="w-full h-11 min-w-0 rounded-xl bg-black/50 border border-white/10 px-2.5 pr-9 text-xs text-white placeholder:text-white/20 text-ellipsis overflow-hidden whitespace-nowrap focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all [color-scheme:dark]" aria-label="End hour" />
+                              <Clock className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 shrink-0 text-white/55" />
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -763,10 +827,20 @@ export default function AdminNFTCampaignNew() {
                     </label>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-white">Campaign Brief</label>
-                    <textarea name="overview" value={formData.overview} onChange={handleInputChange} required rows={8} placeholder="Describe the NFT campaign, eligibility, required creator actions, links, and reward rules." className="w-full min-h-48 px-4 py-3 rounded-xl bg-black/50 border border-white/10 text-white placeholder:text-white/20 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all resize-none" />
-                  </div>
+                  {campaignType === 'raffle' ? (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-white">Campaign Description</label>
+                      <div className="min-h-32 whitespace-pre-line rounded-xl border border-white/10 bg-black/50 px-4 py-3 text-sm leading-relaxed text-muted">
+                        {raffleCollectionDescription}
+                      </div>
+                      <p className="text-xs text-muted">Raffle descriptions are generated from the Collection Details added in step 1.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-white">Campaign Brief</label>
+                      <textarea name="overview" value={formData.overview} onChange={handleInputChange} required rows={8} placeholder="Describe the NFT campaign, eligibility, required creator actions, links, and reward rules." className="w-full min-h-48 px-4 py-3 rounded-xl bg-black/50 border border-white/10 text-white placeholder:text-white/20 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all resize-none" />
+                    </div>
+                  )}
 
                   {campaignType === 'content' && (
                     <div className="space-y-2">
