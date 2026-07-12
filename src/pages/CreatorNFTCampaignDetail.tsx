@@ -41,7 +41,8 @@ function verifiedTaskMap(campaign: NftCampaign) {
 }
 
 export default function CreatorNFTCampaignDetail() {
-  const { id } = useParams();
+  const { id, code } = useParams();
+  const campaignRef = id || code || '';
   const navigate = useNavigate();
   const { profile: creatorProfile } = useCreatorProfile();
   const [campaign, setCampaign] = useState<NftCampaign | null>(null);
@@ -61,9 +62,9 @@ export default function CreatorNFTCampaignDetail() {
 
   useEffect(() => {
     let isMounted = true;
-    if (!id) return;
+    if (!campaignRef) return;
 
-    getNftCampaign(id)
+    getNftCampaign(campaignRef)
       .then((result) => {
         if (!isMounted) return;
         setCampaign(result.campaign);
@@ -84,7 +85,7 @@ export default function CreatorNFTCampaignDetail() {
     return () => {
       isMounted = false;
     };
-  }, [id]);
+  }, [campaignRef]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
@@ -92,7 +93,8 @@ export default function CreatorNFTCampaignDetail() {
   }, []);
 
   const handleJoin = async () => {
-    if (!id) return;
+    const campaignId = campaign?.id || campaignRef;
+    if (!campaignId) return;
     if (!creatorProfile?.wallet_address) {
       setJoinError('Add a wallet address to your creator profile before joining campaigns.');
       return;
@@ -101,7 +103,7 @@ export default function CreatorNFTCampaignDetail() {
     setJoinError('');
 
     try {
-      const result = await joinNftCampaign(id);
+      const result = await joinNftCampaign(campaignId);
       setParticipation(result.participation);
       if (campaign) setVerifiedTasks(verifiedTaskMap(campaign));
     } catch (err: any) {
@@ -114,14 +116,15 @@ export default function CreatorNFTCampaignDetail() {
   const taskKey = (type: 'follow' | 'retweet' | 'comment' | 'engagement' | 'telegram', value: string) => `${type}:${value}`;
 
   const handleVerifyTask = async (type: 'follow' | 'retweet' | 'comment' | 'engagement' | 'telegram', value: string) => {
-    if (!id) return;
+    const campaignId = campaign?.id || campaignRef;
+    if (!campaignId) return;
     if (campaignEnded) return;
     const key = taskKey(type, value);
     setVerifyingTask(key);
     setTaskErrors((current) => ({ ...current, [key]: '' }));
 
     try {
-      await verifyNftCampaignTask(id, { type, value });
+      await verifyNftCampaignTask(campaignId, { type, value });
       setVerifiedTasks((current) => ({ ...current, [key]: true }));
     } catch (err: any) {
       setVerifiedTasks((current) => ({ ...current, [key]: false }));
@@ -159,13 +162,14 @@ export default function CreatorNFTCampaignDetail() {
 
   const handleSubmitContent = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!id) return;
+    const campaignId = campaign?.id || campaignRef;
+    if (!campaignId) return;
     setSubmittingContent(true);
     setSubmissionSuccess('');
     setSubmissionError('');
 
     try {
-      await submitNftCampaignContent(id, submissionUrl.trim());
+      await submitNftCampaignContent(campaignId, submissionUrl.trim());
       setSubmissionUrl('');
       setSubmissionSuccess('Content submitted for review.');
     } catch (err: any) {

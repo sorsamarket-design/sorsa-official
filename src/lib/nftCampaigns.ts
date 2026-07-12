@@ -1,6 +1,7 @@
 import { requireSupabase } from './supabase';
 import { getBackendBase } from './appSession';
 import { getCampaignEndTime } from './campaignTime';
+import { resolveCampaignIdFromCode } from './campaignShortLinks';
 
 async function getNftBackendAccessToken(forceRefresh = false) {
   const supabase = requireSupabase();
@@ -552,7 +553,8 @@ export async function finalizeAdminRaffle(id: string) {
 }
 
 export async function getNftCampaign(id: string) {
-  const path = `/nft-campaigns/${encodeURIComponent(id)}`;
+  const resolvedId = await resolveCampaignIdFromCode(id);
+  const path = `/nft-campaigns/${encodeURIComponent(resolvedId)}`;
   return withBackendReadFallback(async () => {
     const supabase = requireSupabase();
     const userId = await getCurrentUserId();
@@ -560,14 +562,14 @@ export async function getNftCampaign(id: string) {
       supabase
         .from('campaigns')
         .select(nftCampaignSelect)
-        .eq('id', id)
+        .eq('id', resolvedId)
         .in('status', ['draft', 'completed'])
         .in('campaign_type', ['raffle', 'content', 'fcfs', 'all'])
         .single(),
       supabase
         .from('campaign_participants')
         .select('id, status, joined_at')
-        .eq('campaign_id', id)
+        .eq('campaign_id', resolvedId)
         .eq('creator_id', userId)
         .maybeSingle()
     ]);

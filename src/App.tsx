@@ -93,6 +93,8 @@ function RouteLayout() {
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/auth/callback/brand" element={<BrandAuthCallback />} />
         <Route path="/campaigns" element={<CampaignsRedirect />} />
+        <Route path="/campaigns/:code" element={<ProtectedRoute requiredRole="creator"><CreatorNFTCampaignDetail /></ProtectedRoute>} />
+        <Route path="/c/:code" element={<ProtectedRoute requiredRole="creator"><CreatorNFTCampaignDetail /></ProtectedRoute>} />
         <Route path="/docs" element={<Docs />} />
         <Route path="/terms" element={<LegalPage type="terms" />} />
         <Route path="/privacy" element={<LegalPage type="privacy" />} />
