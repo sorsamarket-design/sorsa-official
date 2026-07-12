@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { AlertCircle, ArrowLeft, Calendar, Clock, ExternalLink, Loader2, Sparkles, Star, Ticket, Users } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Calendar, Check, Clock, Copy, Download, Loader2, Sparkles, Star, Ticket, Users } from 'lucide-react';
 import AdminSidebar from '../components/AdminSidebar';
 import AdminTopBar from '../components/AdminTopBar';
 import LinkifiedText from '../components/LinkifiedText';
 import { finalizeAdminRaffle, getAdminRaffle, getNftCampaignPrimaryAllocation, listAdminRaffles, type NftCampaign, type RaffleWinner } from '../lib/nftCampaigns';
 import { formatCampaignCountdown, getCampaignEndTime } from '../lib/campaignTime';
+import { createXlsxBlob, downloadBlob } from '../lib/xlsxExport';
 
 const appleEase = [0.16, 1, 0.3, 1] as const;
 
@@ -44,11 +45,15 @@ function nftCampaignStatusLabel(status?: string | null) {
   return status || 'Live';
 }
 
-function formatSpreadsheetCell(value: string | number | null | undefined) {
-  return String(value ?? '').replace(/[\t\r\n]+/g, ' ').trim();
+function filenameSafe(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60) || 'raffle';
 }
 
-async function copySpreadsheetText(text: string) {
+async function copyText(text: string) {
   if (navigator.clipboard?.writeText) {
     await navigator.clipboard.writeText(text);
     return;
@@ -58,13 +63,16 @@ async function copySpreadsheetText(text: string) {
   textarea.value = text;
   textarea.setAttribute('readonly', 'true');
   textarea.style.position = 'fixed';
+  textarea.style.top = '0';
   textarea.style.left = '-9999px';
   document.body.appendChild(textarea);
+  textarea.focus();
   textarea.select();
   const copied = document.execCommand('copy');
   textarea.remove();
   if (!copied) throw new Error('Clipboard copy failed');
 }
+
 export default function AdminRaffles() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -76,7 +84,8 @@ export default function AdminRaffles() {
   const [finalizedAt, setFinalizedAt] = useState<string | null>(null);
   const [finalizing, setFinalizing] = useState(false);
   const [finalizeError, setFinalizeError] = useState('');
-  const [sheetCopyStatus, setSheetCopyStatus] = useState('');
+  const [downloadStatus, setDownloadStatus] = useState('');
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'live' | 'past'>('live');
@@ -155,26 +164,33 @@ export default function AdminRaffles() {
     }
   };
 
-  const handleOpenWinnersSpreadsheet = async () => {
+  const handleDownloadWinners = () => {
     if (!campaign || winners.length === 0) return;
 
-    const rows = [
-      ['X Account', 'Wallet Address'],
-      ...winners.map((winner) => [
-        winner.x_account ? `@${winner.x_account.replace(/^@/, '')}` : '',
-        winner.wallet_address || ''
-      ])
-    ];
-    const spreadsheetText = rows.map((row) => row.map(formatSpreadsheetCell).join('\t')).join('\n');
+    const walletRows = winners
+      .map((winner) => String(winner.wallet_address || '').trim())
+      .filter(Boolean)
+      .map((wallet) => [wallet]);
 
-    const sheetWindow = window.open('https://sheets.new', '_blank', 'noopener,noreferrer');
+    const blob = createXlsxBlob('Winning Wallets', [['Wallet Address'], ...walletRows]);
+    const datePart = new Date().toISOString().slice(0, 10);
+    downloadBlob(blob, `${filenameSafe(campaign.title)}-winning-wallets-${datePart}.xlsx`);
+    setDownloadStatus('Download started.');
+    window.setTimeout(() => setDownloadStatus(''), 3000);
+  };
+
+  const handleCopyWinners = async () => {
+    const walletRows = winners
+      .map((winner) => String(winner.wallet_address || '').trim())
+      .filter(Boolean);
+    if (walletRows.length === 0) return;
 
     try {
-      await copySpreadsheetText(spreadsheetText);
-      setSheetCopyStatus(sheetWindow ? 'Copied. Paste into the new Google Sheet.' : 'Copied. Open Google Sheets and paste.');
-      window.setTimeout(() => setSheetCopyStatus(''), 5000);
+      await copyText(walletRows.join('\n'));
+      setCopyStatus('copied');
+      window.setTimeout(() => setCopyStatus('idle'), 3000);
     } catch {
-      setSheetCopyStatus('Could not copy automatically. Copy the X account and wallet columns manually.');
+      setCopyStatus('error');
     }
   };
 
@@ -318,17 +334,31 @@ export default function AdminRaffles() {
                   <div className="flex flex-wrap items-center gap-3">
                     <span className="text-sm text-muted">{winners.length} selected</span>
                     {winners.length ? (
-                      <button
-                        type="button"
-                        onClick={handleOpenWinnersSpreadsheet}
-                        className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition-colors hover:border-purple-400/40 hover:bg-purple-500/10"
-                      >
-                        <ExternalLink className="h-4 w-4 text-purple-300" />
-                        Open Google Sheet
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          onClick={handleCopyWinners}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition-colors hover:border-purple-400/40 hover:bg-purple-500/10"
+                        >
+                          {copyStatus === 'copied' ? <Check className="h-4 w-4 text-green-300" /> : <Copy className="h-4 w-4 text-purple-300" />}
+                          {copyStatus === 'copied' ? 'Copied' : 'Copy Wallets'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleDownloadWinners}
+                          className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition-colors hover:border-purple-400/40 hover:bg-purple-500/10"
+                        >
+                          <Download className="h-4 w-4 text-purple-300" />
+                          Download Winners
+                        </button>
+                      </>
                     ) : null}
                   </div>
-                {sheetCopyStatus ? <p className="text-xs text-cyan sm:text-right">{sheetCopyStatus}</p> : null}
+                {downloadStatus || copyStatus === 'error' ? (
+                  <p className={`text-xs sm:text-right ${copyStatus === 'error' ? 'text-red-400' : 'text-cyan'}`}>
+                    {copyStatus === 'error' ? 'Could not copy wallets automatically.' : downloadStatus}
+                  </p>
+                ) : null}
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse whitespace-nowrap">
