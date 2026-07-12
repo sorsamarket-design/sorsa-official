@@ -212,7 +212,7 @@ body::before {
 .landing-navbar {
   z-index: 60 !important;
   isolation: isolate;
-  contain: paint;
+  overflow: visible;
   background-color: transparent !important;
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
