@@ -130,7 +130,7 @@ export default function CreatorNFTCampaigns() {
                 <button
                   key={campaign.id}
                   type="button"
-                  onClick={() => navigate(getCampaignShortPath(campaign.id))}
+                  onClick={() => navigate(getCampaignShortPath(campaign))}
                   className="group text-left glass-panel rounded-2xl border border-white/10 hover:border-cyan/50 hover:shadow-[0_0_30px_rgba(0,212,255,0.15)] transition-all duration-300 cursor-pointer flex flex-col h-full relative overflow-hidden"
                 >
                   <div className="absolute top-0 right-0 w-32 h-32 bg-cyan/5 blur-[50px] rounded-full pointer-events-none group-hover:bg-cyan/10 transition-colors"></div>

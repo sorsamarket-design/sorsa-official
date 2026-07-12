@@ -1381,12 +1381,35 @@ function getCampaignUrl(campaign) {
   return `${env.FRONTEND_URL.replace(/\/$/, '')}/creator/campaigns/${encodeURIComponent(campaign.id)}`;
 }
 
+function getCampaignShortCode(id) {
+  return String(id || '').replace(/-/g, '').slice(0, 16).toLowerCase();
+}
+
+function slugifyCampaignTitle(title) {
+  return String(title || '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Za-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function getNftCampaignSlug(campaign) {
+  const metadata = parseCampaignMetadata(campaign);
+  const allocationType = ['gtd', 'fcfs'].includes(campaign?.allocation_type || metadata.allocation_type)
+    ? String(campaign?.allocation_type || metadata.allocation_type).toUpperCase()
+    : 'WL';
+  const titleSlug = slugifyCampaignTitle(stripNftAllocationLabel(campaign?.title || ''));
+  return titleSlug ? `${titleSlug}-${allocationType}` : getCampaignShortCode(campaign?.id);
+}
+
 function getCreatorCampaignUrl(campaign) {
   if (!env.FRONTEND_URL || !campaign?.id) return null;
   const metadata = parseCampaignMetadata(campaign);
   const isNftCampaign = metadata.is_nft_campaign || campaign.campaign_type === 'raffle' || campaign.campaign_type === 'content';
-  const path = isNftCampaign ? 'creator/nft-campaigns' : 'creator/campaigns';
-  return `${env.FRONTEND_URL.replace(/\/$/, '')}/${path}/${encodeURIComponent(campaign.id)}`;
+  if (isNftCampaign) {
+    return `${env.FRONTEND_URL.replace(/\/$/, '')}/campaigns/${encodeURIComponent(getNftCampaignSlug(campaign))}`;
+  }
+  return `${env.FRONTEND_URL.replace(/\/$/, '')}/creator/campaigns/${encodeURIComponent(campaign.id)}`;
 }
 
 function buildCampaignNotification(campaign, label = 'New campaign') {
