@@ -210,6 +210,7 @@ async function revokeCurrentAppSession(req) {
 const telegramStatusStreams = new Map();
 const telegramMembershipCache = new Map();
 const telegramMembershipCacheTtlMs = 60 * 1000;
+const raffleTaskAuditNote = 'Note: We may check your tasks again anytime before the raffle ends. If you didn\'t finish all of them, your entry will be void.';
 
 function writeTelegramStatusEvent(res, status) {
   res.write(`data: ${JSON.stringify(status)}\n\n`);
@@ -274,9 +275,11 @@ function buildCollectionDetailsDescription(details = {}) {
     .filter(([, value]) => String(value || '').trim())
     .map(([label, value]) => `${label}: ${String(value).trim()}`);
 
-  return rows.length
+  const collectionDetails = rows.length
     ? `Collection Details\n${rows.join('\n')}`
-    : 'Collection details will be announced soon.';
+    : 'Collection Details\nCollection details will be announced soon.';
+
+  return `${collectionDetails}\n\n${raffleTaskAuditNote}`;
 }
 
 function normalizeAdditionalRequirements(requirements) {

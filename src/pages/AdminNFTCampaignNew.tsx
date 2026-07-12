@@ -10,9 +10,11 @@ import telegramNotifications from '../lib/telegramNotifications';
 
 const appleEase = [0.16, 1, 0.3, 1] as const;
 const defaultRaffleGoal = 'Complete all tasks to enter raffle';
-const defaultRaffleFollowAccounts = ['atlasreachx'];
+const defaultRaffleFollowAccounts = ['https://x.com/atlasreachx'];
+const defaultRaffleFollowHandle = 'atlasreachx';
 const defaultRaffleTelegramTasks = ['https://t.me/AtlasReachX'];
 const collectionChainOptions = ['Ethereum', 'Base', 'Solana', 'Robinhood'];
+const raffleTaskAuditNote = 'Note: We may check your tasks again anytime before the raffle ends. If you didn\'t finish all of them, your entry will be void.';
 
 function cleanXHandle(value: string) {
   return value
@@ -85,9 +87,11 @@ function buildCollectionDetailsDescription(details: {
     .filter(([, value]) => String(value || '').trim())
     .map(([label, value]) => `${label}: ${String(value).trim()}`);
 
-  return rows.length
+  const collectionDetails = rows.length
     ? `Collection Details\n${rows.join('\n')}`
-    : 'Collection details will be announced soon.';
+    : 'Collection Details\nCollection details will be announced soon.';
+
+  return `${collectionDetails}\n\n${raffleTaskAuditNote}`;
 }
 
 function telegramStatusLabel(status?: string | null) {
@@ -152,7 +156,7 @@ export default function AdminNFTCampaignNew() {
     setCampaignType(nextType);
     if (nextType === 'raffle') {
       setFollowAccounts(prev => {
-        const hasDefault = prev.some(account => cleanXHandle(account).toLowerCase() === defaultRaffleFollowAccounts[0]);
+        const hasDefault = prev.some(account => cleanXHandle(account).toLowerCase() === defaultRaffleFollowHandle);
         return hasDefault ? prev : [...defaultRaffleFollowAccounts, ...prev.filter(account => account.trim())].slice(0, 3);
       });
       setTelegramTasks(prev => {
@@ -163,7 +167,7 @@ export default function AdminNFTCampaignNew() {
     }
 
     setFollowAccounts(prev => {
-      const withoutDefaults = prev.filter(account => cleanXHandle(account).toLowerCase() !== defaultRaffleFollowAccounts[0]);
+      const withoutDefaults = prev.filter(account => cleanXHandle(account).toLowerCase() !== defaultRaffleFollowHandle);
       return withoutDefaults.length ? withoutDefaults : [''];
     });
   };
@@ -191,15 +195,6 @@ export default function AdminNFTCampaignNew() {
       ...prev,
       total_fcfs: String(Math.max(0, Number(prev.total_fcfs || 0) + delta))
     }));
-  };
-
-  const openDatePicker = (input: HTMLInputElement | null) => {
-    if (!input) return;
-    if (typeof input.showPicker === 'function') {
-      input.showPicker();
-    } else {
-      input.focus();
-    }
   };
 
   const handleImageChange = (
@@ -429,12 +424,8 @@ export default function AdminNFTCampaignNew() {
         }
       }
 
-      const startDateTime = campaignType === 'raffle'
-        ? combineDateAndTime(formData.start_date, formData.start_time)
-        : formData.start_date || null;
-      const endDateTime = campaignType === 'raffle'
-        ? combineDateAndTime(formData.end_date, formData.end_time, formData.end_date || null)
-        : formData.end_date || null;
+      const startDateTime = combineDateAndTime(formData.start_date, formData.start_time);
+      const endDateTime = combineDateAndTime(formData.end_date, formData.end_time, formData.end_date || null);
 
       if (campaignType === 'raffle' && formData.start_date && formData.end_date && startDateTime && endDateTime) {
         const startMs = new Date(startDateTime).getTime();
@@ -718,64 +709,37 @@ export default function AdminNFTCampaignNew() {
                     </div>
                   </div>
 
-                  {campaignType === 'raffle' ? (
-                    <div className="space-y-2">
-                      <div className="grid grid-cols-2 gap-3.5">
-                        <div className="min-w-0">
-                          <label className="mb-2 block text-[13px] font-medium text-muted">Start</label>
-                          <div className="flex flex-col gap-2">
-                            <div className="relative">
-                              <input ref={startDateRef} type="date" name="start_date" value={formData.start_date} onChange={handleInputChange} className="w-full h-11 min-w-0 rounded-xl bg-black/50 border border-white/10 px-2.5 pr-9 text-xs text-white placeholder:text-white/20 text-ellipsis overflow-hidden whitespace-nowrap focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:opacity-0" />
-                              <button type="button" onClick={() => openDatePicker(startDateRef.current)} className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md flex shrink-0 items-center justify-center text-white/75 hover:text-white hover:bg-white/10 transition-colors" aria-label="Open start date picker">
-                                <Calendar className="w-3.5 h-3.5 shrink-0" />
-                              </button>
-                            </div>
-                            <div className="relative">
-                              <input type="time" name="start_time" value={formData.start_time} onChange={handleInputChange} className="w-full h-11 min-w-0 rounded-xl bg-black/50 border border-white/10 px-2.5 pr-9 text-xs text-white placeholder:text-white/20 text-ellipsis overflow-hidden whitespace-nowrap focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all [color-scheme:dark]" aria-label="Start hour" />
-                              <Clock className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 shrink-0 text-white/55" />
-                            </div>
+                  <div className="space-y-2">
+                    <div className="grid w-full grid-cols-2 gap-3.5 overflow-hidden">
+                      <div className="min-w-0 overflow-hidden">
+                        <label className="mb-2 block text-[13px] font-medium text-muted">Start</label>
+                        <div className="flex flex-col gap-2">
+                          <div className="relative">
+                            <input ref={startDateRef} type="date" name="start_date" value={formData.start_date} onChange={handleInputChange} className="box-border h-11 w-full min-w-0 rounded-xl bg-black/50 border border-white/10 px-2.5 pr-9 text-xs text-white placeholder:text-white/20 text-ellipsis overflow-hidden whitespace-nowrap focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:opacity-0" />
+                            <Calendar className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 shrink-0 text-white/55" />
                           </div>
-                        </div>
-                        <div className="min-w-0">
-                          <label className="mb-2 block text-[13px] font-medium text-muted">End</label>
-                          <div className="flex flex-col gap-2">
-                            <div className="relative">
-                              <input ref={endDateRef} type="date" name="end_date" value={formData.end_date} onChange={handleInputChange} className="w-full h-11 min-w-0 rounded-xl bg-black/50 border border-white/10 px-2.5 pr-9 text-xs text-white placeholder:text-white/20 text-ellipsis overflow-hidden whitespace-nowrap focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:opacity-0" />
-                              <button type="button" onClick={() => openDatePicker(endDateRef.current)} className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md flex shrink-0 items-center justify-center text-white/75 hover:text-white hover:bg-white/10 transition-colors" aria-label="Open end date picker">
-                                <Calendar className="w-3.5 h-3.5 shrink-0" />
-                              </button>
-                            </div>
-                            <div className="relative">
-                              <input type="time" name="end_time" value={formData.end_time} onChange={handleInputChange} className="w-full h-11 min-w-0 rounded-xl bg-black/50 border border-white/10 px-2.5 pr-9 text-xs text-white placeholder:text-white/20 text-ellipsis overflow-hidden whitespace-nowrap focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all [color-scheme:dark]" aria-label="End hour" />
-                              <Clock className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 shrink-0 text-white/55" />
-                            </div>
+                          <div className="relative">
+                            <input type="time" name="start_time" value={formData.start_time} onChange={handleInputChange} className="box-border h-11 w-full min-w-0 rounded-xl bg-black/50 border border-white/10 px-2.5 pr-9 text-xs text-white placeholder:text-white/20 text-ellipsis overflow-hidden whitespace-nowrap focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:opacity-0" aria-label="Start hour" />
+                            <Clock className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 shrink-0 text-white/55" />
                           </div>
                         </div>
                       </div>
-                      <p className="text-xs text-muted">Choose an end hour for raffles that should close at a specific time.</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-white">Start Date</label>
-                        <div className="relative">
-                          <input ref={startDateRef} type="date" name="start_date" value={formData.start_date} onChange={handleInputChange} className="w-full px-4 py-3 pr-12 rounded-xl bg-black/50 border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:opacity-0" />
-                          <button type="button" onClick={() => openDatePicker(startDateRef.current)} className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center text-white/75 hover:text-white hover:bg-white/10 transition-colors" aria-label="Open start date picker">
-                            <Calendar className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-white">End Date</label>
-                        <div className="relative">
-                          <input ref={endDateRef} type="date" name="end_date" value={formData.end_date} onChange={handleInputChange} className="w-full px-4 py-3 pr-12 rounded-xl bg-black/50 border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:opacity-0" />
-                          <button type="button" onClick={() => openDatePicker(endDateRef.current)} className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center text-white/75 hover:text-white hover:bg-white/10 transition-colors" aria-label="Open end date picker">
-                            <Calendar className="w-4 h-4" />
-                          </button>
+                      <div className="min-w-0 overflow-hidden">
+                        <label className="mb-2 block text-[13px] font-medium text-muted">End</label>
+                        <div className="flex flex-col gap-2">
+                          <div className="relative">
+                            <input ref={endDateRef} type="date" name="end_date" value={formData.end_date} onChange={handleInputChange} className="box-border h-11 w-full min-w-0 rounded-xl bg-black/50 border border-white/10 px-2.5 pr-9 text-xs text-white placeholder:text-white/20 text-ellipsis overflow-hidden whitespace-nowrap focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:opacity-0" />
+                            <Calendar className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 shrink-0 text-white/55" />
+                          </div>
+                          <div className="relative">
+                            <input type="time" name="end_time" value={formData.end_time} onChange={handleInputChange} className="box-border h-11 w-full min-w-0 rounded-xl bg-black/50 border border-white/10 px-2.5 pr-9 text-xs text-white placeholder:text-white/20 text-ellipsis overflow-hidden whitespace-nowrap focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:opacity-0" aria-label="End hour" />
+                            <Clock className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 shrink-0 text-white/55" />
+                          </div>
                         </div>
                       </div>
                     </div>
-                  )}
+                    <p className="text-xs text-muted">Choose an end hour for campaigns that should close at a specific time.</p>
+                  </div>
                   <div className="space-y-3">
                     <label className="text-sm font-medium text-white">Category</label>
                     <div className="inline-flex px-4 py-2 rounded-full text-sm font-medium border bg-purple-500/20 text-purple-300 border-purple-500/30">
