@@ -353,14 +353,6 @@ export default function CreatorNFTCampaignDetail() {
                                 className={taskActionPillClass}
                               >
                                 Follow
-                              </a>
-                              <a
-                                href={`https://x.com/${account}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="w-10 h-10 rounded-full border border-white/10 bg-white/5 text-cyan hover:border-cyan/30 inline-flex items-center justify-center transition-colors"
-                                aria-label={`Open @${account} on X`}
-                              >
                                 <ExternalLink className="w-4 h-4" />
                               </a>
                               <button
@@ -436,14 +428,6 @@ export default function CreatorNFTCampaignDetail() {
                                 className={taskActionPillClass}
                               >
                                 Follow
-                              </a>
-                              <a
-                                href={`https://x.com/${account}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="w-10 h-10 rounded-full border border-white/10 bg-white/5 text-cyan hover:border-cyan/30 inline-flex items-center justify-center transition-colors"
-                                aria-label={`Open @${account} on X`}
-                              >
                                 <ExternalLink className="w-4 h-4" />
                               </a>
                               <button
@@ -497,14 +481,6 @@ export default function CreatorNFTCampaignDetail() {
                                 className={taskActionPillClass}
                               >
                                 Like & Retweet
-                              </a>
-                              <a
-                                href={link}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="w-10 h-10 rounded-full border border-white/10 bg-white/5 text-cyan hover:border-cyan/30 inline-flex items-center justify-center transition-colors"
-                                aria-label="Open required X post"
-                              >
                                 <ExternalLink className="w-4 h-4" />
                               </a>
                               <button
