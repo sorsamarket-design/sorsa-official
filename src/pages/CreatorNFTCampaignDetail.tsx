@@ -159,6 +159,17 @@ export default function CreatorNFTCampaignDetail() {
   const canVerifyTasks = !campaignEnded;
   const hasWalletAddress = Boolean(creatorProfile?.wallet_address);
   const primaryAllocation = getNftCampaignPrimaryAllocation(campaign);
+  const collectionDetails = [
+    { label: 'Chain', value: campaign.collection_details?.chain },
+    {
+      label: 'Mint Date',
+      value: campaign.collection_details?.mint_date
+        ? new Date(campaign.collection_details.mint_date).toLocaleDateString()
+        : ''
+    },
+    { label: 'Supply', value: campaign.collection_details?.supply },
+    { label: 'Mint Price', value: campaign.collection_details?.mint_price }
+  ].filter((item) => String(item.value || '').trim());
 
   const handleSubmitContent = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -295,6 +306,16 @@ export default function CreatorNFTCampaignDetail() {
 
           <section className="glass-panel rounded-[2rem] p-8 border border-white/10">
             <h2 className="text-xl font-semibold text-white mb-4">Campaign Details</h2>
+            {collectionDetails.length ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                {collectionDetails.map((item) => (
+                  <div key={item.label} className="rounded-xl border border-white/10 bg-white/5 p-4">
+                    <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-muted">{item.label}</p>
+                    <p className="mt-1 text-sm font-semibold text-white">{item.value}</p>
+                  </div>
+                ))}
+              </div>
+            ) : null}
             <div className="text-muted leading-relaxed whitespace-pre-line">
               <LinkifiedText text={campaign.overview || 'No campaign brief provided.'} />
             </div>

@@ -645,6 +645,14 @@ function normalizeNftCampaignBody(body, userId, brandProfile) {
   const backgroundImageUrl = typeof campaign.background_image_url === 'string' && campaign.background_image_url.trim()
     ? campaign.background_image_url.trim()
     : null;
+  const collectionDetails = campaign.collection_details && typeof campaign.collection_details === 'object'
+    ? {
+        chain: String(campaign.collection_details.chain || '').trim(),
+        mint_date: String(campaign.collection_details.mint_date || '').trim(),
+        supply: String(campaign.collection_details.supply || '').trim(),
+        mint_price: String(campaign.collection_details.mint_price || '').trim()
+      }
+    : {};
   const maxCreators = null;
   const maxContentSubmissions = isNftContentType(campaignType)
     ? Math.max(1, Math.min(5, Number(campaign.max_content_submissions || 5)))
@@ -704,7 +712,8 @@ function normalizeNftCampaignBody(body, userId, brandProfile) {
     retweet_links: Array.from(new Set(retweetLinks)),
     comment_links: Array.from(new Set(commentLinks)),
     engagement_links: Array.from(new Set(engagementLinks)),
-    telegram_tasks: telegramTasks
+    telegram_tasks: telegramTasks,
+    collection_details: collectionDetails
   };
 
   return {
@@ -751,6 +760,7 @@ function withNftCampaignMetadata(campaign) {
     comment_links: Array.isArray(metadata.comment_links) ? metadata.comment_links : [],
     engagement_links: Array.isArray(metadata.engagement_links) ? metadata.engagement_links : [],
     telegram_tasks: normalizeTelegramTasks(metadata.telegram_tasks),
+    collection_details: metadata.collection_details && typeof metadata.collection_details === 'object' ? metadata.collection_details : {},
     raffle_results: Array.isArray(metadata.raffle_results) ? metadata.raffle_results : [],
     raffle_finalized_at: metadata.raffle_finalized_at || null
   };

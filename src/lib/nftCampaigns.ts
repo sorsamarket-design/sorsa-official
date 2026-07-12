@@ -89,6 +89,7 @@ function withNftCampaignMetadata(campaign: any) {
     comment_links: Array.isArray(metadata.comment_links) ? metadata.comment_links : [],
     engagement_links: Array.isArray(metadata.engagement_links) ? metadata.engagement_links : [],
     telegram_tasks: Array.isArray(metadata.telegram_tasks) ? metadata.telegram_tasks : [],
+    collection_details: metadata.collection_details && typeof metadata.collection_details === 'object' ? metadata.collection_details : {},
     raffle_results: Array.isArray(metadata.raffle_results) ? metadata.raffle_results : [],
     raffle_finalized_at: metadata.raffle_finalized_at || null
   };
@@ -203,8 +204,16 @@ export type NftCampaignPayload = {
   comment_links: string[];
   engagement_links: string[];
   telegram_tasks?: TelegramTask[];
+  collection_details?: CollectionDetails;
   start_date: string | null;
   end_date: string | null;
+};
+
+export type CollectionDetails = {
+  chain?: string | null;
+  mint_date?: string | null;
+  supply?: string | null;
+  mint_price?: string | null;
 };
 
 export function getNftCampaignPrimaryAllocation(campaign: Pick<NftCampaignPayload, 'allocation_type' | 'budget' | 'total_gtd' | 'total_fcfs'>) {
