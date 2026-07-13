@@ -439,8 +439,8 @@ export default function AdminRaffles() {
             </>
           ) : (
             <>
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="min-w-0">
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -462,7 +462,7 @@ export default function AdminRaffles() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, ease: appleEase, delay: 0.2 }}
-                  className="inline-flex w-fit self-start bg-white/5 p-1.5 rounded-full border border-white/10"
+                  className="ml-auto inline-flex w-fit self-start bg-white/5 p-1.5 rounded-full border border-white/10"
                 >
                   <button
                     type="button"
