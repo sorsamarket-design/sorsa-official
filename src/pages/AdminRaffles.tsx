@@ -275,26 +275,26 @@ export default function AdminRaffles() {
                 </div>
               </motion.div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="glass-panel rounded-2xl p-5 border border-white/10">
-                  <Users className="w-5 h-5 text-purple-300 mb-3" />
-                  <div className="text-sm text-muted">Participants</div>
-                  <div className="text-2xl font-semibold text-white">{stats.joined_count}</div>
+              <div className="grid grid-cols-4 gap-1.5 sm:gap-4">
+                <div className="glass-panel min-w-0 rounded-2xl border border-white/10 p-2 sm:p-5">
+                  <Users className="mb-2 h-4 w-4 text-purple-300 sm:mb-3 sm:h-5 sm:w-5" />
+                  <div className="text-[0.6rem] leading-tight text-muted sm:text-sm">Participants</div>
+                  <div className="break-words text-[0.85rem] font-bold leading-tight text-white sm:text-2xl sm:font-semibold">{stats.joined_count}</div>
                 </div>
-                <div className="glass-panel rounded-2xl p-5 border border-white/10">
-                  <Ticket className="w-5 h-5 text-purple-300 mb-3" />
-                  <div className="text-sm text-muted">{selectedCampaignAllocation?.label || 'Total WL'}</div>
-                  <div className="text-2xl font-semibold text-white">{Number(selectedCampaignAllocation?.value || 0).toLocaleString()}</div>
+                <div className="glass-panel min-w-0 rounded-2xl border border-white/10 p-2 sm:p-5">
+                  <Ticket className="mb-2 h-4 w-4 text-purple-300 sm:mb-3 sm:h-5 sm:w-5" />
+                  <div className="text-[0.6rem] leading-tight text-muted sm:text-sm">{selectedCampaignAllocation?.label || 'Total WL'}</div>
+                  <div className="break-words text-[0.85rem] font-bold leading-tight text-white sm:text-2xl sm:font-semibold">{Number(selectedCampaignAllocation?.value || 0).toLocaleString()}</div>
                 </div>
-                <div className="glass-panel rounded-2xl p-5 border border-white/10">
-                  <Star className="w-5 h-5 text-purple-300 mb-3" />
-                  <div className="text-sm text-muted">Sorsa Threshold</div>
-                  <div className="text-2xl font-semibold text-white">{Number(campaign.min_sorsa_score || 0).toLocaleString()}+</div>
+                <div className="glass-panel min-w-0 rounded-2xl border border-white/10 p-2 sm:p-5">
+                  <Star className="mb-2 h-4 w-4 text-purple-300 sm:mb-3 sm:h-5 sm:w-5" />
+                  <div className="text-[0.6rem] leading-tight text-muted sm:text-sm">Sorsa Threshold</div>
+                  <div className="break-words text-[0.85rem] font-bold leading-tight text-white sm:text-2xl sm:font-semibold">{Number(campaign.min_sorsa_score || 0).toLocaleString()}+</div>
                 </div>
-                <div className="glass-panel rounded-2xl p-5 border border-white/10">
-                  <Clock className="w-5 h-5 text-purple-300 mb-3" />
-                  <div className="text-sm text-muted">Time Left</div>
-                  <div className="whitespace-nowrap text-lg font-semibold text-white tabular-nums">{formatCampaignCountdown(campaign.end_date, now)}</div>
+                <div className="glass-panel min-w-0 rounded-2xl border border-white/10 p-2 sm:p-5">
+                  <Clock className="mb-2 h-4 w-4 text-purple-300 sm:mb-3 sm:h-5 sm:w-5" />
+                  <div className="text-[0.6rem] leading-tight text-muted sm:text-sm">Time Left</div>
+                  <div className="whitespace-nowrap text-[0.68rem] font-bold leading-tight text-white tabular-nums sm:text-lg sm:font-semibold lg:text-base xl:text-lg">{formatCampaignCountdown(campaign.end_date, now)}</div>
                 </div>
               </div>
 

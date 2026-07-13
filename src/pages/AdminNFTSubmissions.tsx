@@ -293,8 +293,8 @@ export default function AdminNFTSubmissions() {
             </>
           ) : (
             <>
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="min-w-0">
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -312,17 +312,14 @@ export default function AdminNFTSubmissions() {
                     NFT Submissions
                   </motion.h1>
                   <p className="text-muted mt-2">Select a content campaign to view joined creators and submission details.</p>
+                  <button
+                    onClick={fetchData}
+                    className="mt-4 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm font-medium text-white hover:bg-white/10 transition-colors w-fit"
+                  >
+                    Refresh
+                  </button>
                 </div>
-                <button
-                  onClick={fetchData}
-                  className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm font-medium text-white hover:bg-white/10 transition-colors w-fit"
-                >
-                  Refresh
-                </button>
-              </div>
-
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                <div className="inline-flex bg-white/5 p-1.5 rounded-full border border-white/10 w-fit">
+                <div className="ml-auto inline-flex w-fit self-start bg-white/5 p-1.5 rounded-full border border-white/10">
                   <button
                     type="button"
                     onClick={() => setActiveTab('live')}
@@ -351,7 +348,9 @@ export default function AdminNFTSubmissions() {
                     <span className="relative z-10">Past</span>
                   </button>
                 </div>
+              </div>
 
+              <div className="flex justify-end">
                 <div className="relative w-full lg:w-96">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                   <input

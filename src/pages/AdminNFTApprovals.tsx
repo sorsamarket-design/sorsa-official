@@ -113,7 +113,7 @@ export default function AdminNFTApprovals() {
           </motion.header>
 
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-            <div className="flex w-full bg-white/5 p-1 rounded-xl border border-white/10 overflow-x-auto">
+            <div className="inline-flex w-fit max-w-full self-start bg-white/5 p-1 rounded-xl border border-white/10 overflow-x-auto">
               {(['all', 'submitted', 'approved', 'rejected'] as const).map((item) => (
                 <button
                   key={item}
@@ -144,12 +144,12 @@ export default function AdminNFTApprovals() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-white/10 bg-white/5">
-                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted">Creator</th>
-                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted">NFT Campaign</th>
-                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted">Status</th>
-                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted">Submitted</th>
-                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted">Content Link</th>
-                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-muted text-right">Actions</th>
+                    <th className="whitespace-nowrap px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-muted sm:px-4 sm:py-4 sm:text-xs lg:px-6">Creator</th>
+                    <th className="whitespace-nowrap px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-muted sm:px-4 sm:py-4 sm:text-xs lg:px-6">NFT Campaign</th>
+                    <th className="whitespace-nowrap px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-muted sm:px-4 sm:py-4 sm:text-xs lg:px-6">Status</th>
+                    <th className="whitespace-nowrap px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-muted sm:px-4 sm:py-4 sm:text-xs lg:px-6">Submitted</th>
+                    <th className="whitespace-nowrap px-2 py-3 text-[10px] font-bold uppercase tracking-wider text-muted sm:px-4 sm:py-4 sm:text-xs lg:px-6">Content Link</th>
+                    <th className="whitespace-nowrap px-2 py-3 text-right text-[10px] font-bold uppercase tracking-wider text-muted sm:px-4 sm:py-4 sm:text-xs lg:px-6">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
@@ -171,7 +171,7 @@ export default function AdminNFTApprovals() {
                   ) : (
                     filteredSubmissions.map((submission) => (
                       <tr key={submission.id} className="group hover:bg-white/5 transition-colors">
-                        <td className="px-6 py-4">
+                        <td className="px-2 py-3 sm:px-4 sm:py-4 lg:px-6">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500/20 to-cyan/20 border border-white/10 flex items-center justify-center overflow-hidden">
                               {submission.creator_profile?.avatar_url ? (
@@ -186,18 +186,18 @@ export default function AdminNFTApprovals() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-2 py-3 sm:px-4 sm:py-4 lg:px-6">
                           <div className="text-sm font-medium">{submission.campaign?.title}</div>
                           <div className="text-xs text-muted">Total WL: {Number(submission.campaign?.budget || 0).toLocaleString()}</div>
                         </td>
-                        <td className="px-6 py-4">{getStatusBadge(submission.status)}</td>
-                        <td className="px-6 py-4">
+                        <td className="px-2 py-3 sm:px-4 sm:py-4 lg:px-6">{getStatusBadge(submission.status)}</td>
+                        <td className="px-2 py-3 sm:px-4 sm:py-4 lg:px-6">
                           <div className="flex flex-col">
                             <span className="text-sm">{new Date(submission.submitted_at).toLocaleDateString()}</span>
                             <span className="text-xs text-muted">{new Date(submission.submitted_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-2 py-3 sm:px-4 sm:py-4 lg:px-6">
                           <a
                             href={submission.tweet_url}
                             target="_blank"
@@ -208,7 +208,7 @@ export default function AdminNFTApprovals() {
                             {submission.tweet_url}
                           </a>
                         </td>
-                        <td className="px-6 py-4 text-right">
+                        <td className="px-2 py-3 text-right sm:px-4 sm:py-4 lg:px-6">
                           {processingId === submission.id ? (
                             <Loader2 className="w-5 h-5 animate-spin text-cyan ml-auto" />
                           ) : submission.status === 'submitted' ? (

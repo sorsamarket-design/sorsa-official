@@ -71,7 +71,7 @@ export default function AdminApprovals() {
 
           {/* Filters & Search */}
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-            <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 w-full md:w-auto overflow-x-auto">
+            <div className="inline-flex w-fit max-w-full self-start bg-white/5 p-1 rounded-xl border border-white/10 overflow-x-auto">
               {(['all', 'submitted', 'approved', 'revision', 'rejected'] as const).map((f) => (
                 <button
                   key={f}
