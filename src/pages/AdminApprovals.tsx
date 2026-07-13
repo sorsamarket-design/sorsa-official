@@ -100,14 +100,14 @@ export default function AdminApprovals() {
           {/* Table */}
           <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-xl">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[680px] text-left border-collapse">
+              <table className="w-max table-auto text-left border-collapse sm:w-full">
                 <thead>
                   <tr className="border-b border-white/10 bg-white/5">
-                    <th className="whitespace-nowrap px-2 py-4 text-[11px] font-bold uppercase tracking-wider text-muted sm:px-6 sm:text-xs">Creator</th>
-                    <th className="whitespace-nowrap px-2 py-4 text-[11px] font-bold uppercase tracking-wider text-muted sm:px-6 sm:text-xs">Campaign</th>
-                    <th className="whitespace-nowrap px-2 py-4 text-[11px] font-bold uppercase tracking-wider text-muted sm:px-6 sm:text-xs">Status</th>
-                    <th className="whitespace-nowrap px-2 py-4 text-[11px] font-bold uppercase tracking-wider text-muted sm:px-6 sm:text-xs">Date</th>
-                    <th className="whitespace-nowrap px-2 py-4 text-right text-[11px] font-bold uppercase tracking-wider text-muted sm:px-6 sm:text-xs">View Link</th>
+                    <th className="whitespace-nowrap px-1.5 py-3 text-[11px] font-bold uppercase tracking-wider text-muted sm:px-6 sm:py-4 sm:text-xs">Creator</th>
+                    <th className="whitespace-nowrap px-1.5 py-3 text-[11px] font-bold uppercase tracking-wider text-muted sm:px-6 sm:py-4 sm:text-xs">Campaign</th>
+                    <th className="whitespace-nowrap px-1.5 py-3 text-[11px] font-bold uppercase tracking-wider text-muted sm:px-6 sm:py-4 sm:text-xs">Status</th>
+                    <th className="whitespace-nowrap px-1.5 py-3 text-[11px] font-bold uppercase tracking-wider text-muted sm:px-6 sm:py-4 sm:text-xs">Date</th>
+                    <th className="whitespace-nowrap px-1.5 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-muted sm:px-6 sm:py-4 sm:text-xs">View Link</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
@@ -126,7 +126,7 @@ export default function AdminApprovals() {
                   ) : (
                     filteredSubmissions.map((sub) => (
                       <tr key={sub.id} className="group hover:bg-white/5 transition-colors">
-                        <td className="px-2 py-4 sm:px-6">
+                        <td className="px-1.5 py-3 sm:px-6 sm:py-4">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-white/10 flex items-center justify-center overflow-hidden">
                               {sub.creator_profile?.avatar_url ? (
@@ -135,26 +135,26 @@ export default function AdminApprovals() {
                                 <Users className="w-5 h-5 text-muted" />
                               )}
                             </div>
-                            <div>
-                              <div className="font-medium">@{sub.creator_profile?.x_handle}</div>
-                              <div className="text-xs text-muted">{sub.creator_profile?.company_name}</div>
+                            <div className="min-w-0">
+                              <div className="max-w-[96px] truncate font-medium sm:max-w-none">@{sub.creator_profile?.x_handle}</div>
+                              <div className="max-w-[96px] truncate text-xs text-muted sm:max-w-none">{sub.creator_profile?.company_name}</div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-2 py-4 sm:px-6">
-                          <div className="text-sm font-medium">{sub.campaign?.title}</div>
+                        <td className="px-1.5 py-3 sm:px-6 sm:py-4">
+                          <div className="max-w-[120px] truncate text-sm font-medium sm:max-w-none">{sub.campaign?.title}</div>
                           <div className="text-xs text-muted">Budget: ${sub.campaign?.budget}</div>
                         </td>
-                        <td className="px-2 py-4 sm:px-6">
+                        <td className="px-1.5 py-3 sm:px-6 sm:py-4">
                           {getStatusBadge(sub.status)}
                         </td>
-                        <td className="px-2 py-4 sm:px-6">
-                          <div className="flex flex-col">
+                        <td className="px-1.5 py-3 sm:px-6 sm:py-4">
+                          <div className="flex flex-col whitespace-nowrap">
                             <span className="text-sm">{new Date(sub.submitted_at).toLocaleDateString()}</span>
                             <span className="text-xs text-muted">{new Date(sub.submitted_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                           </div>
                         </td>
-                        <td className="px-2 py-4 text-right sm:px-6">
+                        <td className="px-1.5 py-3 text-right sm:px-6 sm:py-4">
                           <a 
                             href={sub.tweet_url}
                             target="_blank"

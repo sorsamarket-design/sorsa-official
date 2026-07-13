@@ -151,10 +151,12 @@ export default function AdminNFTCampaignNew() {
     mint_price: formData.collection_mint_price.trim()
   };
   const raffleCollectionDescription = buildCollectionDetailsDescription(collectionDetailsPayload);
+  const campaignGoalValue = campaignType === 'raffle' ? defaultRaffleGoal : formData.goal;
 
   const handleCampaignTypeChange = (nextType: NftCampaignType) => {
     setCampaignType(nextType);
     if (nextType === 'raffle') {
+      setFormData(prev => ({ ...prev, goal: defaultRaffleGoal }));
       setFollowAccounts(prev => {
         const hasDefault = prev.some(account => cleanXHandle(account).toLowerCase() === defaultRaffleFollowHandle);
         return hasDefault ? prev : [...defaultRaffleFollowAccounts, ...prev.filter(account => account.trim())].slice(0, 3);
@@ -166,6 +168,10 @@ export default function AdminNFTCampaignNew() {
       return;
     }
 
+    setFormData(prev => ({
+      ...prev,
+      goal: prev.goal.trim() === defaultRaffleGoal ? '' : prev.goal
+    }));
     setFollowAccounts(prev => {
       const withoutDefaults = prev.filter(account => cleanXHandle(account).toLowerCase() !== defaultRaffleFollowHandle);
       return withoutDefaults.length ? withoutDefaults : [''];
@@ -335,7 +341,7 @@ export default function AdminNFTCampaignNew() {
       : formData.allocation_type === 'fcfs'
         ? formData.total_fcfs
         : formData.budget;
-    if (!formData.title.trim() || !formData.goal.trim() || !selectedTotal) {
+    if (!formData.title.trim() || !campaignGoalValue.trim() || !selectedTotal) {
       setError(`Campaign title, goal, and ${allocationLabels[formData.allocation_type as keyof typeof allocationLabels] || 'Total WL'} are required before continuing.`);
       return;
     }
@@ -443,7 +449,7 @@ export default function AdminNFTCampaignNew() {
 
       await createNftCampaign({
         title: formData.title.trim(),
-        goal: formData.goal.trim(),
+        goal: campaignType === 'raffle' ? defaultRaffleGoal : formData.goal.trim(),
         campaign_type: campaignType,
         overview: campaignType === 'raffle' ? raffleCollectionDescription : formData.overview.trim(),
         categories: ['NFT'],
@@ -595,7 +601,20 @@ export default function AdminNFTCampaignNew() {
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-white">Campaign Goal</label>
-                      <input name="goal" value={formData.goal} onChange={handleInputChange} required placeholder="e.g. Drive mint awareness" className="w-full px-4 py-3 rounded-xl bg-black/50 border border-white/10 text-white placeholder:text-white/20 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all" />
+                      <input
+                        name="goal"
+                        value={campaignGoalValue}
+                        onChange={handleInputChange}
+                        readOnly={campaignType === 'raffle'}
+                        required
+                        placeholder={campaignType === 'raffle' ? defaultRaffleGoal : 'e.g. Drive mint awareness'}
+                        className={`w-full px-4 py-3 rounded-xl bg-black/50 border border-white/10 text-white placeholder:text-white/20 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all ${
+                          campaignType === 'raffle' ? 'cursor-not-allowed text-white/70 focus:border-white/10 focus:ring-0' : ''
+                        }`}
+                      />
+                      {campaignType === 'raffle' ? (
+                        <p className="text-xs text-muted">Raffle campaigns use this fixed goal automatically.</p>
+                      ) : null}
                     </div>
                   </div>
 

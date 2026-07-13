@@ -72,11 +72,11 @@ export default function AdminDashboard() {
           </header>
 
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold">Post Review Queue</h2>
+            <div className="flex items-center justify-between gap-3 overflow-x-hidden">
+              <h2 className="min-w-0 truncate text-xl font-bold">Post Review Queue</h2>
               <button 
                 onClick={fetchSubmissions}
-                className="text-sm text-cyan hover:underline"
+                className="shrink-0 text-sm text-cyan hover:underline"
               >
                 Refresh
               </button>
@@ -84,14 +84,14 @@ export default function AdminDashboard() {
 
             <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-xl">
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[720px] text-left border-collapse">
+                <table className="w-max table-auto text-left border-collapse sm:w-full">
                   <thead>
                     <tr className="border-b border-white/10 bg-white/5">
-                      <th className="whitespace-nowrap px-2 py-4 text-[11px] font-bold uppercase tracking-wider text-muted sm:px-6 sm:text-xs">Campaign</th>
-                      <th className="whitespace-nowrap px-2 py-4 text-[11px] font-bold uppercase tracking-wider text-muted sm:px-6 sm:text-xs">Creator</th>
-                      <th className="whitespace-nowrap px-2 py-4 text-[11px] font-bold uppercase tracking-wider text-muted sm:px-6 sm:text-xs">Entry</th>
-                      <th className="whitespace-nowrap px-2 py-4 text-[11px] font-bold uppercase tracking-wider text-muted sm:px-6 sm:text-xs">Time</th>
-                      <th className="whitespace-nowrap px-2 py-4 text-right text-[11px] font-bold uppercase tracking-wider text-muted sm:px-6 sm:text-xs">Actions</th>
+                      <th className="whitespace-nowrap px-1.5 py-3 text-[11px] font-bold uppercase tracking-wider text-muted sm:px-6 sm:py-4 sm:text-xs">Campaign</th>
+                      <th className="whitespace-nowrap px-1.5 py-3 text-[11px] font-bold uppercase tracking-wider text-muted sm:px-6 sm:py-4 sm:text-xs">Creator</th>
+                      <th className="whitespace-nowrap px-1.5 py-3 text-[11px] font-bold uppercase tracking-wider text-muted sm:px-6 sm:py-4 sm:text-xs">Entry</th>
+                      <th className="whitespace-nowrap px-1.5 py-3 text-[11px] font-bold uppercase tracking-wider text-muted sm:px-6 sm:py-4 sm:text-xs">Time</th>
+                      <th className="whitespace-nowrap px-1.5 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-muted sm:px-6 sm:py-4 sm:text-xs">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
@@ -113,10 +113,10 @@ export default function AdminDashboard() {
                     ) : (
                       submissions.map((sub) => (
                         <tr key={sub.id} className="group hover:bg-white/5 transition-colors">
-                          <td className="px-2 py-4 sm:px-6">
-                            <div className="text-sm font-medium">{sub.campaign?.title}</div>
+                          <td className="px-1.5 py-3 sm:px-6 sm:py-4">
+                            <div className="max-w-[120px] truncate text-sm font-medium sm:max-w-none">{sub.campaign?.title}</div>
                           </td>
-                          <td className="px-2 py-4 sm:px-6">
+                          <td className="px-1.5 py-3 sm:px-6 sm:py-4">
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center overflow-hidden">
                                 {sub.creator_profile?.avatar_url ? (
@@ -125,26 +125,26 @@ export default function AdminDashboard() {
                                   <Users className="w-4 h-4 text-muted" />
                                 )}
                               </div>
-                              <span className="text-sm">@{sub.creator_profile?.x_handle}</span>
+                              <span className="max-w-[96px] truncate text-sm sm:max-w-none">@{sub.creator_profile?.x_handle}</span>
                             </div>
                           </td>
-                          <td className="px-2 py-4 sm:px-6">
+                          <td className="px-1.5 py-3 sm:px-6 sm:py-4">
                             <a 
                               href={sub.tweet_url} 
                               target="_blank" 
                               rel="noopener noreferrer"
-                              className="text-sm text-cyan hover:underline flex items-center gap-1 max-w-[200px] truncate"
+                              className="flex max-w-[120px] items-center gap-1 truncate text-sm text-cyan hover:underline sm:max-w-[200px]"
                             >
                               <ExternalLink className="w-3.5 h-3.5" />
                               {sub.tweet_url}
                             </a>
                           </td>
-                          <td className="px-2 py-4 sm:px-6">
-                            <div className="text-xs text-muted">
+                          <td className="px-1.5 py-3 sm:px-6 sm:py-4">
+                            <div className="whitespace-nowrap text-xs text-muted">
                               {new Date(sub.submitted_at).toLocaleString()}
                             </div>
                           </td>
-                          <td className="px-2 py-4 text-right sm:px-6">
+                          <td className="px-1.5 py-3 text-right sm:px-6 sm:py-4">
                             <div className="flex items-center justify-end gap-2">
                               {processingId === sub.id ? (
                                 <Loader2 className="w-5 h-5 animate-spin text-cyan" />

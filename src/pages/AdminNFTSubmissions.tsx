@@ -289,28 +289,34 @@ export default function AdminNFTSubmissions() {
             </>
           ) : (
             <>
-              <div>
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.8, ease: appleEase }}
-                      className="text-purple-400 text-sm font-semibold tracking-wider uppercase mb-1"
-                    >
-                      Admin NFT Campaigns
-                    </motion.div>
-                    <motion.h1
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.8, ease: appleEase, delay: 0.1 }}
-                      className="text-3xl font-semibold tracking-tight text-white"
-                    >
-                      NFT Submissions
-                    </motion.h1>
-                    <p className="text-muted mt-2">Select a content campaign to view joined creators and submission details.</p>
-                  </div>
-                  <div className="ml-auto inline-flex w-fit self-start bg-white/5 p-1.5 rounded-full border border-white/10">
+              <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-3">
+                <div className="min-w-0 flex-1">
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8, ease: appleEase }}
+                    className="text-purple-400 text-sm font-semibold tracking-wider uppercase mb-1"
+                  >
+                    Admin NFT Campaigns
+                  </motion.div>
+                  <motion.h1
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8, ease: appleEase, delay: 0.1 }}
+                    className="text-3xl font-semibold tracking-tight text-white"
+                  >
+                    NFT Submissions
+                  </motion.h1>
+                  <p className="text-muted mt-2">Select a content campaign to view joined creators and submission details.</p>
+                </div>
+                <div className="ml-auto flex w-fit shrink-0 flex-wrap items-center justify-end gap-3 self-start">
+                  <button
+                    onClick={fetchData}
+                    className="w-fit px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm font-medium text-white hover:bg-white/10 transition-colors"
+                  >
+                    Refresh
+                  </button>
+                  <div className="inline-flex w-fit shrink-0 bg-white/5 p-1.5 rounded-full border border-white/10">
                     <button
                       type="button"
                       onClick={() => setActiveTab('live')}
@@ -340,13 +346,6 @@ export default function AdminNFTSubmissions() {
                     </button>
                   </div>
                 </div>
-
-                <button
-                  onClick={fetchData}
-                  className="mt-4 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm font-medium text-white hover:bg-white/10 transition-colors w-fit"
-                >
-                  Refresh
-                </button>
               </div>
 
               <div className="flex justify-end">
