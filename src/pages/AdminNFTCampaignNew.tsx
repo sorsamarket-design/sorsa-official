@@ -987,6 +987,7 @@ export default function AdminNFTCampaignNew() {
                         <div className="space-y-3">
                           {telegramTasks.map((chatId, index) => {
                             const cleanedChatId = cleanTelegramChatId(chatId);
+                            const isDefaultTelegramTask = cleanedChatId.toLowerCase() === defaultRaffleTelegramTasks[0].toLowerCase();
                             const status = cleanedChatId
                               ? telegramStatusKeys(cleanedChatId).map(key => telegramStatuses[key]).find(Boolean) || null
                               : null;
@@ -995,8 +996,8 @@ export default function AdminNFTCampaignNew() {
                             return (
                               <div key={index} className="space-y-2">
                                 <div className="flex items-center gap-3">
-                                  <input value={chatId} onChange={(e) => updateTelegramTask(index, e.target.value)} placeholder="https://t.me/your_public_group" className="flex-1 px-4 py-3 rounded-xl bg-black/50 border border-white/10 text-white placeholder:text-white/20 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all" />
-                                  <button type="button" onClick={() => removeTelegramTask(index)} className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 text-muted hover:text-white hover:bg-white/10 flex items-center justify-center">
+                                  <input value={chatId} onChange={(e) => updateTelegramTask(index, e.target.value)} readOnly={isDefaultTelegramTask} placeholder="https://t.me/your_public_group" className={`flex-1 px-4 py-3 rounded-xl bg-black/50 border border-white/10 text-white placeholder:text-white/20 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all ${isDefaultTelegramTask ? 'cursor-not-allowed text-white/70 focus:border-white/10 focus:ring-0' : ''}`} />
+                                  <button type="button" onClick={() => removeTelegramTask(index)} disabled={isDefaultTelegramTask} className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 text-muted hover:text-white hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white/5 disabled:hover:text-muted flex items-center justify-center" aria-label={isDefaultTelegramTask ? 'Default Telegram task cannot be removed' : 'Remove Telegram task'}>
                                     <X className="w-4 h-4" />
                                   </button>
                                 </div>
