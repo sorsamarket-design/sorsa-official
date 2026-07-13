@@ -84,7 +84,14 @@ export default function AdminDashboard() {
 
             <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-xl">
               <div className="overflow-x-auto">
-                <table className="w-full table-auto text-left border-collapse">
+                <table className="w-full table-fixed text-left border-collapse">
+                  <colgroup>
+                    <col className="w-[24%]" />
+                    <col className="w-[24%]" />
+                    <col className="w-[18%]" />
+                    <col className="w-[18%]" />
+                    <col className="w-[16%]" />
+                  </colgroup>
                   <thead>
                     <tr className="border-b border-white/10 bg-white/5">
                       <th className="whitespace-nowrap px-1.5 py-3 text-[11px] font-bold uppercase tracking-wider text-muted sm:px-6 sm:py-4 sm:text-xs">Campaign</th>
@@ -92,19 +99,18 @@ export default function AdminDashboard() {
                       <th className="whitespace-nowrap px-1.5 py-3 text-[11px] font-bold uppercase tracking-wider text-muted sm:px-6 sm:py-4 sm:text-xs">Entry</th>
                       <th className="whitespace-nowrap px-1.5 py-3 text-[11px] font-bold uppercase tracking-wider text-muted sm:px-6 sm:py-4 sm:text-xs">Time</th>
                       <th className="whitespace-nowrap px-1.5 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-muted sm:px-6 sm:py-4 sm:text-xs">Actions</th>
-                      <th aria-hidden="true" className="w-full p-0" />
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
                     {isLoading ? (
                       <tr>
-                        <td colSpan={6} className="px-2 py-12 text-center sm:px-6">
+                        <td colSpan={5} className="px-2 py-12 text-center sm:px-6">
                           <Loader2 className="w-8 h-8 text-cyan animate-spin mx-auto" />
                         </td>
                       </tr>
                     ) : submissions.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-2 py-12 text-center text-muted sm:px-6">
+                        <td colSpan={5} className="px-2 py-12 text-center text-muted sm:px-6">
                           <div className="flex flex-col items-center gap-2">
                             <CheckCircle2 className="w-8 h-8 text-green-400" />
                             <p>No pending submissions to review.</p>
@@ -176,7 +182,6 @@ export default function AdminDashboard() {
                               )}
                             </div>
                           </td>
-                          <td aria-hidden="true" className="w-full p-0" />
                         </tr>
                       ))
                     )}
