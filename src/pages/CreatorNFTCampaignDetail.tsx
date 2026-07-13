@@ -343,13 +343,13 @@ export default function CreatorNFTCampaignDetail() {
             </div>
           </div>
 
-          <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
-            <h2 className="mb-6 text-xl font-bold text-white">Campaign Details</h2>
-            <div className="grid grid-cols-2 gap-4">
+          <section className="glass-panel rounded-[2rem] border border-white/10 p-8">
+            <h2 className="mb-4 text-xl font-semibold text-white">Campaign Details</h2>
+            <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
               {collectionDetailCards.map((item) => (
-                <div key={item.label} className="rounded-xl border border-white/10 bg-black/40 p-5">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">{item.label}</p>
-                  <p className="mt-2 break-words text-xl font-bold text-white sm:text-2xl">{item.value}</p>
+                <div key={item.label} className="rounded-xl border border-white/10 bg-white/5 p-4">
+                  <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-muted">{item.label}</p>
+                  <p className="mt-1 break-words text-sm font-semibold text-white">{item.value}</p>
                 </div>
               ))}
             </div>
