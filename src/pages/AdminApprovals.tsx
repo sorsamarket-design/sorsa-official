@@ -100,7 +100,14 @@ export default function AdminApprovals() {
           {/* Table */}
           <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-xl">
             <div className="overflow-x-auto">
-              <table className="w-max table-auto text-left border-collapse">
+              <table className="w-full table-fixed text-left border-collapse">
+                <colgroup>
+                  <col className="w-[24%]" />
+                  <col className="w-[24%]" />
+                  <col className="w-[18%]" />
+                  <col className="w-[18%]" />
+                  <col className="w-[16%]" />
+                </colgroup>
                 <thead>
                   <tr className="border-b border-white/10 bg-white/5">
                     <th className="whitespace-nowrap px-2 py-3 text-xs font-bold uppercase tracking-wider text-muted">Creator</th>
