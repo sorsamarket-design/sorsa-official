@@ -40,6 +40,32 @@ function verifiedTaskMap(campaign: NftCampaign) {
   return next;
 }
 
+function parseCollectionDetailsFromOverview(overview: string) {
+  const details: Record<string, string> = {};
+  const lines = overview.replace(/\r\n/g, '\n').split('\n');
+  const startIndex = lines.findIndex((line) => /^Collection Details:?$/i.test(line.trim()));
+  if (startIndex === -1) return details;
+
+  for (const line of lines.slice(startIndex + 1)) {
+    const trimmed = line.trim();
+    if (!trimmed || /^Note:/i.test(trimmed)) break;
+    const match = trimmed.match(/^(Chain|Mint Date|Supply|Mint Price)\s*:\s*(.+)$/i);
+    if (!match) continue;
+    const key = match[1].toLowerCase().replace(/\s+/g, '_');
+    details[key] = match[2].trim();
+  }
+
+  return details;
+}
+
+function getCollectionDetailValue(
+  metadataDetails: NftCampaign['collection_details'],
+  overviewDetails: Record<string, string>,
+  key: 'chain' | 'mint_date' | 'supply' | 'mint_price'
+) {
+  return String(metadataDetails?.[key] || overviewDetails[key] || '').trim();
+}
+
 export default function CreatorNFTCampaignDetail() {
   const { id, code } = useParams();
   const campaignRef = id || code || '';
@@ -160,23 +186,29 @@ export default function CreatorNFTCampaignDetail() {
   const canVerifyTasks = !campaignEnded;
   const hasWalletAddress = Boolean(creatorProfile?.wallet_address);
   const primaryAllocation = getNftCampaignPrimaryAllocation(campaign);
+  const overviewText = String(campaign.overview || '').trim().replace(/\r\n/g, '\n');
+  const overviewCollectionDetails = parseCollectionDetailsFromOverview(overviewText);
   const collectionDetailStats = [
-    { label: 'Chain', value: campaign.collection_details?.chain },
-    { label: 'Mint Date', value: campaign.collection_details?.mint_date },
-    { label: 'Supply', value: campaign.collection_details?.supply },
-    { label: 'Mint Price', value: campaign.collection_details?.mint_price }
+    { label: 'Chain', value: getCollectionDetailValue(campaign.collection_details, overviewCollectionDetails, 'chain') },
+    { label: 'Mint Date', value: getCollectionDetailValue(campaign.collection_details, overviewCollectionDetails, 'mint_date') },
+    { label: 'Supply', value: getCollectionDetailValue(campaign.collection_details, overviewCollectionDetails, 'supply') },
+    { label: 'Mint Price', value: getCollectionDetailValue(campaign.collection_details, overviewCollectionDetails, 'mint_price') }
   ];
   const collectionDetailCards = collectionDetailStats.map((item) => ({
     ...item,
     value: String(item.value || '').trim() || 'TBA'
   }));
-  const overviewText = String(campaign.overview || '').trim();
   const defaultTaskAuditNote = "Note: We may check your tasks again anytime before the raffle ends. If you didn't finish all of them, your entry will be void.";
-  const campaignDetailsNote = overviewText
+  const overviewSections = overviewText
     .split(/\n{2,}/)
     .map((section) => section.trim())
+    .filter(Boolean);
+  const campaignDetailsNote = overviewSections
     .find((section) => /^Note:/i.test(section)) || defaultTaskAuditNote;
-  const overviewIsCollectionDetails = overviewText.startsWith('Collection Details\n');
+  const overviewBodyText = overviewSections
+    .filter((section) => !/^Note:/i.test(section))
+    .filter((section) => !/^Collection Details:?/i.test(section))
+    .join('\n\n');
 
   const handleSubmitContent = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -322,11 +354,11 @@ export default function CreatorNFTCampaignDetail() {
               ))}
             </div>
             <p className="mt-6 text-muted leading-relaxed">{campaignDetailsNote}</p>
-            {!overviewIsCollectionDetails && (
+            {overviewBodyText ? (
               <div className="mt-6 text-muted leading-relaxed whitespace-pre-line">
-                <LinkifiedText text={overviewText || 'No campaign brief provided.'} />
+                <LinkifiedText text={overviewBodyText} />
               </div>
-            )}
+            ) : null}
           </section>
 
           <section className="glass-panel rounded-[2rem] p-8 border border-white/10">
