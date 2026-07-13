@@ -92,31 +92,33 @@ export default function AdminNFTApprovals() {
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: appleEase }}
-            className="flex flex-col md:flex-row md:items-center justify-between gap-4"
+            className="space-y-2"
           >
-            <div>
-              <div className="inline-flex items-center gap-2 text-purple-400 text-sm font-semibold tracking-wider uppercase mb-2">
-                <Sparkles className="w-4 h-4" />
-                Admin NFT Campaigns
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="inline-flex items-center gap-2 text-purple-400 text-sm font-semibold tracking-wider uppercase mb-2">
+                  <Sparkles className="w-4 h-4" />
+                  Admin NFT Campaigns
+                </div>
+                <h1 className="text-3xl font-bold">NFT Approvals</h1>
               </div>
-              <h1 className="text-3xl font-bold">NFT Approvals</h1>
-              <p className="text-muted mt-1">Review content submissions from admin-created NFT campaigns.</p>
+              <button
+                onClick={fetchSubmissions}
+                className="w-fit shrink-0 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm font-medium text-white hover:bg-white/10 transition-colors"
+              >
+                Refresh
+              </button>
             </div>
-            <button
-              onClick={fetchSubmissions}
-              className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm font-medium text-white hover:bg-white/10 transition-colors"
-            >
-              Refresh
-            </button>
+            <p className="text-muted">Review content submissions from admin-created NFT campaigns.</p>
           </motion.header>
 
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-            <div className="flex bg-white/5 p-1 rounded-xl border border-white/10 w-full md:w-auto overflow-x-auto">
+            <div className="flex w-full bg-white/5 p-1 rounded-xl border border-white/10 overflow-x-auto">
               {(['all', 'submitted', 'approved', 'rejected'] as const).map((item) => (
                 <button
                   key={item}
                   onClick={() => setFilter(item)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-all whitespace-nowrap ${
+                  className={`px-3 py-2 rounded-lg text-sm font-medium capitalize transition-all whitespace-nowrap sm:px-4 sm:py-2.5 ${
                     filter === item ? 'bg-purple-500 text-white shadow-lg' : 'text-muted hover:text-white'
                   }`}
                 >

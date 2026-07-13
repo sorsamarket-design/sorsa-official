@@ -462,7 +462,7 @@ export default function AdminRaffles() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, ease: appleEase, delay: 0.2 }}
-                  className="inline-flex bg-white/5 p-1.5 rounded-full border border-white/10"
+                  className="inline-flex w-fit self-start bg-white/5 p-1.5 rounded-full border border-white/10"
                 >
                   <button
                     type="button"
