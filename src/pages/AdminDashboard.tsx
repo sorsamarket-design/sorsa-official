@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Users, Megaphone, ShieldCheck, AlertCircle, CheckCircle2, XCircle, ExternalLink, Loader2 } from 'lucide-react';
+import { Users, AlertCircle, CheckCircle2, XCircle, ExternalLink, Loader2 } from 'lucide-react';
 import AdminSidebar from '../components/AdminSidebar';
 import AdminTopBar from '../components/AdminTopBar';
 import { useCampaigns } from '../hooks/useCampaigns';
@@ -55,29 +55,21 @@ export default function AdminDashboard() {
 
       <main className="flex-1 md:ml-64 p-4 md:p-8">
         <div className="max-w-6xl mx-auto space-y-8">
-          <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
+          <header className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0">
               <h1 className="text-3xl font-bold">Admin Overview</h1>
               <p className="text-muted mt-1">Review and manage creator post submissions.</p>
             </div>
-          </header>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white/5 border border-white/10 rounded-2xl p-6 relative overflow-hidden group"
+              transition={{ duration: 0.8, ease: appleEase }}
+              className="ml-auto text-right"
             >
-              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                <ShieldCheck className="w-12 h-12" />
-              </div>
-              <div className="flex items-center gap-3 text-yellow-400 mb-2">
-                <AlertCircle className="w-5 h-5" />
-                <span className="text-sm font-medium">Pending Approvals</span>
-              </div>
-              <div className="text-4xl font-bold">{submissions.length}</div>
+              <div className="text-xs font-medium text-yellow-400">Pending Approvals</div>
+              <div className="text-2xl font-bold text-white leading-tight">{submissions.length}</div>
             </motion.div>
-          </div>
+          </header>
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">

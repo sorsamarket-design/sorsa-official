@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import { AlertCircle, ArrowLeft, Calendar, Check, Clock, Copy, Download, Loader2, Sparkles, Star, Ticket, Users } from 'lucide-react';
 import AdminSidebar from '../components/AdminSidebar';
 import AdminTopBar from '../components/AdminTopBar';
+import AppLoadingScreen from '../components/AppLoadingScreen';
 import LinkifiedText from '../components/LinkifiedText';
 import { finalizeAdminRaffle, getAdminRaffle, getNftCampaignPrimaryAllocation, listAdminRaffles, type NftCampaign, type RaffleWinner } from '../lib/nftCampaigns';
 import { formatCampaignCountdown, getCampaignEndTime } from '../lib/campaignTime';
@@ -195,14 +196,7 @@ export default function AdminRaffles() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] flex">
-        <AdminSidebar />
-        <main className="flex-1 md:ml-64 p-8 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
-        </main>
-      </div>
-    );
+    return <AppLoadingScreen />;
   }
 
   if (error) {

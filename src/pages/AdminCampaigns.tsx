@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
 import { Megaphone, Clock, CheckCircle2, AlertCircle, Loader2, Sparkles, DollarSign } from 'lucide-react';
 import AdminSidebar from '../components/AdminSidebar';
@@ -6,6 +6,7 @@ import AdminTopBar from '../components/AdminTopBar';
 import { useCampaigns, Campaign } from '../hooks/useCampaigns';
 
 const appleEase = [0.16, 1, 0.3, 1] as const;
+type CampaignManagementTab = 'needs-finalization' | 'live' | 'completed';
 
 export default function AdminCampaigns() {
   const { campaigns, finalizeCampaign, runPayoutAutomation, refreshCampaigns } = useCampaigns();
@@ -13,11 +14,33 @@ export default function AdminCampaigns() {
   const [isRunningAutomation, setIsRunningAutomation] = useState(false);
   const [automationMessage, setAutomationMessage] = useState('');
   const [automationError, setAutomationError] = useState(false);
+  const [activeTab, setActiveTab] = useState<CampaignManagementTab>('needs-finalization');
 
   const isExpiredCampaign = (campaign: Campaign) => Boolean(campaign.end_date && new Date(campaign.end_date) < new Date());
   const needsFinalizationCampaigns = campaigns.filter(c => c.status === 'live' && isExpiredCampaign(c));
   const activeCampaigns = campaigns.filter(c => c.status === 'live' && !isExpiredCampaign(c));
   const completedCampaigns = campaigns.filter(c => c.status === 'completed');
+  const tabs = [
+    {
+      id: 'needs-finalization' as const,
+      label: 'Needs Finalization',
+      icon: AlertCircle,
+      iconClassName: 'text-yellow-400',
+      count: needsFinalizationCampaigns.length
+    },
+    {
+      id: 'live' as const,
+      label: 'Live Campaigns',
+      icon: Megaphone,
+      iconClassName: 'text-cyan'
+    },
+    {
+      id: 'completed' as const,
+      label: 'Completed',
+      icon: CheckCircle2,
+      iconClassName: 'text-green-400'
+    }
+  ];
 
   const handleFinalize = async (id: string) => {
     if (!confirm('Are you sure you want to finalize this campaign? This will fetch Sorsa metrics and award rewards to all approved participants.')) return;
@@ -86,16 +109,41 @@ export default function AdminCampaigns() {
             </div>
           )}
 
+          <div className="grid grid-cols-3 gap-2 bg-white/5 p-1.5 rounded-2xl border border-white/10 mb-6">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`min-w-0 rounded-xl px-2 py-3 text-xs sm:text-sm font-semibold transition-all inline-flex items-center justify-center gap-1.5 sm:gap-2 ${
+                    isActive
+                      ? 'bg-white text-black shadow-sm'
+                      : 'text-muted hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-black' : tab.iconClassName}`} />
+                  <span className="truncate">{tab.label}</span>
+                  {tab.count ? (
+                    <span className={`shrink-0 px-1.5 py-0.5 rounded-full text-[10px] border ${
+                      isActive
+                        ? 'bg-yellow-500/15 border-yellow-500/20 text-yellow-700'
+                        : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400'
+                    }`}>
+                      {tab.count}
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+
           {/* Needs Finalization */}
-          <section className="mb-12">
-            <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-yellow-400" /> Needs Finalization
-              {needsFinalizationCampaigns.length > 0 && (
-                <span className="px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-xs">
-                  {needsFinalizationCampaigns.length}
-                </span>
-              )}
-            </h2>
+          {activeTab === 'needs-finalization' && (
+          <section>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {needsFinalizationCampaigns.map((campaign) => (
                 <motion.div
@@ -154,12 +202,11 @@ export default function AdminCampaigns() {
               )}
             </div>
           </section>
+          )}
 
           {/* Active Campaigns */}
-          <section className="mb-12">
-            <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
-              <Megaphone className="w-5 h-5 text-cyan" /> Live Campaigns
-            </h2>
+          {activeTab === 'live' && (
+          <section>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {activeCampaigns.map((campaign) => {
                 return (
@@ -218,12 +265,11 @@ export default function AdminCampaigns() {
               )}
             </div>
           </section>
+          )}
 
           {/* Completed Campaigns */}
+          {activeTab === 'completed' && (
           <section>
-            <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-green-400" /> Completed
-            </h2>
             <div className="glass-panel rounded-[2rem] overflow-hidden border border-white/10">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse whitespace-nowrap">
@@ -259,6 +305,7 @@ export default function AdminCampaigns() {
               </div>
             </div>
           </section>
+          )}
 
         </div>
       </main>

@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ArrowLeft, Calendar, ExternalLink, FileText, Loader2, Search, Sparkles, Users, Wallet } from 'lucide-react';
+import { ArrowLeft, Calendar, ExternalLink, FileText, Search, Sparkles, Users, Wallet } from 'lucide-react';
 import AdminSidebar from '../components/AdminSidebar';
 import AdminTopBar from '../components/AdminTopBar';
+import AppLoadingScreen from '../components/AppLoadingScreen';
 import { getAdminNftContentCampaign, listAdminNftContentCampaigns, type NftCampaign } from '../lib/nftCampaigns';
 import { formatCampaignCountdown, getCampaignEndTime } from '../lib/campaignTime';
 
@@ -58,6 +59,7 @@ export default function AdminNFTSubmissions() {
   const [participants, setParticipants] = useState<CampaignParticipant[]>([]);
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'live' | 'past'>('live');
   const [searchQuery, setSearchQuery] = useState('');
@@ -80,6 +82,7 @@ export default function AdminNFTSubmissions() {
       console.error('Failed to load NFT submissions:', err);
       setError(err.message || 'NFT submissions could not be loaded.');
     } finally {
+      setHasLoaded(true);
       setIsLoading(false);
     }
   };
@@ -117,15 +120,8 @@ export default function AdminNFTSubmissions() {
     return map;
   }, [submissions]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] flex">
-        <AdminSidebar />
-        <main className="flex-1 md:ml-64 p-8 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
-        </main>
-      </div>
-    );
+  if (isLoading && !hasLoaded) {
+    return <AppLoadingScreen />;
   }
 
   if (error) {
@@ -293,61 +289,64 @@ export default function AdminNFTSubmissions() {
             </>
           ) : (
             <>
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8, ease: appleEase }}
-                    className="text-purple-400 text-sm font-semibold tracking-wider uppercase mb-1"
-                  >
-                    Admin NFT Campaigns
-                  </motion.div>
-                  <motion.h1
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8, ease: appleEase, delay: 0.1 }}
-                    className="text-3xl font-semibold tracking-tight text-white"
-                  >
-                    NFT Submissions
-                  </motion.h1>
-                  <p className="text-muted mt-2">Select a content campaign to view joined creators and submission details.</p>
-                  <button
-                    onClick={fetchData}
-                    className="mt-4 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm font-medium text-white hover:bg-white/10 transition-colors w-fit"
-                  >
-                    Refresh
-                  </button>
+              <div>
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.8, ease: appleEase }}
+                      className="text-purple-400 text-sm font-semibold tracking-wider uppercase mb-1"
+                    >
+                      Admin NFT Campaigns
+                    </motion.div>
+                    <motion.h1
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.8, ease: appleEase, delay: 0.1 }}
+                      className="text-3xl font-semibold tracking-tight text-white"
+                    >
+                      NFT Submissions
+                    </motion.h1>
+                    <p className="text-muted mt-2">Select a content campaign to view joined creators and submission details.</p>
+                  </div>
+                  <div className="ml-auto inline-flex w-fit self-start bg-white/5 p-1.5 rounded-full border border-white/10">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('live')}
+                      className={`relative px-6 py-2 rounded-full text-sm font-medium transition-colors ${
+                        activeTab === 'live' ? 'text-black' : 'text-muted hover:text-white'
+                      }`}
+                    >
+                      {activeTab === 'live' && (
+                        <motion.div layoutId="adminNftSubmissionTabBg" className="absolute inset-0 bg-white rounded-full" transition={{ type: 'spring', stiffness: 400, damping: 30 }} />
+                      )}
+                      <span className="relative z-10 flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${activeTab === 'live' ? 'bg-green-500' : 'bg-transparent'}`} />
+                        Live
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('past')}
+                      className={`relative px-6 py-2 rounded-full text-sm font-medium transition-colors ${
+                        activeTab === 'past' ? 'text-black' : 'text-muted hover:text-white'
+                      }`}
+                    >
+                      {activeTab === 'past' && (
+                        <motion.div layoutId="adminNftSubmissionTabBg" className="absolute inset-0 bg-white rounded-full" transition={{ type: 'spring', stiffness: 400, damping: 30 }} />
+                      )}
+                      <span className="relative z-10">Past</span>
+                    </button>
+                  </div>
                 </div>
-                <div className="ml-auto inline-flex w-fit self-start bg-white/5 p-1.5 rounded-full border border-white/10">
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('live')}
-                    className={`relative px-6 py-2 rounded-full text-sm font-medium transition-colors ${
-                      activeTab === 'live' ? 'text-black' : 'text-muted hover:text-white'
-                    }`}
-                  >
-                    {activeTab === 'live' && (
-                      <motion.div layoutId="adminNftSubmissionTabBg" className="absolute inset-0 bg-white rounded-full" transition={{ type: 'spring', stiffness: 400, damping: 30 }} />
-                    )}
-                    <span className="relative z-10 flex items-center gap-2">
-                      <div className={`w-2 h-2 rounded-full ${activeTab === 'live' ? 'bg-green-500' : 'bg-transparent'}`} />
-                      Live
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('past')}
-                    className={`relative px-6 py-2 rounded-full text-sm font-medium transition-colors ${
-                      activeTab === 'past' ? 'text-black' : 'text-muted hover:text-white'
-                    }`}
-                  >
-                    {activeTab === 'past' && (
-                      <motion.div layoutId="adminNftSubmissionTabBg" className="absolute inset-0 bg-white rounded-full" transition={{ type: 'spring', stiffness: 400, damping: 30 }} />
-                    )}
-                    <span className="relative z-10">Past</span>
-                  </button>
-                </div>
+
+                <button
+                  onClick={fetchData}
+                  className="mt-4 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm font-medium text-white hover:bg-white/10 transition-colors w-fit"
+                >
+                  Refresh
+                </button>
               </div>
 
               <div className="flex justify-end">

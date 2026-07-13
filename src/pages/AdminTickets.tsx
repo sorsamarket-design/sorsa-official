@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
-import { Inbox, Loader2, MessageSquare, RefreshCw } from 'lucide-react';
+import { Inbox, MessageSquare, RefreshCw } from 'lucide-react';
 import AdminSidebar from '../components/AdminSidebar';
 import AdminTopBar from '../components/AdminTopBar';
+import AppLoadingScreen from '../components/AppLoadingScreen';
 import { supabase } from '../lib/supabase';
 
 const appleEase = [0.16, 1, 0.3, 1] as const;
@@ -46,6 +47,7 @@ function statusClass(status: string) {
 export default function AdminTickets() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [activeStatus, setActiveStatus] = useState<'all' | TicketStatus>('open');
@@ -71,6 +73,7 @@ export default function AdminTickets() {
       console.error('Error loading support tickets:', error);
       setLoadError('Unable to load tickets.');
     } finally {
+      setHasLoaded(true);
       setLoading(false);
     }
   };
@@ -103,6 +106,10 @@ export default function AdminTickets() {
       setSavingId(null);
     }
   };
+
+  if (loading && !hasLoaded) {
+    return <AppLoadingScreen />;
+  }
 
   return (
     <div className="min-h-screen bg-[#0A0A1E] text-[#F5F5F7] font-sans selection:bg-purple-500/30 flex">
@@ -147,12 +154,7 @@ export default function AdminTickets() {
             ))}
           </div>
 
-          {loading ? (
-            <div className="glass-panel rounded-[2rem] p-12 border border-white/10 text-center text-muted">
-              <Loader2 className="w-8 h-8 text-purple-400 animate-spin mx-auto mb-4" />
-              Loading tickets...
-            </div>
-          ) : loadError ? (
+          {loadError ? (
             <div className="glass-panel rounded-[2rem] p-12 border border-red-500/20 bg-red-500/5 text-center text-red-400">
               {loadError}
             </div>
