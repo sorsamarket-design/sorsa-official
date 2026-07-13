@@ -909,8 +909,8 @@ export default function AdminNFTCampaignNew() {
                             <label className="text-sm font-medium text-white">Like & Retweet Tasks</label>
                             <p className="text-xs text-muted mt-1">Add up to 2 X post links creators must like and retweet to join.</p>
                           </div>
-                          <button type="button" onClick={addRetweetLink} disabled={retweetLinks.length >= 2} className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm font-medium text-white hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-2">
-                            <Plus className="w-4 h-4" /> Add
+                          <button type="button" onClick={addRetweetLink} disabled={retweetLinks.length >= 2} className="w-auto shrink-0 whitespace-nowrap px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm font-medium text-white hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1.5">
+                            <Plus className="w-4 h-4 shrink-0" /> Add
                           </button>
                         </div>
                         <div className="space-y-3">
@@ -931,8 +931,8 @@ export default function AdminNFTCampaignNew() {
                             <label className="text-sm font-medium text-white">Like & Comment Tasks</label>
                             <p className="text-xs text-muted mt-1">Add up to 2 X post links creators must like and comment on to join.</p>
                           </div>
-                          <button type="button" onClick={addCommentLink} disabled={commentLinks.length >= 2} className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm font-medium text-white hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-2">
-                            <Plus className="w-4 h-4" /> Add
+                          <button type="button" onClick={addCommentLink} disabled={commentLinks.length >= 2} className="w-auto shrink-0 whitespace-nowrap px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm font-medium text-white hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1.5">
+                            <Plus className="w-4 h-4 shrink-0" /> Add
                           </button>
                         </div>
                         <div className="space-y-3">
@@ -953,8 +953,8 @@ export default function AdminNFTCampaignNew() {
                             <label className="text-sm font-medium text-white">Like, Retweet & Comment Tasks</label>
                             <p className="text-xs text-muted mt-1">Add up to 2 X post links creators must like, retweet, and comment on to join.</p>
                           </div>
-                          <button type="button" onClick={addEngagementLink} disabled={engagementLinks.length >= 2} className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm font-medium text-white hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-2">
-                            <Plus className="w-4 h-4" /> Add
+                          <button type="button" onClick={addEngagementLink} disabled={engagementLinks.length >= 2} className="w-auto shrink-0 whitespace-nowrap px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm font-medium text-white hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1.5">
+                            <Plus className="w-4 h-4 shrink-0" /> Add
                           </button>
                         </div>
                         <div className="space-y-3">
@@ -979,8 +979,8 @@ export default function AdminNFTCampaignNew() {
                             <button type="button" onClick={() => refreshTelegramStatuses(true)} disabled={telegramStatusLoading} className="w-10 h-10 rounded-full bg-white/5 border border-white/10 text-white hover:bg-white/10 disabled:opacity-50 inline-flex items-center justify-center" aria-label="Verify Telegram group links">
                               {telegramStatusLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageCircle className="w-4 h-4" />}
                             </button>
-                            <button type="button" onClick={addTelegramTask} disabled={telegramTasks.length >= 3} className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm font-medium text-white hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-2">
-                              <Plus className="w-4 h-4" /> Add
+                            <button type="button" onClick={addTelegramTask} disabled={telegramTasks.length >= 3} className="w-auto shrink-0 whitespace-nowrap px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm font-medium text-white hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center gap-1.5">
+                              <Plus className="w-4 h-4 shrink-0" /> Add
                             </button>
                           </div>
                         </div>
