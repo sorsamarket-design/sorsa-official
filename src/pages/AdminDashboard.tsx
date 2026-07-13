@@ -84,14 +84,14 @@ export default function AdminDashboard() {
 
             <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-xl">
               <div className="overflow-x-auto">
-                <table className="w-max table-auto text-left border-collapse sm:w-full">
+                <table className="w-max table-auto text-left border-collapse">
                   <thead>
                     <tr className="border-b border-white/10 bg-white/5">
-                      <th className="whitespace-nowrap px-1.5 py-3 text-[11px] font-bold uppercase tracking-wider text-muted sm:px-6 sm:py-4 sm:text-xs">Campaign</th>
-                      <th className="whitespace-nowrap px-1.5 py-3 text-[11px] font-bold uppercase tracking-wider text-muted sm:px-6 sm:py-4 sm:text-xs">Creator</th>
-                      <th className="whitespace-nowrap px-1.5 py-3 text-[11px] font-bold uppercase tracking-wider text-muted sm:px-6 sm:py-4 sm:text-xs">Entry</th>
-                      <th className="whitespace-nowrap px-1.5 py-3 text-[11px] font-bold uppercase tracking-wider text-muted sm:px-6 sm:py-4 sm:text-xs">Time</th>
-                      <th className="whitespace-nowrap px-1.5 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-muted sm:px-6 sm:py-4 sm:text-xs">Actions</th>
+                      <th className="whitespace-nowrap px-2 py-3 text-xs font-bold uppercase tracking-wider text-muted">Campaign</th>
+                      <th className="whitespace-nowrap px-2 py-3 text-xs font-bold uppercase tracking-wider text-muted">Creator</th>
+                      <th className="whitespace-nowrap px-2 py-3 text-xs font-bold uppercase tracking-wider text-muted">Entry</th>
+                      <th className="whitespace-nowrap px-2 py-3 text-xs font-bold uppercase tracking-wider text-muted">Time</th>
+                      <th className="whitespace-nowrap px-2 py-3 text-right text-xs font-bold uppercase tracking-wider text-muted">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
@@ -113,10 +113,10 @@ export default function AdminDashboard() {
                     ) : (
                       submissions.map((sub) => (
                         <tr key={sub.id} className="group hover:bg-white/5 transition-colors">
-                          <td className="px-1.5 py-3 sm:px-6 sm:py-4">
+                          <td className="px-2 py-3">
                             <div className="max-w-[120px] truncate text-sm font-medium sm:max-w-none">{sub.campaign?.title}</div>
                           </td>
-                          <td className="px-1.5 py-3 sm:px-6 sm:py-4">
+                          <td className="px-2 py-3">
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center overflow-hidden">
                                 {sub.creator_profile?.avatar_url ? (
@@ -128,7 +128,7 @@ export default function AdminDashboard() {
                               <span className="max-w-[96px] truncate text-sm sm:max-w-none">@{sub.creator_profile?.x_handle}</span>
                             </div>
                           </td>
-                          <td className="px-1.5 py-3 sm:px-6 sm:py-4">
+                          <td className="px-2 py-3">
                             <a 
                               href={sub.tweet_url} 
                               target="_blank" 
@@ -139,12 +139,12 @@ export default function AdminDashboard() {
                               {sub.tweet_url}
                             </a>
                           </td>
-                          <td className="px-1.5 py-3 sm:px-6 sm:py-4">
+                          <td className="px-2 py-3">
                             <div className="whitespace-nowrap text-xs text-muted">
                               {new Date(sub.submitted_at).toLocaleString()}
                             </div>
                           </td>
-                          <td className="px-1.5 py-3 text-right sm:px-6 sm:py-4">
+                          <td className="px-2 py-3 text-right">
                             <div className="flex items-center justify-end gap-2">
                               {processingId === sub.id ? (
                                 <Loader2 className="w-5 h-5 animate-spin text-cyan" />
