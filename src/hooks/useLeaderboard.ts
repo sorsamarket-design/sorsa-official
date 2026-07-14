@@ -118,6 +118,9 @@ export function useLeaderboard() {
         .map((profile) => {
           const authProfile = authProfileById.get(profile.id) as any;
           const handle = profile.x_handle || authProfile?.full_name || 'Unknown';
+          const isLeaderboardExcluded =
+            campaignsCompletedExcludedCreatorIds.has(profile.id) ||
+            FALLBACK_CAMPAIGNS_COMPLETED_EXCLUDED_HANDLES.has(String(handle || '').toLowerCase());
           const avatar =
             resolveCreatorAvatarUrl(profile.avatar_url, authProfile?.avatar_url) ||
             getInitialsAvatarUrl(profile.full_name || authProfile?.full_name || handle);
@@ -127,9 +130,8 @@ export function useLeaderboard() {
             handle,
             avatar,
             sorsaScore: profile.sorsa_score || 0,
-            points: profile.activity_points || 0,
-            campaignsCompleted: campaignsCompletedExcludedCreatorIds.has(profile.id) ||
-              FALLBACK_CAMPAIGNS_COMPLETED_EXCLUDED_HANDLES.has(String(handle || '').toLowerCase())
+            points: isLeaderboardExcluded ? 0 : profile.activity_points || 0,
+            campaignsCompleted: isLeaderboardExcluded
               ? 0
               : Math.max(
                   Number(profile.campaigns_completed || 0),

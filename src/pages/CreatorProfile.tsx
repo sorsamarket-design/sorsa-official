@@ -165,8 +165,8 @@ export default function CreatorProfile() {
                   <span className="text-sm text-muted">{pastCampaigns.length} total</span>
                 </div>
                 {pastCampaigns.length ? (
-                  <div className="space-y-3">
-                    {pastCampaigns.slice(0, 6).map((item) => (
+                  <div className={`space-y-3 ${pastCampaigns.length > 5 ? 'max-h-[21rem] overflow-y-auto pr-1 [scrollbar-color:rgba(255,255,255,0.25)_transparent] [scrollbar-width:thin] md:max-h-none md:overflow-visible md:pr-0' : ''}`}>
+                    {pastCampaigns.map((item) => (
                       <div key={item.id} className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center gap-4">
                         <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 overflow-hidden flex items-center justify-center shrink-0">
                           {item.campaign.image_url ? (

@@ -1054,6 +1054,11 @@ async function awardSubmissionActivityPoints(submission) {
   return awardActivityPoints(creatorId, 10, `submission_approved:${submissionId}`);
 }
 
+async function awardNftCampaignCompletionPoints(creatorId, campaignId) {
+  if (!creatorId || !campaignId) return { awarded: false, reason: 'missing_nft_completion' };
+  return awardActivityPoints(creatorId, 5, `nft_campaign_completed:${campaignId}`);
+}
+
 async function callSorsa(path, options = {}) {
   if (!env.SORSA_API_KEY) {
     throw Object.assign(new Error('Unable to verify'), { status: 500 });
@@ -3386,11 +3391,19 @@ app.post('/admin/raffles/:campaignId/finalize', async (req, res) => {
     });
     console.log(`Raffle winners Telegram group announcement result for campaign ${campaignId}:`, telegram);
 
+    const activityPoints = await Promise.all(
+      eligibleParticipants.map((participant) => awardNftCampaignCompletionPoints(participant.creator_id, campaignId))
+    );
+
     return res.json({
       winners,
       finalized_at: finalizedAt,
       alreadyFinalized: false,
-      telegram
+      telegram,
+      activityPoints: {
+        awarded: activityPoints.filter((award) => award.awarded).length,
+        skipped: activityPoints.filter((award) => !award.awarded).length
+      }
     });
   } catch (error) {
     const status = error.status || 500;
@@ -4469,9 +4482,19 @@ app.post('/submissions/:submissionId/status', async (req, res) => {
     }
 
     let activityPoints = { awarded: false };
+    let nftCompletionPoints = { awarded: false };
     let referral = { qualified: false };
     if (status === 'approved' && submission.creator_id) {
       activityPoints = await awardSubmissionActivityPoints(submission);
+      const campaignType = String(submission.campaign?.campaign_type || '').toLowerCase();
+      const categories = Array.isArray(submission.campaign?.categories) ? submission.campaign.categories : [];
+      const metadata = parseCampaignMetadata(submission.campaign);
+      const isNftContentCampaign =
+        isNftContentType(campaignType) &&
+        (metadata.nft || categories.some((category) => String(category).toLowerCase() === 'nft'));
+      if (isNftContentCampaign) {
+        nftCompletionPoints = await awardNftCampaignCompletionPoints(submission.creator_id, submission.campaign_id);
+      }
       referral = await qualifyReferralForCreator(submission.creator_id);
     }
 
@@ -4480,7 +4503,7 @@ app.post('/submissions/:submissionId/status', async (req, res) => {
       telegram = await notifySubmissionDecision(submission);
     }
 
-    return res.json({ submission, telegram, activityPoints, referral });
+    return res.json({ submission, telegram, activityPoints, nftCompletionPoints, referral });
   } catch (error) {
     const status = error.status || 500;
     return res.status(status).json({ error: error.message || 'Submission status update failed' });
