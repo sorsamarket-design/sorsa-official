@@ -303,16 +303,18 @@ export default function CreatorSettings() {
         </div>
       </main>
       {connectLink?.connectCode && !telegramStatus?.connected && createPortal(
-        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-[#0A0A1E] border border-white/10 p-6 rounded-2xl max-w-sm w-full relative shadow-2xl">
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setConnectLink(null)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} transition={{ duration: 0.3, ease: appleEase }} className="relative w-full max-w-sm glass-panel rounded-[2rem] p-8 border border-white/10 shadow-2xl overflow-hidden">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-cyan/10 blur-[60px] rounded-full pointer-events-none"></div>
             <button
               onClick={() => setConnectLink(null)}
-              className="absolute top-4 right-4 text-muted hover:text-white transition-colors"
+              className="absolute top-6 right-6 z-10 p-2 rounded-full hover:bg-white/10 text-muted hover:text-white transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <div className="flex flex-col items-center text-center mt-2">
+            <div className="relative z-10 flex flex-col items-center text-center mt-2">
               <div className="w-12 h-12 rounded-full bg-cyan/10 flex items-center justify-center mb-4">
                 <Send className="w-6 h-6 text-cyan" />
               </div>
@@ -342,7 +344,7 @@ export default function CreatorSettings() {
                 </button>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>,
         document.body
       )}

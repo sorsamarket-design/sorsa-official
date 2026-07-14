@@ -346,15 +346,16 @@ export default function BrandSettings() {
 
       {isTelegramModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeTelegramModal} />
-          <div className="relative w-full max-w-lg glass-panel border border-white/10 rounded-2xl bg-[#11112A] p-6 shadow-2xl">
-            <div className="flex items-center justify-between mb-6">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={closeTelegramModal} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} transition={{ duration: 0.3, ease: appleEase }} className="relative w-full max-w-lg glass-panel rounded-[2rem] p-8 border border-white/10 shadow-2xl overflow-hidden">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-cyan/10 blur-[60px] rounded-full pointer-events-none"></div>
+            <div className="flex items-center justify-between mb-6 relative z-10">
               <h3 className="text-xl font-semibold text-white">Connect Telegram Group</h3>
-              <button onClick={closeTelegramModal} className="text-muted hover:text-white transition-colors">
+              <button onClick={closeTelegramModal} className="p-2 rounded-full hover:bg-white/10 text-muted hover:text-white transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="space-y-5">
+            <div className="space-y-5 relative z-10">
               <div className="rounded-xl bg-white/5 border border-white/10 p-4 space-y-3 text-sm text-muted">
                 <p>1. Add the AtlasReach bot to your public Telegram group.</p>
                 <p>2. Promote the bot to admin so it can verify members.</p>
@@ -381,7 +382,7 @@ export default function BrandSettings() {
                 {telegramLoading ? 'Verifying...' : telegramVerifySuccess ? 'Verified!' : 'Verify Bot Setup'}
               </button>
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
     </div>
