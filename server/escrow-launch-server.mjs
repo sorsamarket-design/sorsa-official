@@ -3394,6 +3394,9 @@ app.post('/admin/raffles/:campaignId/finalize', async (req, res) => {
     const activityPoints = await Promise.all(
       eligibleParticipants.map((participant) => awardNftCampaignCompletionPoints(participant.creator_id, campaignId))
     );
+    const referrals = await Promise.all(
+      eligibleParticipants.map((participant) => qualifyReferralForCreator(participant.creator_id))
+    );
 
     return res.json({
       winners,
@@ -3403,6 +3406,10 @@ app.post('/admin/raffles/:campaignId/finalize', async (req, res) => {
       activityPoints: {
         awarded: activityPoints.filter((award) => award.awarded).length,
         skipped: activityPoints.filter((award) => !award.awarded).length
+      },
+      referrals: {
+        qualified: referrals.filter((referral) => referral.qualified).length,
+        skipped: referrals.filter((referral) => !referral.qualified).length
       }
     });
   } catch (error) {
