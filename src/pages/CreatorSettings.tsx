@@ -166,7 +166,7 @@ export default function CreatorSettings() {
           </div>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: appleEase, delay: 0.2 }} className="flex flex-col md:flex-row gap-8">
-            <div className="order-2 w-full shrink-0 space-y-2 flex flex-col justify-between h-full md:order-1 md:w-64">
+            <div className="hidden w-full shrink-0 space-y-2 md:flex md:flex-col md:justify-between md:h-full md:w-64">
               <div className="space-y-2">
                 {tabs.map((tab) => (
                   <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${activeTab === tab.id ? 'bg-white/10 text-white border border-white/20' : 'text-muted hover:bg-white/5 hover:text-white border border-transparent'}`}>
@@ -175,7 +175,7 @@ export default function CreatorSettings() {
                   </button>
                 ))}
               </div>
-              <div className="pt-8 mt-auto">
+              <div className="pt-4 mt-auto border-t border-white/10">
                 <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 font-medium">
                   <LogOut className="w-5 h-5" />
                   <span>Log Out</span>
@@ -183,7 +183,16 @@ export default function CreatorSettings() {
               </div>
             </div>
 
-            <div className="order-1 flex-1 md:order-2">
+            <div className="flex-1 space-y-6">
+              <div className="md:hidden rounded-full bg-white/5 border border-white/10 p-1 flex">
+                {tabs.map((tab) => (
+                  <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex-1 h-11 rounded-full px-4 text-sm font-medium transition-colors inline-flex items-center justify-center gap-2 ${activeTab === tab.id ? 'bg-white/10 text-white' : 'text-muted hover:text-white'}`}>
+                    <tab.icon className="w-4 h-4" />
+                    <span>{tab.label}</span>
+                  </button>
+                ))}
+              </div>
+
               <div className="glass-panel rounded-[2rem] p-8 border border-white/10 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-cyan/5 blur-[80px] rounded-full pointer-events-none"></div>
                 
@@ -194,43 +203,43 @@ export default function CreatorSettings() {
                     {activeTab === 'notifications' && (
                       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
                         <h2 className="text-xl font-semibold text-white mb-6">Notification Preferences</h2>
-                        <div className="p-4 rounded-xl bg-white/5 border border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                          <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-full bg-cyan/10 flex items-center justify-center"><Send className="w-5 h-5 text-cyan" /></div>
-                            <div>
-                              <h3 className="font-medium text-white">Telegram</h3>
-                              <p className="text-sm text-muted">
-                                {telegramLoading
-                                  ? 'Checking connection...'
-                                  : telegramStatus?.connected
-                                    ? `Connected${telegramStatus.telegramUsername ? ` as @${telegramStatus.telegramUsername}` : ''}`
-                                    : 'Not connected'}
-                              </p>
-                            </div>
-                          </div>
-                          {telegramStatus?.connected ? (
-                            <button onClick={handleDisconnectTelegram} disabled={telegramSaving} className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm text-muted hover:text-white hover:bg-white/10 transition-colors disabled:opacity-50">
-                              {telegramSaving ? 'Disconnecting...' : 'Disconnect'}
-                            </button>
-                          ) : (
-                            <button onClick={handleConnectTelegram} disabled={telegramSaving || telegramLoading} className="px-4 py-2 rounded-xl bg-cyan text-black text-sm font-semibold hover:bg-cyan/90 transition-colors disabled:opacity-50 flex items-center gap-2">
-                              <Send className="w-4 h-4" />
-                              Connect Telegram
-                            </button>
-                          )}
-                        </div>
                         {(telegramMessage || telegramError) && (
                           <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-sm text-red-400">
                             {telegramMessage || telegramError}
                           </div>
                         )}
-                        <div className="space-y-4">
+                        <div className="rounded-xl bg-white/5 border border-white/10 overflow-hidden">
+                          <div className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div className="flex items-center gap-4">
+                              <div className="w-10 h-10 rounded-full bg-cyan/10 flex items-center justify-center"><Send className="w-5 h-5 text-cyan" /></div>
+                              <div>
+                                <h3 className="font-medium text-white">Telegram</h3>
+                                <p className="text-sm text-muted">
+                                  {telegramLoading
+                                    ? 'Checking connection...'
+                                    : telegramStatus?.connected
+                                      ? `Connected${telegramStatus.telegramUsername ? ` as @${telegramStatus.telegramUsername}` : ''}`
+                                      : 'Not connected'}
+                                </p>
+                              </div>
+                            </div>
+                            {telegramStatus?.connected ? (
+                              <button onClick={handleDisconnectTelegram} disabled={telegramSaving} className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-sm text-muted hover:text-white hover:bg-white/10 transition-colors disabled:opacity-50">
+                                {telegramSaving ? 'Disconnecting...' : 'Disconnect'}
+                              </button>
+                            ) : (
+                              <button onClick={handleConnectTelegram} disabled={telegramSaving || telegramLoading} className="px-4 py-2 rounded-xl bg-cyan text-black text-sm font-semibold hover:bg-cyan/90 transition-colors disabled:opacity-50 flex items-center gap-2">
+                                <Send className="w-4 h-4" />
+                                Connect Telegram
+                              </button>
+                            )}
+                          </div>
                           {[
                             { label: 'New Campaigns', key: 'newCampaigns', description: 'Live campaign announcements.' },
                             { label: 'Campaign Updates', key: 'campaignUpdates', description: 'Submission approval and rejection decisions.' },
                             { label: 'Payment Alerts', key: 'payments', description: 'Payout and wallet activity.' }
                           ].map((item) => (
-                            <div key={item.key} className={`flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/10 ${telegramPreferencesDisabled ? 'opacity-60' : ''}`}>
+                            <div key={item.key} className={`flex items-center justify-between p-4 border-t border-white/10 ${telegramPreferencesDisabled ? 'opacity-60' : ''}`}>
                               <div>
                                 <h3 className="font-medium text-white">{item.label}</h3>
                                 <p className="text-sm text-muted">{item.description}</p>
@@ -297,6 +306,13 @@ export default function CreatorSettings() {
                     )}
                   </div>
                 )}
+              </div>
+
+              <div className="md:hidden pt-4 border-t border-white/10">
+                <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 font-medium">
+                  <LogOut className="w-5 h-5" />
+                  <span>Log Out</span>
+                </button>
               </div>
             </div>
           </motion.div>
