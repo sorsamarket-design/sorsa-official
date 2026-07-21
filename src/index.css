@@ -801,6 +801,44 @@ body::before {
   border-color: rgba(255, 255, 255, 0.15);
 }
 
+.campaign-score-slider::-webkit-slider-runnable-track {
+  height: 0.5rem;
+  border-radius: 9999px;
+}
+
+.campaign-score-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin-top: -0.3125rem;
+  border-radius: 9999px;
+  background: #F5F5F7;
+  border: 2px solid #00D4FF;
+  box-shadow: 0 0 0 4px rgba(0, 212, 255, 0.16);
+}
+
+.campaign-score-slider::-moz-range-track {
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: transparent;
+}
+
+.campaign-score-slider::-moz-range-progress {
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: #00D4FF;
+}
+
+.campaign-score-slider::-moz-range-thumb {
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 9999px;
+  background: #F5F5F7;
+  border: 2px solid #00D4FF;
+  box-shadow: 0 0 0 4px rgba(0, 212, 255, 0.16);
+}
+
 :where(a, button, [role="button"], summary, label[for], select) {
   cursor: pointer !important;
 }

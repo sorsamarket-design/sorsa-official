@@ -43,6 +43,7 @@ export default function CampaignNew() {
     goal: draftCampaign?.goal || '',
     overview: draftCampaign?.overview || ''
   });
+  const minSorsaScoreProgress = ((minSorsaScore - 500) / 500) * 100;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -261,7 +262,10 @@ export default function CampaignNew() {
                         min="500" max="1000" step="10"
                         value={minSorsaScore}
                         onChange={(e) => setMinSorsaScore(Number(e.target.value))}
-                        className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-cyan"
+                        className="campaign-score-slider w-full h-2 rounded-lg appearance-none cursor-pointer accent-cyan"
+                        style={{
+                          background: `linear-gradient(to right, #00D4FF 0%, #00D4FF ${minSorsaScoreProgress}%, rgba(255, 255, 255, 0.1) ${minSorsaScoreProgress}%, rgba(255, 255, 255, 0.1) 100%)`
+                        }}
                       />
                     </div>
 
