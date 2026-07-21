@@ -278,6 +278,11 @@ body::before {
 }
 
 @media (min-width: 48rem) {
+  .app-topbar {
+    contain: layout style;
+    overflow: visible;
+  }
+
   .creator-sidebar {
     width: 16rem;
   }
