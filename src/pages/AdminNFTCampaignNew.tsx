@@ -13,7 +13,7 @@ const defaultRaffleGoal = 'Complete all tasks to enter raffle';
 const defaultRaffleFollowAccounts = ['https://x.com/atlasreachx'];
 const defaultRaffleFollowHandle = 'atlasreachx';
 const defaultRaffleTelegramTasks = ['https://t.me/AtlasReachX'];
-const collectionChainOptions = ['Ethereum', 'Base', 'Solana', 'Robinhood'];
+const collectionChainOptions = ['Ethereum', 'Base', 'Solana', 'Robinhood', 'ARC'];
 const raffleTaskAuditNote = 'Note: We may check your tasks again anytime before the raffle ends. If you didn\'t finish all of them, your entry will be void.';
 
 function cleanXHandle(value: string) {
