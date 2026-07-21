@@ -217,7 +217,7 @@ export default function BrandSettings() {
           </div>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease: appleEase, delay: 0.2 }} className="flex flex-col md:flex-row gap-8">
-            <div className="w-full md:w-64 shrink-0 space-y-2">
+            <div className="hidden w-full shrink-0 space-y-2 md:block md:w-64">
               <div className="space-y-2">
                 {tabs.map((tab) => (
                   <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${activeTab === tab.id ? 'bg-white/10 text-white border border-white/20' : 'text-muted hover:bg-white/5 hover:text-white border border-transparent'}`}>
@@ -226,7 +226,7 @@ export default function BrandSettings() {
                   </button>
                 ))}
               </div>
-              <div className="pt-8">
+              <div className="pt-4 mt-8 border-t border-white/10">
                 <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 font-medium">
                   <LogOut className="w-5 h-5" />
                   <span>{role === 'creator' ? 'Exit Brand Workspace' : 'Log Out'}</span>
@@ -234,7 +234,16 @@ export default function BrandSettings() {
               </div>
             </div>
 
-            <div className="flex-1">
+            <div className="flex-1 space-y-6">
+              <div className="md:hidden rounded-full bg-white/5 border border-white/10 p-1 flex">
+                {tabs.map((tab) => (
+                  <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex-1 min-h-11 rounded-full px-3 py-2 text-xs font-medium leading-tight transition-colors inline-flex items-center justify-center gap-2 text-center ${activeTab === tab.id ? 'bg-white/10 text-white' : 'text-muted hover:text-white'}`}>
+                    <tab.icon className="w-4 h-4 shrink-0" />
+                    <span>{tab.label}</span>
+                  </button>
+                ))}
+              </div>
+
               <div className="glass-panel rounded-[2rem] p-8 border border-white/10 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-cyan/5 blur-[80px] rounded-full pointer-events-none"></div>
 
@@ -338,6 +347,13 @@ export default function BrandSettings() {
                     </div>
                   </form>
                 )}
+              </div>
+
+              <div className="md:hidden pt-4 border-t border-white/10">
+                <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 font-medium">
+                  <LogOut className="w-5 h-5" />
+                  <span>{role === 'creator' ? 'Exit Brand Workspace' : 'Log Out'}</span>
+                </button>
               </div>
             </div>
           </motion.div>
