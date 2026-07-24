@@ -2610,6 +2610,66 @@ function scheduleSubmissionWindowNotifications() {
   console.log(`Submission window notifications scheduled every ${intervalMs / 1000}s.`);
 }
 
+let nftCampaignEndPolling = false;
+
+async function runNftCampaignEndNotifications() {
+  if (nftCampaignEndPolling) return;
+  nftCampaignEndPolling = true;
+  try {
+    const { data: campaigns, error } = await supabase
+      .from('campaigns')
+      .select('id, title, status, end_date, language, campaign_type')
+      .in('status', ['live'])
+      .in('campaign_type', ['raffle', 'fcfs', 'content', 'nft'])
+      .lte('end_date', new Date().toISOString())
+      .limit(10);
+      
+    if (error) throw error;
+    
+    const adminNotificationIds = [6160210209, 7229118404];
+    
+    for (const campaign of campaigns || []) {
+      const metadata = parseCampaignMetadata(campaign);
+      if (metadata.end_notified) continue;
+      
+      const adminNotificationText = `<b>NFT Campaign Ended</b>\n\nThe admin created NFT campaign <b>${escapeTelegramHtml(campaign.title)}</b> has ended. It is ready to be finalized.`;
+      
+      let successCount = 0;
+      for (const adminId of adminNotificationIds) {
+        await sendTelegramMessage(adminId, adminNotificationText).then(() => successCount++).catch(err => {
+          console.warn(`Failed to send campaign end notification to admin ${adminId}:`, err.message || err);
+        });
+      }
+      
+      if (successCount > 0) {
+        await supabase
+          .from('campaigns')
+          .update({
+             language: JSON.stringify({ ...metadata, end_notified: true })
+          })
+          .eq('id', campaign.id);
+      }
+    }
+  } finally {
+    nftCampaignEndPolling = false;
+  }
+}
+
+function scheduleNftCampaignEndNotifications() {
+  const intervalMs = 60 * 1000;
+  const run = async () => {
+    try {
+      await runNftCampaignEndNotifications();
+    } catch (e) {
+      console.error('NFT campaign end notifications failed:', e);
+    }
+  };
+  
+  setTimeout(run, 15_000);
+  setInterval(run, intervalMs);
+  console.log(`NFT campaign end notifications scheduled every ${intervalMs / 1000}s.`);
+}
+
 app.get('/campaigns/launch/ready', async (_req, res) => {
   try {
     await assertCampaignSchemaReady();
@@ -4577,4 +4637,5 @@ app.listen(port, () => {
   scheduleCreatorIdentitySync();
   schedulePayoutAutomation();
   scheduleSubmissionWindowNotifications();
+  scheduleNftCampaignEndNotifications();
 });
