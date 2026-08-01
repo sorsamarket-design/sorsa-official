@@ -28,8 +28,6 @@ export function TelegramPreferencesProvider({ children }: { children: React.Reac
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const cachedUserId = useRef<string | null>(null);
-  const statusStreamRef = useRef<EventSource | null>(null);
-  const streamLoadedRef = useRef(false);
 
   const resetCache = useCallback(() => {
     setStatus(null);
@@ -38,7 +36,6 @@ export function TelegramPreferencesProvider({ children }: { children: React.Reac
     setSaving(false);
     setLoaded(false);
     setError(null);
-    streamLoadedRef.current = false;
   }, []);
 
   useEffect(() => {
@@ -55,64 +52,22 @@ export function TelegramPreferencesProvider({ children }: { children: React.Reac
     if (authLoading || !user) return;
 
     let cancelled = false;
-    let source: EventSource | null = null;
-
-    telegramNotifications.createStatusEventSource()
-      .then((eventSource) => {
-        if (cancelled) {
-          eventSource.close();
-          return;
-        }
-
-        source = eventSource;
-        statusStreamRef.current = eventSource;
-        eventSource.onopen = () => {
-          if (streamLoadedRef.current) {
-            setError(null);
-          }
-        };
-        eventSource.onmessage = (event) => {
-          try {
-            const nextStatus = JSON.parse(event.data) as TelegramStatus;
-            streamLoadedRef.current = true;
-            setStatus(nextStatus);
-            setLoaded(true);
-            setLastFetchedAt(Date.now());
-            setError(null);
-          } catch (err) {
-            console.warn('Could not parse Telegram status stream event:', err);
-          }
-        };
-        eventSource.onerror = () => {
-          if (streamLoadedRef.current) {
-            return;
-          }
-
-          telegramNotifications.getPreferences(accessToken)
-            .then((nextStatus) => {
-              streamLoadedRef.current = true;
-              setStatus(nextStatus);
-              setLoaded(true);
-              setLastFetchedAt(Date.now());
-              setError(null);
-            })
-            .catch(() => {
-              setError('Telegram connection status could not be loaded.');
-            });
-        };
+    telegramNotifications.getPreferences(accessToken)
+      .then((nextStatus) => {
+        if (cancelled) return;
+        setStatus(nextStatus);
+        setLoaded(true);
+        setLastFetchedAt(Date.now());
+        setError(null);
       })
-      .catch((err) => {
+      .catch(() => {
         if (!cancelled) {
-          setError(err.message || 'Telegram connection status stream could not be opened.');
+          setError('Telegram connection status could not be loaded.');
         }
       });
 
     return () => {
       cancelled = true;
-      if (source) source.close();
-      if (statusStreamRef.current === source) {
-        statusStreamRef.current = null;
-      }
     };
   }, [accessToken, authLoading, user?.id]);
 

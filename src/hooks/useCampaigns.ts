@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
-import { getBackendBase } from '../lib/appSession';
+import { backendFetch, getBackendBase } from '../lib/appSession';
 
 export interface Campaign {
   id: string;
@@ -77,12 +77,6 @@ function getBackendBaseUrl() {
   url.search = '';
   url.hash = '';
   return url.toString().replace(/\/$/, '');
-}
-
-async function getBackendAuthHeaders() {
-  return {
-    'Content-Type': 'application/json'
-  };
 }
 
 export function useCampaigns(brandId?: string) {
@@ -210,10 +204,8 @@ export function useCampaigns(brandId?: string) {
   const joinCampaign = useCallback(async (campaignId: string) => {
     if (!user) throw new Error('Not authenticated');
 
-    const response = await fetch(`${getBackendBaseUrl()}/campaigns/${encodeURIComponent(campaignId)}/join`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: await getBackendAuthHeaders()
+    const response = await backendFetch(`${getBackendBaseUrl()}/campaigns/${encodeURIComponent(campaignId)}/join`, {
+      method: 'POST'
     });
     const result = await response.json().catch(() => null);
     if (!response.ok) {
@@ -354,10 +346,8 @@ export function useCampaigns(brandId?: string) {
   }, []);
 
   const updateSubmissionStatus = useCallback(async (submissionId: string, status: 'approved' | 'revision' | 'rejected', feedback?: string) => {
-    const response = await fetch(`${getBackendBaseUrl()}/submissions/${encodeURIComponent(submissionId)}/status`, {
+    const response = await backendFetch(`${getBackendBaseUrl()}/submissions/${encodeURIComponent(submissionId)}/status`, {
       method: 'POST',
-      credentials: 'include',
-      headers: await getBackendAuthHeaders(),
       body: JSON.stringify({ status, feedback })
     });
     const result = await response.json().catch(() => null);
@@ -369,10 +359,8 @@ export function useCampaigns(brandId?: string) {
   }, []);
 
   const runPayoutAutomation = useCallback(async () => {
-    const response = await fetch(`${getBackendBaseUrl()}/payouts/run`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: await getBackendAuthHeaders()
+    const response = await backendFetch(`${getBackendBaseUrl()}/payouts/run`, {
+      method: 'POST'
     });
     const result = await response.json().catch(() => null);
     if (!response.ok) {

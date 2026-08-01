@@ -5,6 +5,7 @@ import { motion } from 'motion/react';
 import { TimedPasswordInput } from '../components/TimedPasswordInput';
 import { XLogo } from '../components/XLogo';
 import { supabase } from '../lib/supabase';
+import { createAppSession } from '../lib/appSession';
 
 const appleEase = [0.16, 1, 0.3, 1] as const;
 
@@ -23,8 +24,11 @@ export default function BrandLogin() {
     try {
       if (!supabase) throw new Error('Supabase is not configured');
 
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      if (data.session?.access_token) {
+        await createAppSession(data.session.access_token);
+      }
       navigate('/brand/profiles');
     } catch (err) {
       console.error('Email login error:', err);

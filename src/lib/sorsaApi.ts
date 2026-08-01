@@ -1,16 +1,9 @@
 import { requireSupabase } from './supabase';
-import { getBackendBase } from './appSession';
+import { backendFetch } from './appSession';
 
 async function proxySorsa(path: string, options: RequestInit = {}, accessToken?: string) {
   requireSupabase();
-  const response = await fetch(`${getBackendBase()}${path}`, {
-    ...options,
-    credentials: 'include',
-    headers: {
-      ...(options.headers || {}),
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
-    }
-  });
+  const response = await backendFetch(path, options);
   const body = await response.json().catch(() => null);
 
   if (!response.ok) {

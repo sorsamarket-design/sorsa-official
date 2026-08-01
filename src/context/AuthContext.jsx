@@ -23,6 +23,17 @@ const AuthContext = createContext({
   signOut: async () => {},
 });
 
+function logClientAuthEvent(event, session) {
+  if (!['SIGNED_IN', 'TOKEN_REFRESHED', 'SIGNED_OUT'].includes(event)) return;
+  console.info('[auth.client]', {
+    event,
+    userId: session?.user?.id ?? null,
+    expiresAt: session?.expires_at ?? null,
+    hasAccessToken: Boolean(session?.access_token),
+    hasRefreshToken: Boolean(session?.refresh_token)
+  });
+}
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(/** @type {SupabaseUser | null} */ (null));
   const [role, setRole] = useState(/** @type {string | null} */ (null));
@@ -75,6 +86,7 @@ export const AuthProvider = ({ children }) => {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      logClientAuthEvent(event, nextSession);
       const nextUser = nextSession?.user ?? null;
       const nextUserId = nextUser?.id ?? null;
       const userChanged = userIdRef.current !== nextUserId;

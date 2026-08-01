@@ -11,6 +11,7 @@ import {
 } from 'viem';
 import { campaignEscrowAbi, createCampaignTypes, erc20Abi } from './escrowAbi';
 import { requireSupabase } from './supabase';
+import { backendFetch, getFreshBackendAccessToken } from './appSession';
 
 export interface EscrowLaunchAuthorization {
   campaignId: Hex;
@@ -91,11 +92,7 @@ function getDraftEndpoint() {
 }
 
 async function getBackendAccessToken(accessToken?: string) {
-  if (accessToken) return accessToken;
-  const supabase = requireSupabase();
-  const { data, error } = await supabase.auth.getSession();
-  if (error) throw new Error(error.message || 'Could not read current session.');
-  return data.session?.access_token || null;
+  return accessToken || getFreshBackendAccessToken();
 }
 
 export async function assertEscrowLaunchBackendReady() {
@@ -281,13 +278,8 @@ export async function launchCampaignThroughEscrow(
     throw new Error('Missing auth session. Please refresh and sign in again.');
   }
 
-  const response = await fetch(launchEndpoint, {
+  const response = await backendFetch(launchEndpoint, {
     method: 'POST',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${backendAccessToken}`
-    },
     body: JSON.stringify(request)
   });
 
@@ -331,13 +323,8 @@ export async function saveCampaignDraftThroughBackend(
     throw new Error('Missing auth session. Please refresh and sign in again.');
   }
 
-  const response = await fetch(draftEndpoint, {
+  const response = await backendFetch(draftEndpoint, {
     method: 'POST',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${backendAccessToken}`
-    },
     body: JSON.stringify({ campaign, draftCampaignId })
   });
 

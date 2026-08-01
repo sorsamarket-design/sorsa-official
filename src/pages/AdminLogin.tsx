@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ShieldCheck } from 'lucide-react';
 import { motion } from 'motion/react';
 import { supabase } from '../lib/supabase';
+import { createAppSession } from '../lib/appSession';
 
 const appleEase = [0.16, 1, 0.3, 1] as const;
 
@@ -34,6 +35,9 @@ export default function AdminLogin() {
         throw new Error('Not an admin account');
       }
 
+      if (data.session?.access_token) {
+        await createAppSession(data.session.access_token);
+      }
       navigate('/admin/dashboard');
     } catch (error) {
       console.error('Admin login error:', error);

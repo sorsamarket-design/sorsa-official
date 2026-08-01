@@ -1,3 +1,5 @@
+import { requireSupabase } from './supabase';
+
 const launchEndpoint = import.meta.env.VITE_ESCROW_LAUNCH_ENDPOINT;
 
 export function getBackendBase() {
@@ -6,6 +8,72 @@ export function getBackendBase() {
   }
 
   return launchEndpoint.replace(/\/campaigns\/launch\/?$/, '');
+}
+
+export async function getFreshBackendAccessToken(forceRefresh = false) {
+  const supabase = requireSupabase();
+  if (forceRefresh) {
+    const { data, error } = await supabase.auth.refreshSession();
+    if (error) throw new Error(error.message || 'Could not refresh current session.');
+    return data.session?.access_token || null;
+  }
+
+  const { data, error } = await supabase.auth.getSession();
+  if (error) throw new Error(error.message || 'Could not read current session.');
+  const session = data.session;
+  if (!session) return null;
+
+  const expiresAtMs = session.expires_at ? session.expires_at * 1000 : 0;
+  if (expiresAtMs && expiresAtMs <= Date.now() + 60_000) {
+    return getFreshBackendAccessToken(true);
+  }
+
+  return session.access_token || null;
+}
+
+function backendUrl(pathOrUrl: string) {
+  if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
+  return `${getBackendBase()}${pathOrUrl}`;
+}
+
+function buildBackendHeaders(options: RequestInit, accessToken: string | null) {
+  const headers = new Headers(options.headers || {});
+  if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
+    headers.set('Content-Type', 'application/json');
+  }
+  if (accessToken) {
+    headers.set('Authorization', `Bearer ${accessToken}`);
+  }
+  return headers;
+}
+
+async function isInvalidSessionResponse(response: Response) {
+  if (response.status !== 401) return false;
+  const body = await response.clone().json().catch(() => null);
+  return body?.error === 'Invalid session';
+}
+
+export async function backendFetch(pathOrUrl: string, options: RequestInit = {}) {
+  let accessToken = await getFreshBackendAccessToken();
+  const requestOptions = {
+    ...options,
+    credentials: 'include' as RequestCredentials,
+    headers: buildBackendHeaders(options, accessToken)
+  };
+  const response = await fetch(backendUrl(pathOrUrl), requestOptions);
+
+  if (accessToken && await isInvalidSessionResponse(response)) {
+    accessToken = await getFreshBackendAccessToken(true);
+    if (accessToken) {
+      return fetch(backendUrl(pathOrUrl), {
+        ...options,
+        credentials: 'include',
+        headers: buildBackendHeaders(options, accessToken)
+      });
+    }
+  }
+
+  return response;
 }
 
 export async function createAppSession(accessToken: string) {
@@ -26,10 +94,7 @@ export async function createAppSession(accessToken: string) {
 }
 
 export async function destroyAppSession() {
-  const response = await fetch(`${getBackendBase()}/auth/logout`, {
-    method: 'POST',
-    credentials: 'include'
-  });
+  const response = await backendFetch('/auth/logout', { method: 'POST' });
   if (!response.ok) {
     const body = await response.json().catch(() => null);
     throw new Error(body?.error || 'Could not end app session');

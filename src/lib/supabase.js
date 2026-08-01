@@ -7,7 +7,14 @@ export const hasSupabaseConfig = Boolean(supabaseUrl && supabaseAnonKey);
 
 /** @type {import('@supabase/supabase-js').SupabaseClient} */
 export const supabase = hasSupabaseConfig
-  ? createClient(supabaseUrl, supabaseAnonKey)
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+        storageKey: 'atlasreach.supabase.auth'
+      }
+    })
   : /** @type {any} */ (null);
 
 export function requireSupabase() {

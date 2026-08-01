@@ -45,6 +45,7 @@ const env = {
   PAYOUT_MAX_PAYMENTS_PER_TX: process.env.PAYOUT_MAX_PAYMENTS_PER_TX || '50',
   SUBMISSION_WINDOW_NOTIFICATIONS_ENABLED: process.env.SUBMISSION_WINDOW_NOTIFICATIONS_ENABLED !== 'false',
   SUBMISSION_WINDOW_POLL_INTERVAL_SECONDS: process.env.SUBMISSION_WINDOW_POLL_INTERVAL_SECONDS || '300',
+  APP_SESSION_TTL_DAYS: process.env.APP_SESSION_TTL_DAYS || '90',
   NFT_X_TASK_VERIFICATION_BYPASS_ENABLED: process.env.NFT_X_TASK_VERIFICATION_BYPASS_ENABLED !== 'false'
 };
 
@@ -92,7 +93,23 @@ const publicClient = createPublicClient({ transport: http(env.ESCROW_RPC_URL) })
 const walletClient = createWalletClient({ account: platformAccount, transport: http(env.ESCROW_RPC_URL) });
 const expectedChainId = env.ESCROW_CHAIN_ID ? BigInt(env.ESCROW_CHAIN_ID) : null;
 const appSessionCookieName = 'sorsa_session';
-const appSessionTtlSeconds = 5 * 24 * 60 * 60;
+const appSessionTtlDays = Math.max(1, Number(env.APP_SESSION_TTL_DAYS || '90'));
+const appSessionTtlSeconds = appSessionTtlDays * 24 * 60 * 60;
+
+function logAuthEvent(event, details = {}) {
+  console.info('[auth.server]', JSON.stringify({
+    event,
+    ...details,
+    at: new Date().toISOString()
+  }));
+}
+
+function authRequestContext(req) {
+  return {
+    method: req.method,
+    path: req.originalUrl || req.url || null
+  };
+}
 
 function parseCookies(req) {
   return String(req.headers.cookie || '')
@@ -144,6 +161,10 @@ function requireBearer(req) {
 async function authenticate(req) {
   const cookies = parseCookies(req);
   const sessionToken = cookies[appSessionCookieName];
+  const requestContext = authRequestContext(req);
+  const header = req.headers.authorization || '';
+  const [scheme, bearerToken] = header.split(' ');
+  const bearerPresent = scheme === 'Bearer' && Boolean(bearerToken);
 
   if (sessionToken) {
     const tokenHash = hashSessionToken(sessionToken);
@@ -158,26 +179,73 @@ async function authenticate(req) {
         .from('app_sessions')
         .update({ last_seen_at: new Date().toISOString() })
         .eq('id', sessionRow.id);
+      logAuthEvent('authenticate.success', {
+        ...requestContext,
+        authMethod: 'cookie',
+        cookiePresent: true,
+        bearerPresent,
+        userId: sessionRow.user_id,
+        appSessionId: sessionRow.id
+      });
       return { id: sessionRow.user_id };
     }
+
+    const reason = error
+      ? 'cookie_lookup_error'
+      : !sessionRow
+        ? 'cookie_not_found'
+        : sessionRow.revoked_at
+          ? 'cookie_revoked'
+          : 'cookie_expired';
+    logAuthEvent('authenticate.cookie_rejected', {
+      ...requestContext,
+      authMethod: 'cookie',
+      cookiePresent: true,
+      bearerPresent,
+      reason,
+      appSessionId: sessionRow?.id || null,
+      userId: sessionRow?.user_id || null
+    });
   }
 
   // Fall back to the Supabase bearer token: the app-session cookie can be briefly
   // unavailable right after login (e.g. in-app browsers with stricter cookie jars),
   // so callers that still hold the access token in memory can authenticate with it.
-  const header = req.headers.authorization || '';
-  const [scheme, bearerToken] = header.split(' ');
-  if (scheme === 'Bearer' && bearerToken) {
-    return authenticateToken(bearerToken);
+  if (bearerPresent) {
+    return authenticateToken(bearerToken, {
+      ...requestContext,
+      cookiePresent: Boolean(sessionToken),
+      bearerPresent: true
+    });
   }
 
+  logAuthEvent('authenticate.failure', {
+    ...requestContext,
+    authMethod: 'none',
+    cookiePresent: Boolean(sessionToken),
+    bearerPresent: false,
+    reason: 'missing_app_session'
+  });
   throw Object.assign(new Error('Missing app session'), { status: 401 });
 }
 
-async function authenticateToken(token) {
+async function authenticateToken(token, context = {}) {
   if (!token) throw Object.assign(new Error('Missing bearer token'), { status: 401 });
   const { data, error } = await supabase.auth.getUser(token);
-  if (error || !data.user) throw Object.assign(new Error('Invalid session'), { status: 401 });
+  if (error || !data.user) {
+    logAuthEvent('authenticate.failure', {
+      ...context,
+      authMethod: 'bearer',
+      reason: 'invalid_session',
+      supabaseError: error?.message || null
+    });
+    throw Object.assign(new Error('Invalid session'), { status: 401 });
+  }
+  logAuthEvent('authenticate.success', {
+    ...context,
+    authMethod: 'bearer',
+    userId: data.user.id
+  });
   return data.user;
 }
 
@@ -2714,9 +2782,22 @@ app.get('/campaigns/launch/ready', async (_req, res) => {
 app.post('/auth/session', async (req, res) => {
   try {
     const token = requireBearer(req);
-    const user = await authenticateToken(token);
+    logAuthEvent('app_session.create.attempt', {
+      ...authRequestContext(req),
+      bearerPresent: true
+    });
+    const user = await authenticateToken(token, {
+      ...authRequestContext(req),
+      bearerPresent: true,
+      cookiePresent: Boolean(parseCookies(req)[appSessionCookieName])
+    });
     const session = await createAppSession(user.id);
     setAppSessionCookie(res, session.token);
+    logAuthEvent('app_session.create.success', {
+      ...authRequestContext(req),
+      userId: user.id,
+      expiresAt: session.expiresAt
+    });
     return res.status(201).json({
       userId: user.id,
       expiresAt: session.expiresAt,
@@ -2724,18 +2805,37 @@ app.post('/auth/session', async (req, res) => {
     });
   } catch (error) {
     const status = error.status || 500;
+    logAuthEvent('app_session.create.failure', {
+      ...authRequestContext(req),
+      status,
+      reason: error.message || 'Could not create app session',
+      bearerPresent: Boolean(req.headers.authorization)
+    });
     return res.status(status).json({ error: error.message || 'Could not create app session' });
   }
 });
 
 app.post('/auth/logout', async (req, res) => {
   try {
-    await revokeCurrentAppSession(req);
+    const revoked = await revokeCurrentAppSession(req);
     clearAppSessionCookie(res);
+    logAuthEvent('app_session.logout.success', {
+      ...authRequestContext(req),
+      cookiePresent: Boolean(parseCookies(req)[appSessionCookieName]),
+      bearerPresent: Boolean(req.headers.authorization),
+      revoked
+    });
     return res.json({ ok: true });
   } catch (error) {
     clearAppSessionCookie(res);
     const status = error.status || 500;
+    logAuthEvent('app_session.logout.failure', {
+      ...authRequestContext(req),
+      status,
+      reason: error.message || 'Could not end app session',
+      cookiePresent: Boolean(parseCookies(req)[appSessionCookieName]),
+      bearerPresent: Boolean(req.headers.authorization)
+    });
     return res.status(status).json({ error: error.message || 'Could not end app session' });
   }
 });

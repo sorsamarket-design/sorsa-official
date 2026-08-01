@@ -1,5 +1,5 @@
 import { requireSupabase } from './supabase';
-import { getBackendBase } from './appSession';
+import { backendFetch } from './appSession';
 
 export type TelegramPreferences = {
   newCampaigns: boolean;
@@ -29,14 +29,7 @@ export type BrandTelegramGroup = {
 
 async function request(path: string, options: RequestInit = {}, accessToken?: string) {
   requireSupabase();
-  const response = await fetch(`${getBackendBase()}${path}`, {
-    ...options,
-    credentials: 'include',
-    headers: {
-      ...(options.headers || {}),
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
-    }
-  });
+  const response = await backendFetch(path, options);
   const body = await response.json().catch(() => null);
   if (!response.ok) {
     throw new Error(body?.error || 'Telegram notifications request failed.');
@@ -44,20 +37,10 @@ async function request(path: string, options: RequestInit = {}, accessToken?: st
   return body;
 }
 
-async function createStatusEventSource() {
-  requireSupabase();
-  return new EventSource(`${getBackendBase()}/telegram/status/stream`, { withCredentials: true });
-}
-
 const telegramNotifications = {
-  // accessToken is a fallback credential for when the app-session cookie isn't on the
-  // request yet (see authenticate() on the backend) - EventSource can't carry it, so
-  // the live status stream still depends on the cookie, but this one-shot fetch doesn't.
   getPreferences(accessToken?: string) {
     return request('/telegram/preferences', {}, accessToken);
   },
-
-  createStatusEventSource,
 
   createConnectLink(accessToken?: string) {
     return request('/telegram/connect-code', { method: 'POST' }, accessToken);
