@@ -1191,11 +1191,6 @@ async function sendTelegramPhoto(chatId, imageUrl, caption, buttonUrl = null, op
   await appendTelegramPhoto(form, imageUrl, 'CampaignNotificationImage.JPG');
   form.append('caption', caption);
   form.append('parse_mode', 'HTML');
-  if (buttonUrl) {
-    form.append('reply_markup', JSON.stringify({
-      inline_keyboard: [[{ text: 'View Campaign', url: buttonUrl }]]
-    }));
-  }
 
   return telegramRequest('sendPhoto', form);
 }
@@ -1420,6 +1415,15 @@ function getCreatorCampaignUrl(campaign) {
   return `${env.FRONTEND_URL.replace(/\/$/, '')}/creator/campaigns/${encodeURIComponent(campaign.id)}`;
 }
 
+function getAdminNftCampaignUrl(campaign) {
+  if (!env.FRONTEND_URL || !campaign?.id) return null;
+  const baseUrl = env.FRONTEND_URL.replace(/\/$/, '');
+  const path = isNftContentType(campaign.campaign_type)
+    ? `/admin/nft-submissions/${encodeURIComponent(campaign.id)}`
+    : `/admin/raffles/${encodeURIComponent(campaign.id)}`;
+  return `${baseUrl}${path}`;
+}
+
 function buildCampaignNotification(campaign, label = 'New campaign') {
   const title = escapeTelegramHtml(campaign.title || 'Campaign');
   const brand = escapeTelegramHtml(campaign.brand_profile?.company_name || campaign.brand_name || 'AtlasReach brand');
@@ -1497,7 +1501,7 @@ function buildRaffleWinnersAnnouncement(campaign, winners) {
   const winnerLines = (winners || []).map(formatRaffleWinnerMention).join('\n');
   const fallbackWinnerLines = winnerLines || 'No winners selected.';
 
-  return `<b>The draw is done</b>\n\n<b>${title}</b> has been finalized.\n\nToday's raffle winners:\n${fallbackWinnerLines}\n\nBig congratulations to the names selected.`;
+  return `<b>The draw is done</b>\n\n<b>${title}</b> has been finalized.\n\nToday's raffle winners:\n${fallbackWinnerLines}`;
 }
 
 async function notifyRaffleWinnersGroup(campaign, winners) {
@@ -1508,9 +1512,7 @@ async function notifyRaffleWinnersGroup(campaign, winners) {
   const raffleGroupChatId = normalizeTelegramSupergroupChatId(env.TELEGRAM_RAFFLE_GROUP_CHAT_ID);
   const caption = buildRaffleWinnersAnnouncement(campaign, winners);
   const imageUrl = campaign?.background_image_url || campaign?.image_url || null;
-  const parsedThreadId = env.TELEGRAM_RAFFLE_GROUP_THREAD_ID
-    ? Number(env.TELEGRAM_RAFFLE_GROUP_THREAD_ID)
-    : null;
+  const parsedThreadId = Number(env.TELEGRAM_RAFFLE_GROUP_THREAD_ID || 6);
   const threadId = Number.isFinite(parsedThreadId) && parsedThreadId > 0 ? parsedThreadId : null;
   const topicOptions = threadId ? { message_thread_id: threadId } : {};
   if (imageUrl) {
@@ -2612,44 +2614,70 @@ function scheduleSubmissionWindowNotifications() {
 
 let nftCampaignEndPolling = false;
 
+function parseCampaignLanguageMetadata(language) {
+  try {
+    return language ? JSON.parse(language) : {};
+  } catch {
+    return {};
+  }
+}
+
 async function runNftCampaignEndNotifications() {
   if (nftCampaignEndPolling) return;
   nftCampaignEndPolling = true;
+  const summary = { checked: 0, sent: 0, skipped: 0, failed: 0, marked: 0 };
   try {
+    const now = Date.now();
+    const lookbackMinutes = Math.max(1, Number(process.env.NFT_CAMPAIGN_END_NOTIFICATION_LOOKBACK_MINUTES || 30));
+    const endedAfter = new Date(now - lookbackMinutes * 60 * 1000).toISOString();
     const { data: campaigns, error } = await supabase
       .from('campaigns')
       .select('id, title, status, end_date, language, campaign_type')
-      .in('status', ['live'])
-      .in('campaign_type', ['raffle', 'fcfs', 'content', 'nft'])
-      .lte('end_date', new Date().toISOString())
+      .in('status', ['draft', 'live', 'completed'])
+      .in('campaign_type', ['raffle', 'fcfs', 'content', 'all', 'nft'])
+      .gte('end_date', endedAfter)
+      .lte('end_date', new Date(now).toISOString())
       .limit(10);
       
     if (error) throw error;
     
-    const adminNotificationIds = [6160210209, 7229118404];
+    const adminNotificationIds = [6160210209, 7229118404, 1168423479];
     
     for (const campaign of campaigns || []) {
-      const metadata = parseCampaignMetadata(campaign);
-      if (metadata.end_notified) continue;
+      summary.checked += 1;
+      const metadata = parseCampaignLanguageMetadata(campaign.language);
+      if (metadata.end_notified) {
+        summary.skipped += 1;
+        continue;
+      }
       
-      const adminNotificationText = `<b>NFT Campaign Ended</b>\n\nThe admin created NFT campaign <b>${escapeTelegramHtml(campaign.title)}</b> has ended. It is ready to be finalized.`;
+      const adminCampaignUrl = getAdminNftCampaignUrl(campaign);
+      const adminCampaignLink = adminCampaignUrl
+        ? `\n\n<a href="${escapeTelegramHtml(adminCampaignUrl)}">View admin page</a>`
+        : '';
+      const adminNotificationText = `<b>NFT Campaign Ended</b>\n\nThe admin created NFT campaign <b>${escapeTelegramHtml(campaign.title)}</b> has ended. It is ready to be finalized.${adminCampaignLink}`;
       
       let successCount = 0;
       for (const adminId of adminNotificationIds) {
-        await sendTelegramMessage(adminId, adminNotificationText).then(() => successCount++).catch(err => {
+        await sendTelegramMessage(adminId, adminNotificationText).then(() => successCount++).catch((err) => {
+          summary.failed += 1;
           console.warn(`Failed to send campaign end notification to admin ${adminId}:`, err.message || err);
         });
       }
+      summary.sent += successCount;
       
       if (successCount > 0) {
-        await supabase
+        const { error: updateError } = await supabase
           .from('campaigns')
           .update({
              language: JSON.stringify({ ...metadata, end_notified: true })
           })
           .eq('id', campaign.id);
+        if (updateError) throw updateError;
+        summary.marked += 1;
       }
     }
+    return summary;
   } finally {
     nftCampaignEndPolling = false;
   }
@@ -2659,7 +2687,10 @@ function scheduleNftCampaignEndNotifications() {
   const intervalMs = 60 * 1000;
   const run = async () => {
     try {
-      await runNftCampaignEndNotifications();
+      const result = await runNftCampaignEndNotifications();
+      if (result && (result.checked > 0 || result.sent > 0 || result.failed > 0)) {
+        console.log('NFT campaign end notifications finished:', result);
+      }
     } catch (e) {
       console.error('NFT campaign end notifications failed:', e);
     }
