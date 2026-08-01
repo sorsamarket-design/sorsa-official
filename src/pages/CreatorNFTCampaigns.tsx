@@ -6,7 +6,6 @@ import CreatorSidebar from '../components/CreatorSidebar';
 import CreatorTopBar from '../components/CreatorTopBar';
 import { getNftCampaignPrimaryAllocation, listNftCampaigns } from '../lib/nftCampaigns';
 import { formatCampaignCountdown, getCampaignEndTime } from '../lib/campaignTime';
-import { getCampaignShortPath } from '../lib/campaignShortLinks';
 
 function nftCampaignTypeLabel(type: string) {
   if (type === 'raffle' || type === 'fcfs') return 'Raffle';
@@ -41,7 +40,7 @@ export default function CreatorNFTCampaigns() {
   }, []);
 
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
     return () => window.clearInterval(timer);
   }, []);
 
@@ -130,7 +129,7 @@ export default function CreatorNFTCampaigns() {
                 <button
                   key={campaign.id}
                   type="button"
-                  onClick={() => navigate(getCampaignShortPath(campaign))}
+                  onClick={() => navigate(`/creator/nft-campaigns/${campaign.id}`)}
                   className="group text-left glass-panel rounded-2xl border border-white/10 hover:border-cyan/50 hover:shadow-[0_0_30px_rgba(0,212,255,0.15)] transition-all duration-300 cursor-pointer flex flex-col h-full relative overflow-hidden"
                 >
                   <div className="absolute top-0 right-0 w-32 h-32 bg-cyan/5 blur-[50px] rounded-full pointer-events-none group-hover:bg-cyan/10 transition-colors"></div>

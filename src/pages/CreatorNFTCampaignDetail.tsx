@@ -115,7 +115,7 @@ export default function CreatorNFTCampaignDetail() {
   }, [campaignRef]);
 
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
     return () => window.clearInterval(timer);
   }, []);
 
