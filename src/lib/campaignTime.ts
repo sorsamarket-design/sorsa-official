@@ -35,7 +35,11 @@ export function formatCampaignTimeLeft(endDate?: string | null) {
   return `${minutes}m left`;
 }
 
-export function formatCampaignCountdown(endDate?: string | null, now = Date.now()) {
+export function formatCampaignCountdown(
+  endDate?: string | null,
+  now = Date.now(),
+  options: { includeSeconds?: boolean } = {}
+) {
   const end = getCampaignEndTime(endDate);
   if (!end) return 'No end date';
 
@@ -43,11 +47,25 @@ export function formatCampaignCountdown(endDate?: string | null, now = Date.now(
   if (diff <= 0) return 'Ended';
 
   const totalSeconds = Math.max(0, Math.floor(diff / 1000));
+  const totalMinutes = Math.max(0, Math.ceil(diff / (1000 * 60)));
   const days = Math.floor(totalSeconds / 86400);
   const hours = Math.floor((totalSeconds % 86400) / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
   const pad = (value: number) => String(value).padStart(2, '0');
+
+  if (options.includeSeconds === false) {
+    const roundedDays = Math.floor(totalMinutes / 1440);
+    const roundedHours = Math.floor((totalMinutes % 1440) / 60);
+    const roundedMinutes = totalMinutes % 60;
+    if (roundedDays > 0) {
+      return `${roundedDays}d ${pad(roundedHours)}h ${pad(roundedMinutes)}m`;
+    }
+    if (roundedHours > 0) {
+      return `${roundedHours}h ${pad(roundedMinutes)}m`;
+    }
+    return `${roundedMinutes}m`;
+  }
 
   if (days > 0) {
     return `${days}d ${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s`;

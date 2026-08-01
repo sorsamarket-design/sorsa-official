@@ -131,8 +131,21 @@ export default function CreatorNFTCampaignDetail() {
 
     try {
       const result = await joinNftCampaign(campaignId);
+      const wasAlreadyCounted = Boolean(participation);
       setParticipation(result.participation);
-      if (campaign) setVerifiedTasks(verifiedTaskMap(campaign));
+      if (campaign) {
+        if (!wasAlreadyCounted && !result.alreadyJoined) {
+          setCampaign({
+            ...campaign,
+            stats: {
+              joined_count: Number(campaign.stats?.joined_count || 0) + 1,
+              approved_count: Number(campaign.stats?.approved_count || 0),
+              rejected_count: Number(campaign.stats?.rejected_count || 0)
+            }
+          });
+        }
+        setVerifiedTasks(verifiedTaskMap(campaign));
+      }
     } catch (err: any) {
       setJoinError(err.message || 'Could not join NFT campaign.');
     } finally {
@@ -338,7 +351,7 @@ export default function CreatorNFTCampaignDetail() {
               <Clock className="mb-2 h-4 w-4 text-cyan sm:mb-3 sm:h-5 sm:w-5" />
               <div className="text-[0.6rem] leading-tight text-muted sm:text-sm">Time Left</div>
               <div className="whitespace-nowrap text-[0.68rem] font-bold leading-tight text-white tabular-nums sm:text-lg sm:font-semibold lg:text-base xl:text-lg">
-                {formatCampaignCountdown(campaign.end_date, now)}
+                {formatCampaignCountdown(campaign.end_date, now, { includeSeconds: false })}
               </div>
             </div>
           </div>

@@ -192,7 +192,7 @@ export default function CreatorNFTCampaigns() {
                       </div>
                       <div className="text-sm font-semibold text-white flex items-center gap-1 group-hover:text-cyan transition-colors">
                         <Clock className="w-4 h-4 text-muted" />
-                        {formatCampaignCountdown(campaign.end_date, now)}
+                        {formatCampaignCountdown(campaign.end_date, now, { includeSeconds: false })}
                       </div>
                     </div>
                   </div>
