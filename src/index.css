@@ -136,10 +136,6 @@ body::before {
     scroll-padding-top: calc(var(--in-app-browser-top-clearance) + 4.625rem);
   }
 
-  html.is-in-app-browser body {
-    padding-top: var(--in-app-browser-top-clearance);
-  }
-
   .app-topbar {
     padding-top: env(safe-area-inset-top);
     height: calc(4.625rem + env(safe-area-inset-top));
@@ -209,31 +205,33 @@ body::before {
   html.is-in-app-browser .creator-page-controls,
   html.is-in-app-browser .admin-page-controls,
   html.is-in-app-browser .landing-navbar {
-    top: var(--in-app-browser-top-clearance) !important;
+    top: 0 !important;
   }
 
   html.is-in-app-browser .app-topbar {
-    padding-top: 0;
-    height: 4.625rem;
+    padding-top: var(--in-app-browser-top-clearance);
+    height: calc(4.625rem + var(--in-app-browser-top-clearance));
   }
 
   html.is-in-app-browser .creator-page-controls,
   html.is-in-app-browser .admin-page-controls {
-    padding-top: 0;
-    height: 4rem;
+    padding-top: var(--in-app-browser-top-clearance);
+    height: calc(4rem + var(--in-app-browser-top-clearance));
   }
 
   html.is-in-app-browser .workspace-route-frame {
-    padding-top: 4rem;
+    padding-top: calc(4rem + var(--in-app-browser-top-clearance));
     scroll-padding-top: calc(var(--in-app-browser-top-clearance) + 4rem);
   }
 
   html.is-in-app-browser .workspace-route-frame.workspace-route-frame--brand {
-    padding-top: 4.625rem;
+    padding-top: calc(4.625rem + var(--in-app-browser-top-clearance));
     scroll-padding-top: calc(var(--in-app-browser-top-clearance) + 4.625rem);
   }
 
   html.is-in-app-browser .landing-navbar {
+    padding-top: calc(var(--in-app-browser-top-clearance) + 1rem) !important;
+    padding-bottom: 1rem !important;
     background-color: #050505 !important;
     box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08);
   }
