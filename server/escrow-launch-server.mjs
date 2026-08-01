@@ -2788,6 +2788,16 @@ app.post('/telegram/webhook/:secret', async (req, res) => {
     const isStartCommand = text.startsWith('/start');
     const connectCode = isStartCommand ? text.split(/\s+/)[1]?.trim() : text.replace(/^\/connect\s+/i, '').trim();
     if (!connectCode) {
+      const { data: connectedProfile, error: connectedError } = await supabase
+        .from('creator_profiles')
+        .select('id')
+        .eq('telegram_chat_id', chatId)
+        .maybeSingle();
+      if (connectedError) throw connectedError;
+      if (connectedProfile) {
+        await sendTelegramMessage(chatId, 'Telegram notifications are already connected for AtlasReach. You can manage notification types from Creator Settings.');
+        return res.json({ ok: true });
+      }
       await sendTelegramMessage(chatId, 'Send the Telegram connect code shown in AtlasReach Creator Settings.');
       return res.json({ ok: true });
     }
