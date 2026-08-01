@@ -13,11 +13,18 @@
 }
 
 html {
+  --in-app-browser-top-offset: 0px;
+  --in-app-browser-top-clearance: env(safe-area-inset-top, 0px);
   background-color: var(--color-bg);
   scroll-behavior: smooth;
   scroll-padding-top: calc(4.625rem + env(safe-area-inset-top));
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
   scrollbar-width: thin;
+}
+
+html.is-in-app-browser {
+  --in-app-browser-top-offset: 56px;
+  --in-app-browser-top-clearance: calc(env(safe-area-inset-top, 0px) + var(--in-app-browser-top-offset));
 }
 
 body {
@@ -125,6 +132,14 @@ body::before {
    landing-navbar has no fixed height, so padding is enough there. No notch height is
    ever hardcoded - env() reads it from the browser/device at render time. */
 @media (max-width: 47.999rem) {
+  html.is-in-app-browser {
+    scroll-padding-top: calc(var(--in-app-browser-top-clearance) + 4.625rem);
+  }
+
+  html.is-in-app-browser body {
+    padding-top: var(--in-app-browser-top-clearance);
+  }
+
   .app-topbar {
     padding-top: env(safe-area-inset-top);
     height: calc(4.625rem + env(safe-area-inset-top));
@@ -188,6 +203,44 @@ body::before {
      flush against (or under) it. */
   .app-sidebar-footer {
     padding-bottom: calc(0.625rem + env(safe-area-inset-bottom));
+  }
+
+  html.is-in-app-browser .app-topbar,
+  html.is-in-app-browser .creator-page-controls,
+  html.is-in-app-browser .admin-page-controls,
+  html.is-in-app-browser .landing-navbar {
+    top: var(--in-app-browser-top-clearance) !important;
+  }
+
+  html.is-in-app-browser .app-topbar {
+    padding-top: 0;
+    height: 4.625rem;
+  }
+
+  html.is-in-app-browser .creator-page-controls,
+  html.is-in-app-browser .admin-page-controls {
+    padding-top: 0;
+    height: 4rem;
+  }
+
+  html.is-in-app-browser .workspace-route-frame {
+    padding-top: 4rem;
+    scroll-padding-top: calc(var(--in-app-browser-top-clearance) + 4rem);
+  }
+
+  html.is-in-app-browser .workspace-route-frame.workspace-route-frame--brand {
+    padding-top: 4.625rem;
+    scroll-padding-top: calc(var(--in-app-browser-top-clearance) + 4.625rem);
+  }
+
+  html.is-in-app-browser .landing-navbar {
+    background-color: #050505 !important;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  html.is-in-app-browser .landing-navbar > div {
+    background-color: #050505 !important;
+    border-color: rgba(255, 255, 255, 0.1);
   }
 }
 

@@ -16,6 +16,16 @@ import './index.css';
 
 type WagmiProviderConfig = ComponentProps<typeof WagmiProvider>['config'];
 
+function markInAppBrowser() {
+  if (typeof navigator === 'undefined' || typeof document === 'undefined') return;
+
+  const ua = navigator.userAgent || '';
+  const isInAppBrowser = /Telegram|Twitter|Instagram|FBAN|FBAV|Line\/|MicroMessenger|TikTok|Snapchat|LinkedInApp/i.test(ua);
+  document.documentElement.classList.toggle('is-in-app-browser', isInAppBrowser);
+}
+
+markInAppBrowser();
+
 const config = getDefaultConfig({
   appName: 'AtlasReach',
   projectId: import.meta.env.VITE_WALLETCONNECT_PROJECT_ID || '3fbb6b34438139a04a5840e4f3261a35',
