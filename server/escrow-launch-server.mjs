@@ -46,7 +46,8 @@ const env = {
   SUBMISSION_WINDOW_NOTIFICATIONS_ENABLED: process.env.SUBMISSION_WINDOW_NOTIFICATIONS_ENABLED !== 'false',
   SUBMISSION_WINDOW_POLL_INTERVAL_SECONDS: process.env.SUBMISSION_WINDOW_POLL_INTERVAL_SECONDS || '300',
   APP_SESSION_TTL_DAYS: process.env.APP_SESSION_TTL_DAYS || '90',
-  NFT_X_TASK_VERIFICATION_BYPASS_ENABLED: process.env.NFT_X_TASK_VERIFICATION_BYPASS_ENABLED !== 'false'
+  NFT_X_TASK_VERIFICATION_BYPASS_ENABLED: process.env.NFT_X_TASK_VERIFICATION_BYPASS_ENABLED !== 'false',
+  NFT_CAMPAIGN_ASSET_BUCKET: process.env.NFT_CAMPAIGN_ASSET_BUCKET || 'nft-campaign-assets'
 };
 
 const requiredEnv = [
@@ -65,7 +66,7 @@ for (const key of requiredEnv) {
 }
 
 const app = express();
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '3mb' }));
 
 const allowedOrigins = (env.ALLOWED_ORIGINS || '')
   .split(',')
@@ -95,6 +96,9 @@ const expectedChainId = env.ESCROW_CHAIN_ID ? BigInt(env.ESCROW_CHAIN_ID) : null
 const appSessionCookieName = 'sorsa_session';
 const appSessionTtlDays = Math.max(1, Number(env.APP_SESSION_TTL_DAYS || '90'));
 const appSessionTtlSeconds = appSessionTtlDays * 24 * 60 * 60;
+const nftCampaignAssetBucket = env.NFT_CAMPAIGN_ASSET_BUCKET;
+const maxNftCampaignAssetBytes = 2 * 1024 * 1024;
+let nftCampaignAssetBucketReady = null;
 
 function logAuthEvent(event, details = {}) {
   console.info('[auth.server]', JSON.stringify({
@@ -261,6 +265,94 @@ async function createAppSession(userId) {
     });
   if (error) throw Object.assign(new Error(error.message), { status: 500 });
   return { token, expiresAt };
+}
+
+function parseImageDataUrl(value) {
+  if (typeof value !== 'string') return null;
+  const match = value.match(/^data:(image\/(?:png|jpe?g|webp|gif));base64,([A-Za-z0-9+/=\s]+)$/i);
+  if (!match) return null;
+  const mimeType = match[1].toLowerCase().replace('image/jpg', 'image/jpeg');
+  const buffer = Buffer.from(match[2].replace(/\s/g, ''), 'base64');
+  if (!buffer.length) {
+    throw Object.assign(new Error('Campaign image is empty'), { status: 400 });
+  }
+  if (buffer.length > maxNftCampaignAssetBytes) {
+    throw Object.assign(new Error('Campaign image must be under 2MB'), { status: 400 });
+  }
+  const extensions = {
+    'image/png': 'png',
+    'image/jpeg': 'jpg',
+    'image/webp': 'webp',
+    'image/gif': 'gif'
+  };
+  return {
+    buffer,
+    mimeType,
+    extension: extensions[mimeType] || 'jpg'
+  };
+}
+
+async function ensureNftCampaignAssetBucket() {
+  if (nftCampaignAssetBucketReady) return nftCampaignAssetBucketReady;
+  nftCampaignAssetBucketReady = (async () => {
+    const { data, error } = await supabase.storage.getBucket(nftCampaignAssetBucket);
+    if (error || !data) {
+      const { error: createError } = await supabase.storage.createBucket(nftCampaignAssetBucket, {
+        public: true,
+        fileSizeLimit: maxNftCampaignAssetBytes,
+        allowedMimeTypes: ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
+      });
+      if (createError) throw Object.assign(new Error(createError.message), { status: 500 });
+      return;
+    }
+
+    if (!data.public) {
+      const { error: updateError } = await supabase.storage.updateBucket(nftCampaignAssetBucket, {
+        public: true,
+        fileSizeLimit: maxNftCampaignAssetBytes,
+        allowedMimeTypes: ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
+      });
+      if (updateError) throw Object.assign(new Error(updateError.message), { status: 500 });
+    }
+  })().catch((error) => {
+    nftCampaignAssetBucketReady = null;
+    throw error;
+  });
+  return nftCampaignAssetBucketReady;
+}
+
+async function uploadNftCampaignAsset(source, campaignKey, slot) {
+  const parsed = parseImageDataUrl(source);
+  if (!parsed) return source;
+
+  await ensureNftCampaignAssetBucket();
+  const hash = createHash('sha256').update(parsed.buffer).digest('hex').slice(0, 16);
+  const path = `nft-campaigns/${campaignKey}/${slot}-${hash}.${parsed.extension}`;
+  const { error } = await supabase.storage
+    .from(nftCampaignAssetBucket)
+    .upload(path, parsed.buffer, {
+      contentType: parsed.mimeType,
+      cacheControl: '31536000',
+      upsert: true
+    });
+  if (error) throw Object.assign(new Error(error.message), { status: 500 });
+
+  const { data } = supabase.storage
+    .from(nftCampaignAssetBucket)
+    .getPublicUrl(path);
+  return data.publicUrl;
+}
+
+async function uploadNftCampaignMetadataAssets(metadata, campaignKey) {
+  return {
+    ...metadata,
+    image_url: metadata.image_url
+      ? await uploadNftCampaignAsset(metadata.image_url, campaignKey, 'image')
+      : null,
+    background_image_url: metadata.background_image_url
+      ? await uploadNftCampaignAsset(metadata.background_image_url, campaignKey, 'background')
+      : null
+  };
 }
 
 async function revokeCurrentAppSession(req) {
@@ -3241,6 +3333,9 @@ app.post('/admin/nft-campaigns', async (req, res) => {
     await assertAdmin(user.id);
     const brandProfile = await getOrCreateNftBrandProfile(user.id);
     const payload = normalizeNftCampaignBody(req.body, user.id, brandProfile);
+    const metadata = JSON.parse(payload.language || '{}');
+    const campaignAssetKey = randomBytes(12).toString('hex');
+    payload.language = JSON.stringify(await uploadNftCampaignMetadataAssets(metadata, campaignAssetKey));
 
     const { data, error } = await supabase
       .from('campaigns')
@@ -3274,7 +3369,7 @@ app.get('/admin/raffles', async (req, res) => {
 
     const { data: campaigns, error } = await supabase
       .from('campaigns')
-      .select('id, title, goal, campaign_type, categories, overview, budget, min_sorsa_score, language, status, start_date, end_date, created_at')
+      .select('id, title, goal, campaign_type, language, budget, status, start_date, end_date, created_at')
       .in('campaign_type', ['raffle', 'fcfs'])
       .order('created_at', { ascending: false });
     if (error) throw Object.assign(new Error(error.message), { status: 500 });
@@ -3381,7 +3476,7 @@ app.get('/admin/nft-content-campaigns', async (req, res) => {
 
     const { data: campaigns, error } = await supabase
       .from('campaigns')
-      .select('id, title, goal, campaign_type, categories, overview, budget, min_sorsa_score, language, status, start_date, end_date, created_at')
+      .select('id, title, goal, campaign_type, language, budget, status, start_date, end_date, created_at')
       .in('campaign_type', ['content', 'all'])
       .order('created_at', { ascending: false });
     if (error) throw Object.assign(new Error(error.message), { status: 500 });

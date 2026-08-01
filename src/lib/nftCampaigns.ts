@@ -326,43 +326,11 @@ export async function listCreatorNftParticipations() {
 }
 
 export async function listAdminRaffles(): Promise<AdminRaffleListResult> {
-  return withBackendReadFallback(async () => {
-    const supabase = requireSupabase();
-    const { data, error } = await supabase
-      .from('campaigns')
-      .select(nftCampaignSelect)
-      .in('campaign_type', ['raffle', 'fcfs'])
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-
-    const statsMap = await getNftCampaignStatsMap((data || []).map((campaign: any) => campaign.id));
-    return {
-      campaigns: (data || []).map((campaign: any) => ({
-        ...withNftCampaignMetadata(campaign),
-        stats: statsMap.get(campaign.id) || emptyStats()
-      }))
-    };
-  }, '/admin/raffles');
+  return requestNftCampaigns('/admin/raffles');
 }
 
 export async function listAdminNftContentCampaigns() {
-  return withBackendReadFallback(async () => {
-    const supabase = requireSupabase();
-    const { data, error } = await supabase
-      .from('campaigns')
-      .select(nftCampaignSelect)
-      .in('campaign_type', ['content', 'all'])
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-
-    const statsMap = await getNftCampaignStatsMap((data || []).map((campaign: any) => campaign.id));
-    return {
-      campaigns: (data || []).map((campaign: any) => ({
-        ...withNftCampaignMetadata(campaign),
-        stats: statsMap.get(campaign.id) || emptyStats()
-      }))
-    };
-  }, '/admin/nft-content-campaigns');
+  return requestNftCampaigns('/admin/nft-content-campaigns');
 }
 
 export async function getAdminNftContentCampaign(id: string) {
