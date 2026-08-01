@@ -105,10 +105,12 @@ const Hero = () => {
   const opacity = useTransform(smoothScrollY, [0, 500], [1, 0]);
   const scale = useTransform(smoothScrollY, [0, 500], [1, 0.95]);
   const navigate = useNavigate();
-  const { session, role, signOut } = useAuth();
+  const { session, role, loading, signOut } = useAuth();
   const { disconnect } = useDisconnect();
 
   const handleRoleEntry = (targetRole: 'brand' | 'creator') => {
+    if (loading) return;
+
     if (targetRole === 'brand' && session) {
       navigate('/brand/profiles');
       return;
@@ -116,6 +118,11 @@ const Hero = () => {
 
     if (role === targetRole) {
       navigate(targetRole === 'brand' ? '/brand/campaigns' : '/creator/campaigns');
+      return;
+    }
+
+    if (session && role === null) {
+      navigate('/campaigns');
       return;
     }
 

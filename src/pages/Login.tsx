@@ -2,11 +2,34 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Building2, UserCircle2, ArrowRight } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useAuth } from '../context/AuthContext';
 
 const appleEase = [0.16, 1, 0.3, 1] as const;
 
 export default function Login() {
   const navigate = useNavigate();
+  const { session, role, loading } = useAuth();
+
+  const handleRoleEntry = (targetRole: 'brand' | 'creator') => {
+    if (loading) return;
+
+    if (targetRole === 'brand' && session) {
+      navigate('/brand/profiles');
+      return;
+    }
+
+    if (role === targetRole) {
+      navigate(targetRole === 'brand' ? '/brand/campaigns' : '/creator/campaigns');
+      return;
+    }
+
+    if (session && role === null) {
+      navigate('/campaigns');
+      return;
+    }
+
+    navigate(targetRole === 'brand' ? '/auth/brand' : '/auth/creator');
+  };
 
   return (
     <div className="min-h-screen bg-black text-[#F5F5F7] font-sans flex flex-col items-center justify-center p-6 selection:bg-cyan/30">
@@ -31,7 +54,7 @@ export default function Login() {
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: appleEase, delay: 0.1 }}
-            onClick={() => navigate('/auth/brand')}
+            onClick={() => handleRoleEntry('brand')}
             className="relative rounded-[2.5rem] p-[1px] overflow-hidden group cursor-pointer"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -54,7 +77,7 @@ export default function Login() {
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: appleEase, delay: 0.2 }}
-            onClick={() => navigate('/auth/creator')}
+            onClick={() => handleRoleEntry('creator')}
             className="relative rounded-[2.5rem] p-[1px] overflow-hidden group cursor-pointer"
           >
             <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>

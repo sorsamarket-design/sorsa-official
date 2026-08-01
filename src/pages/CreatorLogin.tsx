@@ -4,13 +4,21 @@ import { ArrowLeft } from 'lucide-react';
 import { motion } from 'motion/react';
 import { XLogo } from '../components/XLogo';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 
 const appleEase = [0.16, 1, 0.3, 1] as const;
 
 export default function CreatorLogin() {
   const navigate = useNavigate();
+  const { session, role, loading } = useAuth();
   const [isLoggingIn, setIsLoggingIn] = React.useState(false);
   const [errorVisible, setErrorVisible] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!loading && session && role === 'creator') {
+      navigate('/creator/campaigns', { replace: true });
+    }
+  }, [loading, navigate, role, session]);
 
   const handleTwitterLogin = async () => {
     setIsLoggingIn(true);
