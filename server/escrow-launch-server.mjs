@@ -1323,6 +1323,21 @@ async function sendTelegramMessage(chatId, text, options = {}) {
   });
 }
 
+async function sendTelegramDocument(chatId, filename, content, caption = '', options = {}) {
+  const form = new FormData();
+  form.append('chat_id', chatId);
+  if (options.message_thread_id) {
+    form.append('message_thread_id', String(options.message_thread_id));
+  }
+  form.append('document', new Blob([content], { type: 'text/csv;charset=utf-8' }), filename);
+  if (caption) {
+    form.append('caption', caption);
+    form.append('parse_mode', 'HTML');
+  }
+
+  return telegramRequest('sendDocument', form);
+}
+
 async function appendTelegramPhoto(form, imageSource, filename = 'notification.jpg') {
   const source = typeof imageSource === 'string' ? imageSource : String(imageSource || '');
   if (/^https?:\/\//i.test(source)) {
@@ -1729,6 +1744,88 @@ async function notifyAdminNftCampaignLaunch(campaign) {
 
   await sendTelegramMessage(chatId, caption, topicOptions);
   return { sent: 1, skipped: 0, threadId };
+}
+
+function getNftCampaignEndAdminTelegramIds() {
+  return [6160210209, 7229118404, 1168423479];
+}
+
+function slugifyCsvFilenamePart(value, fallback = 'nft-raffle') {
+  const slug = String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80);
+  return slug || fallback;
+}
+
+function escapeCsvValue(value) {
+  const text = String(value ?? '');
+  if (/[",\r\n]/.test(text)) {
+    return `"${text.replace(/"/g, '""')}"`;
+  }
+  return text;
+}
+
+function buildCsv(headers, rows) {
+  const lines = [
+    headers.map(escapeCsvValue).join(','),
+    ...rows.map((row) => headers.map((header) => escapeCsvValue(row[header])).join(','))
+  ];
+  return `${lines.join('\n')}\n`;
+}
+
+function getWinnerUsername(winner) {
+  return String(winner?.x_account || winner?.telegram_username || winner?.name || '').replace(/^@/, '').trim();
+}
+
+function buildRaffleWinnerCsvFiles(campaign, winners) {
+  const filenameBase = slugifyCsvFilenamePart(campaign?.title || campaign?.id || 'nft-raffle');
+  const walletRows = (winners || []).map((winner) => ({
+    wallet_address: winner?.wallet_address || ''
+  }));
+  const usernameWalletRows = (winners || []).map((winner) => ({
+    username: getWinnerUsername(winner),
+    wallet_address: winner?.wallet_address || ''
+  }));
+
+  return [
+    {
+      filename: `${filenameBase}-winner-wallets.csv`,
+      content: buildCsv(['wallet_address'], walletRows)
+    },
+    {
+      filename: `${filenameBase}-winner-usernames-wallets.csv`,
+      content: buildCsv(['username', 'wallet_address'], usernameWalletRows)
+    }
+  ];
+}
+
+async function notifyAdminNftRaffleWinnerCsvs(campaign, winners) {
+  const adminIds = getNftCampaignEndAdminTelegramIds();
+  const files = buildRaffleWinnerCsvFiles(campaign, winners);
+  const campaignUrl = getAdminNftCampaignUrl(campaign);
+  const linkLine = campaignUrl ? `\n${escapeTelegramHtml(campaignUrl)}` : '';
+  const caption = `<b>NFT raffle finalized</b>\n${escapeTelegramHtml(campaign?.title || 'NFT campaign')}${linkLine}`;
+  const summary = { sent: 0, failed: 0, skipped: 0 };
+
+  if (!adminIds.length) {
+    return { ...summary, skipped: files.length, reason: 'no_admin_recipients' };
+  }
+
+  for (const adminId of adminIds) {
+    for (const file of files) {
+      try {
+        await sendTelegramDocument(adminId, file.filename, file.content, caption);
+        summary.sent += 1;
+      } catch (error) {
+        summary.failed += 1;
+        console.warn(`Failed to send raffle winner CSV ${file.filename} to admin ${adminId}:`, error.message || error);
+      }
+    }
+  }
+
+  return summary;
 }
 
 async function notifySubmissionDecision(submission) {
@@ -2788,50 +2885,226 @@ function parseCampaignLanguageMetadata(language) {
   }
 }
 
+async function finalizeNftRaffleCampaign(campaignId, options = {}) {
+  const source = options.source || 'manual';
+  const [{ data: campaign, error }, { data: participants, error: participantError }] = await Promise.all([
+    supabase
+      .from('campaigns')
+      .select('id, title, campaign_type, budget, language, status, end_date, start_date')
+      .eq('id', campaignId)
+      .in('campaign_type', ['raffle', 'fcfs'])
+      .single(),
+    supabase
+      .from('campaign_participants')
+      .select(`
+        id,
+        creator_id,
+        status,
+        joined_at,
+        creator_profile:creator_profiles!creator_id (
+          id,
+          x_handle,
+          full_name,
+          wallet_address,
+          telegram_username
+        )
+      `)
+      .eq('campaign_id', campaignId)
+      .neq('status', 'rejected')
+  ]);
+  if (error || !campaign) throw Object.assign(new Error('Raffle campaign not found'), { status: 404 });
+  if (participantError) throw Object.assign(new Error(participantError.message), { status: 500 });
+
+  const metadata = parseCampaignMetadata(campaign);
+  const raffleCampaign = withNftCampaignMetadata(campaign);
+  if (Array.isArray(metadata.raffle_results) && metadata.raffle_results.length > 0) {
+    return {
+      campaign: raffleCampaign,
+      winners: metadata.raffle_results,
+      finalized_at: metadata.raffle_finalized_at || null,
+      alreadyFinalized: true,
+      telegram: { skipped: 1, reason: 'already_finalized' },
+      adminCsv: { skipped: 1, reason: 'already_finalized' },
+      activityPoints: { awarded: 0, skipped: 0 },
+      referrals: { qualified: 0, skipped: 0 }
+    };
+  }
+
+  const allocationType = raffleCampaign.allocation_type === 'gtd' || raffleCampaign.allocation_type === 'fcfs'
+    ? raffleCampaign.allocation_type
+    : 'wl';
+  const allocationTotal = Math.floor(Number(
+    allocationType === 'gtd'
+      ? raffleCampaign.total_gtd || 0
+      : allocationType === 'fcfs'
+        ? raffleCampaign.total_fcfs || 0
+        : campaign.budget || 0
+  ));
+  const allocationLabel = allocationType === 'gtd' ? 'Total GTD' : allocationType === 'fcfs' ? 'Total FCFS' : 'Total WL';
+  if (!Number.isFinite(allocationTotal) || allocationTotal < 1) {
+    throw Object.assign(new Error(`${allocationLabel} must be at least 1 before finalizing this raffle`), { status: 400 });
+  }
+
+  const eligibleParticipants = (participants || []).filter((participant) => participant.creator_profile);
+  if (eligibleParticipants.length === 0) {
+    throw Object.assign(new Error('No eligible joined creators found for this raffle'), { status: 400 });
+  }
+
+  const winners = pickRandomItems(eligibleParticipants, Math.min(allocationTotal, eligibleParticipants.length)).map((participant) => ({
+    participant_id: participant.id,
+    creator_id: participant.creator_id,
+    name: participant.creator_profile?.full_name || participant.creator_profile?.x_handle || 'Creator',
+    x_account: participant.creator_profile?.x_handle || '',
+    wallet_address: participant.creator_profile?.wallet_address || '',
+    telegram_username: participant.creator_profile?.telegram_username || ''
+  }));
+  const finalizedAt = new Date().toISOString();
+  const nextMetadata = {
+    ...metadata,
+    raffle_results: winners,
+    raffle_finalized_at: finalizedAt,
+    raffle_finalized_source: source,
+    end_notified: true
+  };
+
+  const { error: updateError } = await supabase
+    .from('campaigns')
+    .update({
+      status: 'completed',
+      language: JSON.stringify(nextMetadata)
+    })
+    .eq('id', campaignId);
+  if (updateError) throw Object.assign(new Error(updateError.message), { status: 500 });
+
+  const finalizedCampaign = {
+    ...raffleCampaign,
+    status: 'completed',
+    language: JSON.stringify(nextMetadata)
+  };
+  const telegram = await notifyRaffleWinnersGroup(finalizedCampaign, winners).catch((error) => {
+    console.warn(`Raffle winners Telegram group announcement failed for campaign ${campaignId}:`, error.message || error);
+    return { sent: 0, skipped: 0, failed: 1 };
+  });
+  console.log(`Raffle winners Telegram group announcement result for campaign ${campaignId}:`, telegram);
+
+  const adminCsv = await notifyAdminNftRaffleWinnerCsvs(finalizedCampaign, winners).catch((error) => {
+    console.warn(`Raffle winners admin CSV notification failed for campaign ${campaignId}:`, error.message || error);
+    return { sent: 0, skipped: 0, failed: 1 };
+  });
+  console.log(`Raffle winners admin CSV notification result for campaign ${campaignId}:`, adminCsv);
+
+  const activityPoints = await Promise.all(
+    eligibleParticipants.map((participant) => awardNftCampaignCompletionPoints(participant.creator_id, campaignId))
+  );
+  const referrals = await Promise.all(
+    eligibleParticipants.map((participant) => qualifyReferralForCreator(participant.creator_id))
+  );
+
+  return {
+    campaign: finalizedCampaign,
+    winners,
+    finalized_at: finalizedAt,
+    alreadyFinalized: false,
+    telegram,
+    adminCsv,
+    activityPoints: {
+      awarded: activityPoints.filter((award) => award.awarded).length,
+      skipped: activityPoints.filter((award) => !award.awarded).length
+    },
+    referrals: {
+      qualified: referrals.filter((referral) => referral.qualified).length,
+      skipped: referrals.filter((referral) => !referral.qualified).length
+    }
+  };
+}
+
 async function runNftCampaignEndNotifications() {
   if (nftCampaignEndPolling) return;
   nftCampaignEndPolling = true;
-  const summary = { checked: 0, sent: 0, skipped: 0, failed: 0, marked: 0 };
+  const summary = { checked: 0, finalized: 0, alreadyFinalized: 0, notified: 0, sent: 0, csvSent: 0, skipped: 0, failed: 0, marked: 0 };
   try {
     const now = Date.now();
     const lookbackMinutes = Math.max(1, Number(process.env.NFT_CAMPAIGN_END_NOTIFICATION_LOOKBACK_MINUTES || 30));
     const endedAfter = new Date(now - lookbackMinutes * 60 * 1000).toISOString();
-    const { data: campaigns, error } = await supabase
-      .from('campaigns')
-      .select('id, title, status, end_date, language, campaign_type')
-      .in('status', ['draft', 'live', 'completed'])
-      .in('campaign_type', ['raffle', 'fcfs', 'content', 'all', 'nft'])
-      .gte('end_date', endedAfter)
-      .lte('end_date', new Date(now).toISOString())
-      .limit(10);
+    const endedAtOrBefore = new Date(now).toISOString();
+    const [
+      { data: raffleCampaigns, error: raffleError },
+      { data: notificationCampaigns, error: notificationError }
+    ] = await Promise.all([
+      supabase
+        .from('campaigns')
+        .select('id, title, status, end_date, language, campaign_type')
+        .in('status', ['draft', 'live'])
+        .in('campaign_type', ['raffle', 'fcfs'])
+        .lte('end_date', endedAtOrBefore)
+        .order('end_date', { ascending: true })
+        .limit(10),
+      supabase
+        .from('campaigns')
+        .select('id, title, status, end_date, language, campaign_type')
+        .in('status', ['draft', 'live', 'completed'])
+        .in('campaign_type', ['content', 'all', 'nft'])
+        .gte('end_date', endedAfter)
+        .lte('end_date', endedAtOrBefore)
+        .order('end_date', { ascending: true })
+        .limit(10)
+    ]);
       
-    if (error) throw error;
-    
-    const adminNotificationIds = [6160210209, 7229118404, 1168423479];
+    if (raffleError) throw raffleError;
+    if (notificationError) throw notificationError;
+    const campaigns = [...(raffleCampaigns || []), ...(notificationCampaigns || [])];
     
     for (const campaign of campaigns || []) {
       summary.checked += 1;
       const metadata = parseCampaignLanguageMetadata(campaign.language);
+      const isRaffleCampaign = ['raffle', 'fcfs'].includes(campaign.campaign_type);
+
+      if (isRaffleCampaign) {
+        if (Array.isArray(metadata.raffle_results) && metadata.raffle_results.length > 0) {
+          summary.alreadyFinalized += 1;
+          summary.skipped += 1;
+          continue;
+        }
+        try {
+          const result = await finalizeNftRaffleCampaign(campaign.id, { source: 'automatic' });
+          if (result.alreadyFinalized) {
+            summary.alreadyFinalized += 1;
+            summary.skipped += 1;
+            continue;
+          }
+          summary.finalized += 1;
+          summary.sent += Number(result.telegram?.sent || 0);
+          summary.csvSent += Number(result.adminCsv?.sent || 0);
+          summary.failed += Number(result.telegram?.failed || 0) + Number(result.adminCsv?.failed || 0);
+          summary.marked += 1;
+        } catch (err) {
+          summary.failed += 1;
+          console.warn(`Failed to auto-finalize ended NFT raffle campaign ${campaign.id}:`, err.message || err);
+        }
+        continue;
+      }
+
       if (metadata.end_notified) {
         summary.skipped += 1;
         continue;
       }
-      
+
       const adminCampaignUrl = getAdminNftCampaignUrl(campaign);
       const adminCampaignLink = adminCampaignUrl
         ? `\n\n<a href="${escapeTelegramHtml(adminCampaignUrl)}">View admin page</a>`
         : '';
-      const adminNotificationText = `<b>NFT Campaign Ended</b>\n\nThe admin created NFT campaign <b>${escapeTelegramHtml(campaign.title)}</b> has ended. It is ready to be finalized.${adminCampaignLink}`;
-      
+      const adminNotificationText = `<b>NFT Campaign Ended</b>\n\nThe admin created NFT campaign <b>${escapeTelegramHtml(campaign.title)}</b> has ended.${adminCampaignLink}`;
+
       let successCount = 0;
-      for (const adminId of adminNotificationIds) {
+      for (const adminId of getNftCampaignEndAdminTelegramIds()) {
         await sendTelegramMessage(adminId, adminNotificationText).then(() => successCount++).catch((err) => {
           summary.failed += 1;
           console.warn(`Failed to send campaign end notification to admin ${adminId}:`, err.message || err);
         });
       }
       summary.sent += successCount;
-      
+      summary.notified += successCount > 0 ? 1 : 0;
+
       if (successCount > 0) {
         const { error: updateError } = await supabase
           .from('campaigns')
@@ -3606,113 +3879,15 @@ app.post('/admin/raffles/:campaignId/finalize', async (req, res) => {
     const campaignId = String(req.params.campaignId || '').trim();
     if (!campaignId) throw Object.assign(new Error('Missing campaign id'), { status: 400 });
 
-    const [{ data: campaign, error }, { data: participants, error: participantError }] = await Promise.all([
-      supabase
-        .from('campaigns')
-        .select('id, title, campaign_type, budget, language, status')
-        .eq('id', campaignId)
-        .in('campaign_type', ['raffle', 'fcfs'])
-        .single(),
-      supabase
-        .from('campaign_participants')
-        .select(`
-          id,
-          creator_id,
-          status,
-          joined_at,
-          creator_profile:creator_profiles!creator_id (
-            id,
-            x_handle,
-            full_name,
-            wallet_address,
-            telegram_username
-          )
-        `)
-        .eq('campaign_id', campaignId)
-        .neq('status', 'rejected')
-    ]);
-    if (error || !campaign) throw Object.assign(new Error('Raffle campaign not found'), { status: 404 });
-    if (participantError) throw Object.assign(new Error(participantError.message), { status: 500 });
-
-    const metadata = parseCampaignMetadata(campaign);
-    const raffleCampaign = withNftCampaignMetadata(campaign);
-    if (Array.isArray(metadata.raffle_results) && metadata.raffle_results.length > 0) {
-      return res.json({
-        winners: metadata.raffle_results,
-        finalized_at: metadata.raffle_finalized_at || null,
-        alreadyFinalized: true
-      });
-    }
-
-    const allocationType = raffleCampaign.allocation_type === 'gtd' || raffleCampaign.allocation_type === 'fcfs'
-      ? raffleCampaign.allocation_type
-      : 'wl';
-    const allocationTotal = Math.floor(Number(
-      allocationType === 'gtd'
-        ? raffleCampaign.total_gtd || 0
-        : allocationType === 'fcfs'
-          ? raffleCampaign.total_fcfs || 0
-          : campaign.budget || 0
-    ));
-    const allocationLabel = allocationType === 'gtd' ? 'Total GTD' : allocationType === 'fcfs' ? 'Total FCFS' : 'Total WL';
-    if (!Number.isFinite(allocationTotal) || allocationTotal < 1) {
-      throw Object.assign(new Error(`${allocationLabel} must be at least 1 before finalizing this raffle`), { status: 400 });
-    }
-
-    const eligibleParticipants = (participants || []).filter((participant) => participant.creator_profile);
-    if (eligibleParticipants.length === 0) {
-      throw Object.assign(new Error('No eligible joined creators found for this raffle'), { status: 400 });
-    }
-
-    const winners = pickRandomItems(eligibleParticipants, Math.min(allocationTotal, eligibleParticipants.length)).map((participant) => ({
-      participant_id: participant.id,
-      creator_id: participant.creator_id,
-      name: participant.creator_profile?.full_name || participant.creator_profile?.x_handle || 'Creator',
-      x_account: participant.creator_profile?.x_handle || '',
-      wallet_address: participant.creator_profile?.wallet_address || '',
-      telegram_username: participant.creator_profile?.telegram_username || ''
-    }));
-    const finalizedAt = new Date().toISOString();
-
-    const { error: updateError } = await supabase
-      .from('campaigns')
-      .update({
-        status: 'completed',
-        language: JSON.stringify({
-          ...metadata,
-          raffle_results: winners,
-          raffle_finalized_at: finalizedAt
-        })
-      })
-      .eq('id', campaignId);
-    if (updateError) throw Object.assign(new Error(updateError.message), { status: 500 });
-
-    const telegram = await notifyRaffleWinnersGroup(raffleCampaign, winners).catch((error) => {
-      console.warn(`Raffle winners Telegram group announcement failed for campaign ${campaignId}:`, error.message || error);
-      return { sent: 0, skipped: 0, failed: 1 };
-    });
-    console.log(`Raffle winners Telegram group announcement result for campaign ${campaignId}:`, telegram);
-
-    const activityPoints = await Promise.all(
-      eligibleParticipants.map((participant) => awardNftCampaignCompletionPoints(participant.creator_id, campaignId))
-    );
-    const referrals = await Promise.all(
-      eligibleParticipants.map((participant) => qualifyReferralForCreator(participant.creator_id))
-    );
-
+    const result = await finalizeNftRaffleCampaign(campaignId, { source: 'manual' });
     return res.json({
-      winners,
-      finalized_at: finalizedAt,
-      alreadyFinalized: false,
-      telegram,
-      activityPoints: {
-        awarded: activityPoints.filter((award) => award.awarded).length,
-        skipped: activityPoints.filter((award) => !award.awarded).length
-      },
-      referrals: {
-        qualified: referrals.filter((referral) => referral.qualified).length,
-        skipped: referrals.filter((referral) => !referral.qualified).length
-      }
+      winners: result.winners,
+      finalized_at: result.finalized_at,
+      alreadyFinalized: result.alreadyFinalized,
+      telegram: result.telegram,
+      adminCsv: result.adminCsv,
+      activityPoints: result.activityPoints,
+      referrals: result.referrals
     });
   } catch (error) {
     const status = error.status || 500;
