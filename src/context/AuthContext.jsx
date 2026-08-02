@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { supabase, hasSupabaseConfig } from '../lib/supabase';
+import { useLocation } from 'react-router-dom';
+import { getAuthScopeForPath, getSupabaseForScope, hasSupabaseConfig } from '../lib/supabase';
 import { destroyAppSession } from '../lib/appSession';
 
 /** @typedef {import('@supabase/supabase-js').User} SupabaseUser */
@@ -35,21 +36,25 @@ function logClientAuthEvent(event, session) {
 }
 
 export const AuthProvider = ({ children }) => {
+  const location = useLocation();
+  const authScope = getAuthScopeForPath(location.pathname);
   const [user, setUser] = useState(/** @type {SupabaseUser | null} */ (null));
   const [role, setRole] = useState(/** @type {string | null} */ (null));
   const [session, setSession] = useState(/** @type {SupabaseSession | null} */ (null));
   const [loading, setLoading] = useState(true);
   const userIdRef = useRef(null);
+  const scopeRef = useRef(authScope);
 
   useEffect(() => {
-    if (!hasSupabaseConfig || !supabase) {
+    const authClient = getSupabaseForScope(authScope);
+    if (!hasSupabaseConfig || !authClient) {
       setLoading(false);
       return;
     }
 
     async function fetchUserRole(userId) {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await authClient
           .from('profiles')
           .select('role')
           .eq('id', userId)
@@ -60,19 +65,21 @@ export const AuthProvider = ({ children }) => {
         if (data) {
           setRole(data.role);
         } else {
-          const { data: { user: currentUser } } = await supabase.auth.getUser();
+          const { data: { user: currentUser } } = await authClient.auth.getUser();
           setRole(currentUser?.user_metadata?.role ?? null);
         }
       } catch (err) {
         console.error('Error fetching role:', err);
-        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        const { data: { user: currentUser } } = await authClient.auth.getUser();
         setRole(currentUser?.user_metadata?.role ?? null);
       } finally {
         setLoading(false);
       }
     }
 
-    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+    setLoading(true);
+    scopeRef.current = authScope;
+    authClient.auth.getSession().then(({ data: { session: initialSession } }) => {
       const initialUser = initialSession?.user ?? null;
       setSession(initialSession);
       setUser(initialUser);
@@ -85,7 +92,7 @@ export const AuthProvider = ({ children }) => {
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
+    const { data: { subscription } } = authClient.auth.onAuthStateChange((event, nextSession) => {
       logClientAuthEvent(event, nextSession);
       const nextUser = nextSession?.user ?? null;
       const nextUserId = nextUser?.id ?? null;
@@ -113,15 +120,16 @@ export const AuthProvider = ({ children }) => {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [authScope]);
 
   const signOut = useCallback(async () => {
+    const authClient = getSupabaseForScope(scopeRef.current);
     try {
-      await destroyAppSession();
+      await destroyAppSession(scopeRef.current);
     } catch (err) {
       console.warn('App session logout failed:', err);
     }
-    await supabase.auth.signOut();
+    await authClient.auth.signOut({ scope: 'local' });
   }, []);
 
   const value = useMemo(() => ({

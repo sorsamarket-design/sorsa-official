@@ -94,7 +94,8 @@ const platformAccount = privateKeyToAccount(env.PLATFORM_PRIVATE_KEY);
 const publicClient = createPublicClient({ transport: http(env.ESCROW_RPC_URL) });
 const walletClient = createWalletClient({ account: platformAccount, transport: http(env.ESCROW_RPC_URL) });
 const expectedChainId = env.ESCROW_CHAIN_ID ? BigInt(env.ESCROW_CHAIN_ID) : null;
-const appSessionCookieName = 'sorsa_session';
+const defaultAppSessionCookieName = 'sorsa_session';
+const adminAppSessionCookieName = 'sorsa_admin_session';
 const appSessionTtlDays = Math.max(1, Number(env.APP_SESSION_TTL_DAYS || '90'));
 const appSessionTtlSeconds = appSessionTtlDays * 24 * 60 * 60;
 const nftCampaignAssetBucket = env.NFT_CAMPAIGN_ASSET_BUCKET;
@@ -135,8 +136,19 @@ function hashSessionToken(token) {
   return createHash('sha256').update(token).digest('hex');
 }
 
-function serializeAppSessionCookie(value, maxAgeSeconds) {
-  const encodedName = encodeURIComponent(appSessionCookieName);
+function getAppSessionScope(req) {
+  const requestedScope = String(req.headers['x-app-session-scope'] || '').trim().toLowerCase();
+  if (requestedScope === 'admin') return 'admin';
+  const path = String(req.originalUrl || req.url || '');
+  return path.startsWith('/admin/') || path === '/auth/admin' ? 'admin' : 'default';
+}
+
+function getAppSessionCookieName(scope = 'default') {
+  return scope === 'admin' ? adminAppSessionCookieName : defaultAppSessionCookieName;
+}
+
+function serializeAppSessionCookie(cookieName, value, maxAgeSeconds) {
+  const encodedName = encodeURIComponent(cookieName);
   const encodedValue = encodeURIComponent(value);
   return [
     `${encodedName}=${encodedValue}`,
@@ -148,12 +160,12 @@ function serializeAppSessionCookie(value, maxAgeSeconds) {
   ].join('; ');
 }
 
-function setAppSessionCookie(res, token) {
-  res.setHeader('Set-Cookie', serializeAppSessionCookie(token, appSessionTtlSeconds));
+function setAppSessionCookie(res, token, scope = 'default') {
+  res.setHeader('Set-Cookie', serializeAppSessionCookie(getAppSessionCookieName(scope), token, appSessionTtlSeconds));
 }
 
-function clearAppSessionCookie(res) {
-  res.setHeader('Set-Cookie', serializeAppSessionCookie('', 0));
+function clearAppSessionCookie(res, scope = 'default') {
+  res.setHeader('Set-Cookie', serializeAppSessionCookie(getAppSessionCookieName(scope), '', 0));
 }
 
 function requireBearer(req) {
@@ -165,7 +177,9 @@ function requireBearer(req) {
 
 async function authenticate(req) {
   const cookies = parseCookies(req);
-  const sessionToken = cookies[appSessionCookieName];
+  const scope = getAppSessionScope(req);
+  const cookieName = getAppSessionCookieName(scope);
+  const sessionToken = cookies[cookieName];
   const requestContext = authRequestContext(req);
   const header = req.headers.authorization || '';
   const [scheme, bearerToken] = header.split(' ');
@@ -187,6 +201,7 @@ async function authenticate(req) {
       logAuthEvent('authenticate.success', {
         ...requestContext,
         authMethod: 'cookie',
+        appSessionScope: scope,
         cookiePresent: true,
         bearerPresent,
         userId: sessionRow.user_id,
@@ -205,6 +220,7 @@ async function authenticate(req) {
     logAuthEvent('authenticate.cookie_rejected', {
       ...requestContext,
       authMethod: 'cookie',
+      appSessionScope: scope,
       cookiePresent: true,
       bearerPresent,
       reason,
@@ -219,6 +235,7 @@ async function authenticate(req) {
   if (bearerPresent) {
     return authenticateToken(bearerToken, {
       ...requestContext,
+      appSessionScope: scope,
       cookiePresent: Boolean(sessionToken),
       bearerPresent: true
     });
@@ -226,6 +243,7 @@ async function authenticate(req) {
 
   logAuthEvent('authenticate.failure', {
     ...requestContext,
+    appSessionScope: scope,
     authMethod: 'none',
     cookiePresent: Boolean(sessionToken),
     bearerPresent: false,
@@ -357,7 +375,8 @@ async function uploadNftCampaignMetadataAssets(metadata, campaignKey) {
 }
 
 async function revokeCurrentAppSession(req) {
-  const token = parseCookies(req)[appSessionCookieName];
+  const scope = getAppSessionScope(req);
+  const token = parseCookies(req)[getAppSessionCookieName(scope)];
   if (!token) return false;
   const { error } = await supabase
     .from('app_sessions')
@@ -3391,19 +3410,23 @@ app.get('/campaigns/launch/ready', async (_req, res) => {
 app.post('/auth/session', async (req, res) => {
   try {
     const token = requireBearer(req);
+    const scope = getAppSessionScope(req);
     logAuthEvent('app_session.create.attempt', {
       ...authRequestContext(req),
+      appSessionScope: scope,
       bearerPresent: true
     });
     const user = await authenticateToken(token, {
       ...authRequestContext(req),
       bearerPresent: true,
-      cookiePresent: Boolean(parseCookies(req)[appSessionCookieName])
+      cookiePresent: Boolean(parseCookies(req)[getAppSessionCookieName(scope)]),
+      appSessionScope: scope
     });
     const session = await createAppSession(user.id);
-    setAppSessionCookie(res, session.token);
+    setAppSessionCookie(res, session.token, scope);
     logAuthEvent('app_session.create.success', {
       ...authRequestContext(req),
+      appSessionScope: scope,
       userId: user.id,
       expiresAt: session.expiresAt
     });
@@ -3418,6 +3441,7 @@ app.post('/auth/session', async (req, res) => {
       ...authRequestContext(req),
       status,
       reason: error.message || 'Could not create app session',
+      appSessionScope: getAppSessionScope(req),
       bearerPresent: Boolean(req.headers.authorization)
     });
     return res.status(status).json({ error: error.message || 'Could not create app session' });
@@ -3426,23 +3450,27 @@ app.post('/auth/session', async (req, res) => {
 
 app.post('/auth/logout', async (req, res) => {
   try {
+    const scope = getAppSessionScope(req);
     const revoked = await revokeCurrentAppSession(req);
-    clearAppSessionCookie(res);
+    clearAppSessionCookie(res, scope);
     logAuthEvent('app_session.logout.success', {
       ...authRequestContext(req),
-      cookiePresent: Boolean(parseCookies(req)[appSessionCookieName]),
+      appSessionScope: scope,
+      cookiePresent: Boolean(parseCookies(req)[getAppSessionCookieName(scope)]),
       bearerPresent: Boolean(req.headers.authorization),
       revoked
     });
     return res.json({ ok: true });
   } catch (error) {
-    clearAppSessionCookie(res);
+    const scope = getAppSessionScope(req);
+    clearAppSessionCookie(res, scope);
     const status = error.status || 500;
     logAuthEvent('app_session.logout.failure', {
       ...authRequestContext(req),
       status,
       reason: error.message || 'Could not end app session',
-      cookiePresent: Boolean(parseCookies(req)[appSessionCookieName]),
+      appSessionScope: scope,
+      cookiePresent: Boolean(parseCookies(req)[getAppSessionCookieName(scope)]),
       bearerPresent: Boolean(req.headers.authorization)
     });
     return res.status(status).json({ error: error.message || 'Could not end app session' });

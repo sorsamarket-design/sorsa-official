@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ShieldCheck } from 'lucide-react';
 import { motion } from 'motion/react';
-import { supabase } from '../lib/supabase';
+import { adminSupabase } from '../lib/supabase';
 import { createAppSession } from '../lib/appSession';
 
 const appleEase = [0.16, 1, 0.3, 1] as const;
@@ -20,23 +20,23 @@ export default function AdminLogin() {
     setErrorVisible(false);
 
     try {
-      if (!supabase) throw new Error('Supabase is not configured');
+      if (!adminSupabase) throw new Error('Supabase is not configured');
 
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await adminSupabase.auth.signInWithPassword({ email, password });
       if (error || !data.user) throw error || new Error('Login failed');
 
-      const { data: profile, error: profileError } = await supabase
+      const { data: profile, error: profileError } = await adminSupabase
         .from('profiles')
         .select('role')
         .eq('id', data.user.id)
         .single();
       if (profileError || profile?.role !== 'admin') {
-        await supabase.auth.signOut();
+        await adminSupabase.auth.signOut({ scope: 'local' });
         throw new Error('Not an admin account');
       }
 
       if (data.session?.access_token) {
-        await createAppSession(data.session.access_token);
+        await createAppSession(data.session.access_token, 'admin');
       }
       navigate('/admin/dashboard');
     } catch (error) {

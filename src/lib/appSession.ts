@@ -1,4 +1,4 @@
-import { requireSupabase } from './supabase';
+import { getAuthScopeForPath, requireSupabase } from './supabase';
 
 const launchEndpoint = import.meta.env.VITE_ESCROW_LAUNCH_ENDPOINT;
 
@@ -10,8 +10,12 @@ export function getBackendBase() {
   return launchEndpoint.replace(/\/campaigns\/launch\/?$/, '');
 }
 
-export async function getFreshBackendAccessToken(forceRefresh = false) {
-  const supabase = requireSupabase();
+export function getCurrentAuthScope(pathname = typeof window !== 'undefined' ? window.location.pathname : '/') {
+  return getAuthScopeForPath(pathname);
+}
+
+export async function getFreshBackendAccessToken(forceRefresh = false, scope = getCurrentAuthScope()) {
+  const supabase = requireSupabase(scope);
   if (forceRefresh) {
     const { data, error } = await supabase.auth.refreshSession();
     if (error) throw new Error(error.message || 'Could not refresh current session.');
@@ -25,7 +29,7 @@ export async function getFreshBackendAccessToken(forceRefresh = false) {
 
   const expiresAtMs = session.expires_at ? session.expires_at * 1000 : 0;
   if (expiresAtMs && expiresAtMs <= Date.now() + 60_000) {
-    return getFreshBackendAccessToken(true);
+    return getFreshBackendAccessToken(true, scope);
   }
 
   return session.access_token || null;
@@ -47,28 +51,33 @@ function buildBackendHeaders(options: RequestInit, accessToken: string | null) {
   return headers;
 }
 
+function applyAuthScopeHeader(headers: Headers, scope: string) {
+  headers.set('X-App-Session-Scope', scope);
+  return headers;
+}
+
 async function isInvalidSessionResponse(response: Response) {
   if (response.status !== 401) return false;
   const body = await response.clone().json().catch(() => null);
   return body?.error === 'Invalid session';
 }
 
-export async function backendFetch(pathOrUrl: string, options: RequestInit = {}) {
-  let accessToken = await getFreshBackendAccessToken();
+export async function backendFetch(pathOrUrl: string, options: RequestInit = {}, scope = getCurrentAuthScope()) {
+  let accessToken = await getFreshBackendAccessToken(false, scope);
   const requestOptions = {
     ...options,
     credentials: 'include' as RequestCredentials,
-    headers: buildBackendHeaders(options, accessToken)
+    headers: applyAuthScopeHeader(buildBackendHeaders(options, accessToken), scope)
   };
   const response = await fetch(backendUrl(pathOrUrl), requestOptions);
 
   if (accessToken && await isInvalidSessionResponse(response)) {
-    accessToken = await getFreshBackendAccessToken(true);
+    accessToken = await getFreshBackendAccessToken(true, scope);
     if (accessToken) {
       return fetch(backendUrl(pathOrUrl), {
         ...options,
         credentials: 'include',
-        headers: buildBackendHeaders(options, accessToken)
+        headers: applyAuthScopeHeader(buildBackendHeaders(options, accessToken), scope)
       });
     }
   }
@@ -76,14 +85,15 @@ export async function backendFetch(pathOrUrl: string, options: RequestInit = {})
   return response;
 }
 
-export async function createAppSession(accessToken: string) {
+export async function createAppSession(accessToken: string, scope = getCurrentAuthScope()) {
   if (!accessToken) throw new Error('Missing access token');
 
   const response = await fetch(`${getBackendBase()}/auth/session`, {
     method: 'POST',
     credentials: 'include',
     headers: {
-      Authorization: `Bearer ${accessToken}`
+      Authorization: `Bearer ${accessToken}`,
+      'X-App-Session-Scope': scope
     }
   });
   const body = await response.json().catch(() => null);
@@ -93,8 +103,8 @@ export async function createAppSession(accessToken: string) {
   return body;
 }
 
-export async function destroyAppSession() {
-  const response = await backendFetch('/auth/logout', { method: 'POST' });
+export async function destroyAppSession(scope = getCurrentAuthScope()) {
+  const response = await backendFetch('/auth/logout', { method: 'POST' }, scope);
   if (!response.ok) {
     const body = await response.json().catch(() => null);
     throw new Error(body?.error || 'Could not end app session');

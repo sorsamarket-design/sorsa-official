@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Navigate, Routes, Route, useLocation } from 'react-router-dom';
+import { Navigate, Routes, Route, useLocation } from 'react-router-dom';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import BrandLogin from './pages/BrandLogin';
@@ -147,11 +147,10 @@ function RouteLayout() {
 }
 
 export default function App() {
-
   return (
-    <BrowserRouter>
+    <>
       <ScrollToTop />
       <RouteLayout />
-    </BrowserRouter>
+    </>
   );
 }
