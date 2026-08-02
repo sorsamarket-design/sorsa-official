@@ -1804,19 +1804,31 @@ function buildRaffleWinnerCsvFiles(campaign, winners) {
 async function notifyAdminNftRaffleWinnerCsvs(campaign, winners) {
   const adminIds = getNftCampaignEndAdminTelegramIds();
   const files = buildRaffleWinnerCsvFiles(campaign, winners);
-  const campaignUrl = getAdminNftCampaignUrl(campaign);
-  const linkLine = campaignUrl ? `\n${escapeTelegramHtml(campaignUrl)}` : '';
-  const caption = `<b>NFT raffle finalized</b>\n${escapeTelegramHtml(campaign?.title || 'NFT campaign')}${linkLine}`;
-  const summary = { sent: 0, failed: 0, skipped: 0 };
+  const caption = `<b>NFT raffle finalized</b>\n${escapeTelegramHtml(campaign?.title || 'NFT campaign')}`;
+  const imageUrl = campaign?.background_image_url || campaign?.image_url || null;
+  const summary = { sent: 0, imageSent: 0, failed: 0, skipped: 0 };
 
   if (!adminIds.length) {
     return { ...summary, skipped: files.length, reason: 'no_admin_recipients' };
   }
 
   for (const adminId of adminIds) {
+    let imageMessageId = null;
+    if (imageUrl) {
+      try {
+        const imageMessage = await sendTelegramPhoto(adminId, imageUrl, caption);
+        imageMessageId = imageMessage?.message_id || null;
+        summary.imageSent += 1;
+      } catch (error) {
+        summary.failed += 1;
+        console.warn(`Failed to send raffle winner image to admin ${adminId}:`, error.message || error);
+      }
+    }
+
     for (const file of files) {
       try {
-        await sendTelegramDocument(adminId, file.filename, file.content, caption);
+        const replyOptions = imageMessageId ? { reply_to_message_id: imageMessageId } : {};
+        await sendTelegramDocument(adminId, file.filename, file.content, imageMessageId ? '' : caption, replyOptions);
         summary.sent += 1;
       } catch (error) {
         summary.failed += 1;
@@ -2885,39 +2897,50 @@ function parseCampaignLanguageMetadata(language) {
   }
 }
 
+async function claimNftRaffleFinalization(campaignId, source = 'manual') {
+  const { data, error } = await supabase.rpc('claim_nft_raffle_finalization', {
+    p_campaign_id: campaignId,
+    p_source: source,
+    p_claim_timeout_minutes: 15
+  });
+  if (error) {
+    const message = /claim_nft_raffle_finalization/i.test(error.message || '')
+      ? 'Raffle finalization claim RPC is not installed. Apply nft_raffle_finalization_claim.sql before finalizing raffles.'
+      : error.message;
+    throw Object.assign(new Error(message), { status: 500 });
+  }
+
+  const claimedCampaign = Array.isArray(data) ? data[0] : data;
+  if (claimedCampaign) {
+    return { claimed: true, campaign: claimedCampaign };
+  }
+
+  const { data: existingCampaign, error: lookupError } = await supabase
+    .from('campaigns')
+    .select('id, title, campaign_type, budget, language, status, end_date, start_date')
+    .eq('id', campaignId)
+    .in('campaign_type', ['raffle', 'fcfs'])
+    .single();
+  if (lookupError || !existingCampaign) {
+    throw Object.assign(new Error('Raffle campaign not found'), { status: 404 });
+  }
+
+  const metadata = parseCampaignMetadata(existingCampaign);
+  if (Array.isArray(metadata.raffle_results) && metadata.raffle_results.length > 0) {
+    return { claimed: false, alreadyFinalized: true, campaign: existingCampaign };
+  }
+
+  throw Object.assign(new Error('Raffle finalization is already in progress'), { status: 409 });
+}
+
 async function finalizeNftRaffleCampaign(campaignId, options = {}) {
   const source = options.source || 'manual';
-  const [{ data: campaign, error }, { data: participants, error: participantError }] = await Promise.all([
-    supabase
-      .from('campaigns')
-      .select('id, title, campaign_type, budget, language, status, end_date, start_date')
-      .eq('id', campaignId)
-      .in('campaign_type', ['raffle', 'fcfs'])
-      .single(),
-    supabase
-      .from('campaign_participants')
-      .select(`
-        id,
-        creator_id,
-        status,
-        joined_at,
-        creator_profile:creator_profiles!creator_id (
-          id,
-          x_handle,
-          full_name,
-          wallet_address,
-          telegram_username
-        )
-      `)
-      .eq('campaign_id', campaignId)
-      .neq('status', 'rejected')
-  ]);
-  if (error || !campaign) throw Object.assign(new Error('Raffle campaign not found'), { status: 404 });
-  if (participantError) throw Object.assign(new Error(participantError.message), { status: 500 });
+  const claim = await claimNftRaffleFinalization(campaignId, source);
+  const campaign = claim.campaign;
 
   const metadata = parseCampaignMetadata(campaign);
   const raffleCampaign = withNftCampaignMetadata(campaign);
-  if (Array.isArray(metadata.raffle_results) && metadata.raffle_results.length > 0) {
+  if (claim.alreadyFinalized || (Array.isArray(metadata.raffle_results) && metadata.raffle_results.length > 0)) {
     return {
       campaign: raffleCampaign,
       winners: metadata.raffle_results,
@@ -2929,6 +2952,25 @@ async function finalizeNftRaffleCampaign(campaignId, options = {}) {
       referrals: { qualified: 0, skipped: 0 }
     };
   }
+
+  const { data: participants, error: participantError } = await supabase
+    .from('campaign_participants')
+    .select(`
+      id,
+      creator_id,
+      status,
+      joined_at,
+      creator_profile:creator_profiles!creator_id (
+        id,
+        x_handle,
+        full_name,
+        wallet_address,
+        telegram_username
+      )
+    `)
+    .eq('campaign_id', campaignId)
+    .neq('status', 'rejected');
+  if (participantError) throw Object.assign(new Error(participantError.message), { status: 500 });
 
   const allocationType = raffleCampaign.allocation_type === 'gtd' || raffleCampaign.allocation_type === 'fcfs'
     ? raffleCampaign.allocation_type
