@@ -3052,6 +3052,12 @@ async function handleRaffleWalletSubmittedCallback(callbackQuery) {
       console.warn(`Failed to update raffle wallet submission CSV caption for campaign ${campaignId}:`, editError.message || editError);
     }
   }
+  console.log(`Raffle wallet submission callback result for campaign ${campaignId}:`, {
+    submittedByTelegramId: fromId,
+    edited,
+    failed,
+    refsConsidered: editableRefs.length
+  });
 
   if (callbackId) {
     await answerTelegramCallbackQuery(
