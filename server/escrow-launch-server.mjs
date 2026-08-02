@@ -1329,13 +1329,36 @@ async function sendTelegramDocument(chatId, filename, content, caption = '', opt
   if (options.message_thread_id) {
     form.append('message_thread_id', String(options.message_thread_id));
   }
+  if (options.reply_to_message_id) {
+    form.append('reply_to_message_id', String(options.reply_to_message_id));
+  }
   form.append('document', new Blob([content], { type: 'text/csv;charset=utf-8' }), filename);
   if (caption) {
     form.append('caption', caption);
     form.append('parse_mode', 'HTML');
   }
+  if (options.reply_markup) {
+    form.append('reply_markup', JSON.stringify(options.reply_markup));
+  }
 
   return telegramRequest('sendDocument', form);
+}
+
+async function editTelegramMessageCaption(chatId, messageId, caption, options = {}) {
+  return telegramRequest('editMessageCaption', {
+    chat_id: chatId,
+    message_id: messageId,
+    caption,
+    parse_mode: 'HTML',
+    ...options
+  });
+}
+
+async function answerTelegramCallbackQuery(callbackQueryId, text = '') {
+  return telegramRequest('answerCallbackQuery', {
+    callback_query_id: callbackQueryId,
+    text
+  });
 }
 
 async function appendTelegramPhoto(form, imageSource, filename = 'notification.jpg') {
@@ -1775,17 +1798,9 @@ function buildCsv(headers, rows) {
   return `${lines.join('\n')}\n`;
 }
 
-function getWinnerUsername(winner) {
-  return String(winner?.x_account || winner?.telegram_username || winner?.name || '').replace(/^@/, '').trim();
-}
-
 function buildRaffleWinnerCsvFiles(campaign, winners) {
   const filenameBase = slugifyCsvFilenamePart(campaign?.title || campaign?.id || 'nft-raffle');
   const walletRows = (winners || []).map((winner) => ({
-    wallet_address: winner?.wallet_address || ''
-  }));
-  const usernameWalletRows = (winners || []).map((winner) => ({
-    username: getWinnerUsername(winner),
     wallet_address: winner?.wallet_address || ''
   }));
 
@@ -1793,20 +1808,35 @@ function buildRaffleWinnerCsvFiles(campaign, winners) {
     {
       filename: `${filenameBase}-winner-wallets.csv`,
       content: buildCsv(['wallet_address'], walletRows)
-    },
-    {
-      filename: `${filenameBase}-winner-usernames-wallets.csv`,
-      content: buildCsv(['username', 'wallet_address'], usernameWalletRows)
     }
   ];
+}
+
+function getRaffleWalletSubmissionCaption(campaign, submitted = false) {
+  const title = escapeTelegramHtml(campaign?.title || 'NFT campaign');
+  return `<b>NFT raffle finalized</b>\n${title}\n\nWallets submitted: <b>${submitted ? 'Yes' : 'No'}</b>`;
+}
+
+function getRaffleWalletSubmittedKeyboard(campaignId, submitted = false) {
+  if (submitted || !campaignId) return undefined;
+  return {
+    inline_keyboard: [[
+      {
+        text: 'Submitted',
+        callback_data: `nftws:${campaignId}`
+      }
+    ]]
+  };
 }
 
 async function notifyAdminNftRaffleWinnerCsvs(campaign, winners) {
   const adminIds = getNftCampaignEndAdminTelegramIds();
   const files = buildRaffleWinnerCsvFiles(campaign, winners);
-  const caption = `<b>NFT raffle finalized</b>\n${escapeTelegramHtml(campaign?.title || 'NFT campaign')}`;
+  const imageCaption = `<b>NFT raffle finalized</b>\n${escapeTelegramHtml(campaign?.title || 'NFT campaign')}`;
+  const caption = getRaffleWalletSubmissionCaption(campaign, false);
+  const replyMarkup = getRaffleWalletSubmittedKeyboard(campaign?.id, false);
   const imageUrl = campaign?.background_image_url || campaign?.image_url || null;
-  const summary = { sent: 0, imageSent: 0, failed: 0, skipped: 0 };
+  const summary = { sent: 0, imageSent: 0, failed: 0, skipped: 0, messageRefs: [] };
 
   if (!adminIds.length) {
     return { ...summary, skipped: files.length, reason: 'no_admin_recipients' };
@@ -1816,7 +1846,7 @@ async function notifyAdminNftRaffleWinnerCsvs(campaign, winners) {
     let imageMessageId = null;
     if (imageUrl) {
       try {
-        const imageMessage = await sendTelegramPhoto(adminId, imageUrl, caption);
+        const imageMessage = await sendTelegramPhoto(adminId, imageUrl, imageCaption);
         imageMessageId = imageMessage?.message_id || null;
         summary.imageSent += 1;
       } catch (error) {
@@ -1827,9 +1857,19 @@ async function notifyAdminNftRaffleWinnerCsvs(campaign, winners) {
 
     for (const file of files) {
       try {
-        const replyOptions = imageMessageId ? { reply_to_message_id: imageMessageId } : {};
-        await sendTelegramDocument(adminId, file.filename, file.content, imageMessageId ? '' : caption, replyOptions);
+        const replyOptions = {
+          ...(imageMessageId ? { reply_to_message_id: imageMessageId } : {}),
+          ...(replyMarkup ? { reply_markup: replyMarkup } : {})
+        };
+        const message = await sendTelegramDocument(adminId, file.filename, file.content, caption, replyOptions);
         summary.sent += 1;
+        if (message?.chat?.id && message?.message_id) {
+          summary.messageRefs.push({
+            chat_id: String(message.chat.id),
+            message_id: message.message_id,
+            filename: file.filename
+          });
+        }
       } catch (error) {
         summary.failed += 1;
         console.warn(`Failed to send raffle winner CSV ${file.filename} to admin ${adminId}:`, error.message || error);
@@ -2933,6 +2973,87 @@ async function claimNftRaffleFinalization(campaignId, source = 'manual') {
   throw Object.assign(new Error('Raffle finalization is already in progress'), { status: 409 });
 }
 
+async function handleRaffleWalletSubmittedCallback(callbackQuery) {
+  const callbackId = callbackQuery?.id;
+  const fromId = callbackQuery?.from?.id ? Number(callbackQuery.from.id) : null;
+  const data = String(callbackQuery?.data || '');
+  const campaignId = data.startsWith('nftws:') ? data.slice('nftws:'.length).trim() : '';
+  const allowedAdminIds = getNftCampaignEndAdminTelegramIds().map(Number);
+
+  if (!allowedAdminIds.includes(fromId)) {
+    if (callbackId) await answerTelegramCallbackQuery(callbackId, 'Not authorized').catch(() => {});
+    return;
+  }
+  if (!campaignId) {
+    if (callbackId) await answerTelegramCallbackQuery(callbackId, 'Missing campaign').catch(() => {});
+    return;
+  }
+
+  const { data: campaign, error } = await supabase
+    .from('campaigns')
+    .select('id, title, campaign_type, language')
+    .eq('id', campaignId)
+    .in('campaign_type', ['raffle', 'fcfs'])
+    .single();
+  if (error || !campaign) {
+    if (callbackId) await answerTelegramCallbackQuery(callbackId, 'Campaign not found').catch(() => {});
+    return;
+  }
+
+  const metadata = parseCampaignMetadata(campaign);
+  const submittedAt = metadata.raffle_wallets_submitted_at || new Date().toISOString();
+  const nextMetadata = {
+    ...metadata,
+    raffle_wallets_submitted: true,
+    raffle_wallets_submitted_at: submittedAt,
+    raffle_wallets_submitted_by_telegram_id: fromId
+  };
+
+  const { error: updateError } = await supabase
+    .from('campaigns')
+    .update({ language: JSON.stringify(nextMetadata) })
+    .eq('id', campaignId);
+  if (updateError) {
+    console.warn(`Failed to mark raffle wallets submitted for campaign ${campaignId}:`, updateError.message || updateError);
+    if (callbackId) await answerTelegramCallbackQuery(callbackId, 'Could not update status').catch(() => {});
+    return;
+  }
+
+  const refs = Array.isArray(metadata.raffle_admin_csv_message_refs)
+    ? metadata.raffle_admin_csv_message_refs
+    : [];
+  const clickedMessageRef = callbackQuery?.message?.chat?.id && callbackQuery?.message?.message_id
+    ? {
+        chat_id: String(callbackQuery.message.chat.id),
+        message_id: callbackQuery.message.message_id
+      }
+    : null;
+  const editableRefs = [...refs];
+  if (clickedMessageRef && !editableRefs.some((ref) => String(ref?.chat_id) === clickedMessageRef.chat_id && Number(ref?.message_id) === clickedMessageRef.message_id)) {
+    editableRefs.push(clickedMessageRef);
+  }
+  const caption = getRaffleWalletSubmissionCaption(campaign, true);
+  let edited = 0;
+  let failed = 0;
+  for (const ref of editableRefs) {
+    if (!ref?.chat_id || !ref?.message_id) continue;
+    try {
+      await editTelegramMessageCaption(ref.chat_id, ref.message_id, caption, { reply_markup: { inline_keyboard: [] } });
+      edited += 1;
+    } catch (editError) {
+      failed += 1;
+      console.warn(`Failed to update raffle wallet submission CSV caption for campaign ${campaignId}:`, editError.message || editError);
+    }
+  }
+
+  if (callbackId) {
+    await answerTelegramCallbackQuery(
+      callbackId,
+      failed > 0 ? `Marked submitted. Updated ${edited} messages, ${failed} failed.` : 'Wallets marked submitted.'
+    ).catch(() => {});
+  }
+}
+
 async function finalizeNftRaffleCampaign(campaignId, options = {}) {
   const source = options.source || 'manual';
   const claim = await claimNftRaffleFinalization(campaignId, source);
@@ -3034,6 +3155,23 @@ async function finalizeNftRaffleCampaign(campaignId, options = {}) {
     return { sent: 0, skipped: 0, failed: 1 };
   });
   console.log(`Raffle winners admin CSV notification result for campaign ${campaignId}:`, adminCsv);
+
+  if (Array.isArray(adminCsv.messageRefs) && adminCsv.messageRefs.length > 0) {
+    const metadataWithAdminMessages = {
+      ...nextMetadata,
+      raffle_admin_csv_message_refs: adminCsv.messageRefs,
+      raffle_wallets_submitted: false
+    };
+    const { error: messageRefUpdateError } = await supabase
+      .from('campaigns')
+      .update({ language: JSON.stringify(metadataWithAdminMessages) })
+      .eq('id', campaignId);
+    if (messageRefUpdateError) {
+      console.warn(`Failed to store raffle admin CSV message refs for campaign ${campaignId}:`, messageRefUpdateError.message || messageRefUpdateError);
+    } else {
+      finalizedCampaign.language = JSON.stringify(metadataWithAdminMessages);
+    }
+  }
 
   const activityPoints = await Promise.all(
     eligibleParticipants.map((participant) => awardNftCampaignCompletionPoints(participant.creator_id, campaignId))
@@ -3289,6 +3427,15 @@ app.post('/telegram/webhook/:secret', async (req, res) => {
         chatMemberUpdate.new_chat_member
       );
       return res.json({ ok: true });
+    }
+
+    const callbackQuery = req.body?.callback_query;
+    if (callbackQuery?.data) {
+      const callbackData = String(callbackQuery.data || '');
+      if (callbackData.startsWith('nftws:')) {
+        await handleRaffleWalletSubmittedCallback(callbackQuery);
+        return res.json({ ok: true });
+      }
     }
 
     const message = req.body?.message;
