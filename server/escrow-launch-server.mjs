@@ -38,6 +38,7 @@ const env = {
   TELEGRAM_WEBHOOK_SECRET: process.env.TELEGRAM_WEBHOOK_SECRET,
   TELEGRAM_RAFFLE_GROUP_CHAT_ID: process.env.TELEGRAM_RAFFLE_GROUP_CHAT_ID,
   TELEGRAM_RAFFLE_GROUP_THREAD_ID: process.env.TELEGRAM_RAFFLE_GROUP_THREAD_ID,
+  TELEGRAM_NFT_LAUNCH_GROUP_THREAD_ID: process.env.TELEGRAM_NFT_LAUNCH_GROUP_THREAD_ID,
   TELEGRAM_CONNECT_CODE_TTL_MINUTES: process.env.TELEGRAM_CONNECT_CODE_TTL_MINUTES || '30',
   FRONTEND_URL: process.env.FRONTEND_URL || process.env.VITE_FRONTEND_URL,
   PAYOUT_AUTOMATION_ENABLED: process.env.PAYOUT_AUTOMATION_ENABLED !== 'false',
@@ -1361,6 +1362,13 @@ function normalizeTelegramSupergroupChatId(chatId) {
   return value;
 }
 
+function parseTelegramThreadId(value, fallback = null) {
+  const raw = String(value ?? '').trim();
+  const firstCandidate = raw.split(/[,\s]+/).find(Boolean);
+  const parsed = Number(firstCandidate || fallback);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
 function telegramMembershipCacheKey(chatId, userId) {
   return `${telegramTaskKey(chatId)}:${telegramTaskKey(userId)}`;
 }
@@ -1672,8 +1680,7 @@ async function notifyRaffleWinnersGroup(campaign, winners) {
   const raffleGroupChatId = normalizeTelegramSupergroupChatId(env.TELEGRAM_RAFFLE_GROUP_CHAT_ID);
   const caption = buildRaffleWinnersAnnouncement(campaign, winners);
   const imageUrl = campaign?.background_image_url || campaign?.image_url || null;
-  const parsedThreadId = Number(env.TELEGRAM_RAFFLE_GROUP_THREAD_ID || 6);
-  const threadId = Number.isFinite(parsedThreadId) && parsedThreadId > 0 ? parsedThreadId : null;
+  const threadId = parseTelegramThreadId(env.TELEGRAM_RAFFLE_GROUP_THREAD_ID, 6);
   const topicOptions = threadId ? { message_thread_id: threadId } : {};
   if (imageUrl) {
     try {
@@ -1705,8 +1712,7 @@ async function notifyAdminNftCampaignLaunch(campaign) {
   }
 
   const chatId = normalizeTelegramSupergroupChatId(env.TELEGRAM_RAFFLE_GROUP_CHAT_ID);
-  const parsedThreadId = Number(process.env.TELEGRAM_NFT_LAUNCH_GROUP_THREAD_ID || 3);
-  const threadId = Number.isFinite(parsedThreadId) && parsedThreadId > 0 ? parsedThreadId : null;
+  const threadId = parseTelegramThreadId(env.TELEGRAM_NFT_LAUNCH_GROUP_THREAD_ID, 3);
   const topicOptions = threadId ? { message_thread_id: threadId } : {};
   const caption = buildAdminNftLaunchAnnouncement(campaign);
   const imageUrl = campaign?.background_image_url || null;
