@@ -3034,7 +3034,7 @@ async function runNftCampaignEndNotifications() {
       supabase
         .from('campaigns')
         .select('id, title, status, end_date, language, campaign_type')
-        .in('status', ['draft', 'live'])
+        .in('status', ['draft', 'live', 'completed'])
         .in('campaign_type', ['raffle', 'fcfs'])
         .lte('end_date', endedAtOrBefore)
         .order('end_date', { ascending: true })
