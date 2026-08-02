@@ -1770,7 +1770,7 @@ async function notifyAdminNftCampaignLaunch(campaign) {
 }
 
 function getNftCampaignEndAdminTelegramIds() {
-  return [6160210209, 7229118404, 1168423479, 6947220334];
+  return [6160210209, 7229118404, 1168423479];
 }
 
 function slugifyCsvFilenamePart(value, fallback = 'nft-raffle') {
