@@ -1770,7 +1770,7 @@ async function notifyAdminNftCampaignLaunch(campaign) {
 }
 
 function getNftCampaignEndAdminTelegramIds() {
-  return [6160210209, 7229118404, 1168423479];
+  return [6160210209, 7229118404, 1168423479, 6947220334];
 }
 
 function slugifyCsvFilenamePart(value, fallback = 'nft-raffle') {
@@ -1814,7 +1814,7 @@ function buildRaffleWinnerCsvFiles(campaign, winners) {
 
 function getRaffleWalletSubmissionCaption(campaign, submitted = false) {
   const title = escapeTelegramHtml(campaign?.title || 'NFT campaign');
-  return `<b>NFT raffle finalized</b>\n${title}\n\nWallets submitted: <b>${submitted ? '🟢 Yes' : '🔴 No'}</b>`;
+  return `<b>NFT raffle finalized</b>\n${title}\n\nWallets submitted: <b>${submitted ? '&#128994; Yes' : '&#128308; No'}</b>`;
 }
 
 function getRaffleWalletSubmittedKeyboard(campaignId, submitted = false) {
@@ -3196,10 +3196,22 @@ async function finalizeNftRaffleCampaign(campaignId, options = {}) {
   console.log(`Raffle winners admin CSV notification result for campaign ${campaignId}:`, adminCsv);
 
   if (Array.isArray(adminCsv.messageRefs) && adminCsv.messageRefs.length > 0) {
+    const existingMessageRefs = Array.isArray(metadata.raffle_admin_csv_message_refs)
+      ? metadata.raffle_admin_csv_message_refs
+      : [];
+    const mergedMessageRefs = [...existingMessageRefs];
+    for (const ref of adminCsv.messageRefs) {
+      if (!ref?.chat_id || !ref?.message_id) continue;
+      const exists = mergedMessageRefs.some((existingRef) => (
+        String(existingRef?.chat_id) === String(ref.chat_id)
+        && Number(existingRef?.message_id) === Number(ref.message_id)
+      ));
+      if (!exists) mergedMessageRefs.push(ref);
+    }
     const metadataWithAdminMessages = {
       ...nextMetadata,
-      raffle_admin_csv_message_refs: adminCsv.messageRefs,
-      raffle_wallets_submitted: false
+      raffle_admin_csv_message_refs: mergedMessageRefs,
+      raffle_wallets_submitted: Boolean(metadata.raffle_wallets_submitted)
     };
     const { error: messageRefUpdateError } = await supabase
       .from('campaigns')
