@@ -3405,7 +3405,7 @@ app.post('/telegram/webhook/setup', async (req, res) => {
     const webhookUrl = `${getBackendBaseUrl(req)}/telegram/webhook/${encodeURIComponent(env.TELEGRAM_WEBHOOK_SECRET)}`;
     const result = await telegramRequest('setWebhook', {
       url: webhookUrl,
-      allowed_updates: ['message', 'my_chat_member']
+      allowed_updates: ['message', 'my_chat_member', 'callback_query']
     });
     return res.json({ webhookUrl, result });
   } catch (error) {
