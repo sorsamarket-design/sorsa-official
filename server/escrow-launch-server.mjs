@@ -1814,7 +1814,7 @@ function buildRaffleWinnerCsvFiles(campaign, winners) {
 
 function getRaffleWalletSubmissionCaption(campaign, submitted = false) {
   const title = escapeTelegramHtml(campaign?.title || 'NFT campaign');
-  return `<b>NFT raffle finalized</b>\n${title}\n\nWallets submitted: <b>${submitted ? 'Yes' : 'No'}</b>`;
+  return `<b>NFT raffle finalized</b>\n${title}\n\nWallets submitted: <b>${submitted ? '🟢 Yes' : '🔴 No'}</b>`;
 }
 
 function getRaffleWalletSubmittedKeyboard(campaignId, submitted = false) {
