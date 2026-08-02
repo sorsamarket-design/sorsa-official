@@ -2937,6 +2937,13 @@ function parseCampaignLanguageMetadata(language) {
   }
 }
 
+function isRaffleFinalizedMetadata(metadata) {
+  return Boolean(
+    (Array.isArray(metadata?.raffle_results) && metadata.raffle_results.length > 0)
+    || metadata?.raffle_finalization_result === 'no_eligible_participants'
+  );
+}
+
 async function claimNftRaffleFinalization(campaignId, source = 'manual') {
   const { data, error } = await supabase.rpc('claim_nft_raffle_finalization', {
     p_campaign_id: campaignId,
@@ -2966,7 +2973,7 @@ async function claimNftRaffleFinalization(campaignId, source = 'manual') {
   }
 
   const metadata = parseCampaignMetadata(existingCampaign);
-  if (Array.isArray(metadata.raffle_results) && metadata.raffle_results.length > 0) {
+  if (isRaffleFinalizedMetadata(metadata)) {
     return { claimed: false, alreadyFinalized: true, campaign: existingCampaign };
   }
 
@@ -3061,10 +3068,10 @@ async function finalizeNftRaffleCampaign(campaignId, options = {}) {
 
   const metadata = parseCampaignMetadata(campaign);
   const raffleCampaign = withNftCampaignMetadata(campaign);
-  if (claim.alreadyFinalized || (Array.isArray(metadata.raffle_results) && metadata.raffle_results.length > 0)) {
+  if (claim.alreadyFinalized || isRaffleFinalizedMetadata(metadata)) {
     return {
       campaign: raffleCampaign,
-      winners: metadata.raffle_results,
+      winners: Array.isArray(metadata.raffle_results) ? metadata.raffle_results : [],
       finalized_at: metadata.raffle_finalized_at || null,
       alreadyFinalized: true,
       telegram: { skipped: 1, reason: 'already_finalized' },
@@ -3110,7 +3117,39 @@ async function finalizeNftRaffleCampaign(campaignId, options = {}) {
 
   const eligibleParticipants = (participants || []).filter((participant) => participant.creator_profile);
   if (eligibleParticipants.length === 0) {
-    throw Object.assign(new Error('No eligible joined creators found for this raffle'), { status: 400 });
+    const finalizedAt = new Date().toISOString();
+    const noWinnerMetadata = {
+      ...metadata,
+      raffle_results: [],
+      raffle_finalized_at: finalizedAt,
+      raffle_finalized_source: source,
+      raffle_finalization_result: 'no_eligible_participants',
+      end_notified: true
+    };
+    const { error: noWinnerUpdateError } = await supabase
+      .from('campaigns')
+      .update({
+        status: 'completed',
+        language: JSON.stringify(noWinnerMetadata)
+      })
+      .eq('id', campaignId);
+    if (noWinnerUpdateError) throw Object.assign(new Error(noWinnerUpdateError.message), { status: 500 });
+
+    return {
+      campaign: {
+        ...raffleCampaign,
+        status: 'completed',
+        language: JSON.stringify(noWinnerMetadata)
+      },
+      winners: [],
+      finalized_at: finalizedAt,
+      alreadyFinalized: false,
+      noEligibleParticipants: true,
+      telegram: { skipped: 1, reason: 'no_eligible_participants' },
+      adminCsv: { skipped: 1, reason: 'no_eligible_participants' },
+      activityPoints: { awarded: 0, skipped: 0 },
+      referrals: { qualified: 0, skipped: 0 }
+    };
   }
 
   const winners = pickRandomItems(eligibleParticipants, Math.min(allocationTotal, eligibleParticipants.length)).map((participant) => ({
@@ -3240,7 +3279,7 @@ async function runNftCampaignEndNotifications() {
       const isRaffleCampaign = ['raffle', 'fcfs'].includes(campaign.campaign_type);
 
       if (isRaffleCampaign) {
-        if (Array.isArray(metadata.raffle_results) && metadata.raffle_results.length > 0) {
+        if (isRaffleFinalizedMetadata(metadata)) {
           summary.alreadyFinalized += 1;
           summary.skipped += 1;
           continue;
@@ -3256,6 +3295,7 @@ async function runNftCampaignEndNotifications() {
           summary.sent += Number(result.telegram?.sent || 0);
           summary.csvSent += Number(result.adminCsv?.sent || 0);
           summary.failed += Number(result.telegram?.failed || 0) + Number(result.adminCsv?.failed || 0);
+          if (result.noEligibleParticipants) summary.skipped += 1;
           summary.marked += 1;
         } catch (err) {
           summary.failed += 1;
