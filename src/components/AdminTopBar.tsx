@@ -11,7 +11,7 @@ export default function AdminTopBar() {
           iOS Safari doesn't reliably composite backdrop-filter directly on a fixed
           element that extends into the safe area, so the outer fixed parent stays a
           solid fallback color and the blur lives on its own promoted layer. */}
-      <div className="admin-topbar-glass absolute inset-0 border-b border-white/10 bg-[#0A0A1E]/95 backdrop-blur-xl" />
+      <div className="admin-topbar-glass absolute inset-0" />
       <div className="relative flex h-full items-center gap-2 px-3">
         <button
           type="button"

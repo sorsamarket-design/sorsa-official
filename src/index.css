@@ -13,9 +13,10 @@
 }
 
 html {
+  --app-shell-bg: #0A0A1E;
   --in-app-browser-top-offset: 0px;
   --in-app-browser-top-clearance: env(safe-area-inset-top, 0px);
-  background-color: var(--color-bg);
+  background-color: var(--app-shell-bg);
   scroll-behavior: smooth;
   scroll-padding-top: calc(4.625rem + env(safe-area-inset-top));
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
@@ -28,7 +29,7 @@ html.is-in-app-browser {
 }
 
 body {
-  background-color: var(--color-bg);
+  background-color: var(--app-shell-bg);
   color: var(--color-text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -88,7 +89,7 @@ body::before {
   width: 13rem;
   background:
     radial-gradient(circle at 20% 0%, rgba(123, 47, 255, 0.035), transparent 30%),
-    #0A0A1E;
+    var(--app-shell-bg);
   box-shadow:
     inset -1px 0 0 rgba(255, 255, 255, 0.025),
     18px 0 60px rgba(0, 0, 0, 0.08);
@@ -151,11 +152,23 @@ body::before {
   .app-topbar-glass,
   .creator-topbar-glass,
   .admin-topbar-glass {
-    background:
-      linear-gradient(180deg, rgba(14, 14, 38, 0.98), rgba(10, 10, 30, 0.96)),
-      #0A0A1E !important;
+    background: var(--app-shell-bg) !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
+    box-shadow: none !important;
+  }
+
+  .app-topbar::after,
+  .creator-page-controls::after,
+  .admin-page-controls::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    pointer-events: none;
+    background: rgba(255, 255, 255, 0.1);
   }
 
   .landing-navbar {
@@ -190,7 +203,7 @@ body::before {
     right: 0;
     bottom: 0;
     height: 150px;
-    background: #0A0A1E;
+    background: var(--app-shell-bg);
   }
 
   /* Same reasoning as above but for the bottom edge: the mobile sidebar drawers
@@ -252,7 +265,7 @@ body::before {
   z-index: 60 !important;
   isolation: isolate;
   contain: paint;
-  background-color: #0A0A1E !important;
+  background-color: var(--app-shell-bg) !important;
   -webkit-transform: translateZ(0);
   transform: translateZ(0);
   -webkit-backface-visibility: hidden;

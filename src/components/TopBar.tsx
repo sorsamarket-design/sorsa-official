@@ -36,7 +36,7 @@ export default function TopBar() {
           the safe area, which showed up as a transparent/black seam behind the
           notch. The bg-[#0A0A1E] on the fixed parent is a solid fallback so that
           region is never see-through even if the blur layer has issues. */}
-      <div className="app-topbar-glass absolute inset-0 border-b border-white/10" />
+      <div className="app-topbar-glass absolute inset-0" />
       <div className="relative flex h-full min-w-0 items-center justify-between gap-2 px-3 sm:px-4 md:px-6">
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         <button
