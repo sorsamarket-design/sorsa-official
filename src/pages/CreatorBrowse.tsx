@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Filter, Clock, DollarSign, Users, Target, Zap, ArrowUpRight, Loader2 } from 'lucide-react';
+import { Search, Filter, Clock, DollarSign, Users, Target, Zap, ArrowUpRight, Loader2, SlidersHorizontal } from 'lucide-react';
 import CreatorSidebar from '../components/CreatorSidebar';
 import CreatorTopBar from '../components/CreatorTopBar';
 import { useCampaigns } from '../hooks/useCampaigns';
@@ -30,6 +30,27 @@ export default function CreatorBrowse() {
   const [activeSort, setActiveSort] = useState('Newest');
   const [budgetRange, setBudgetRange] = useState(50000); // Max budget filter
   const [activeTab, setActiveTab] = useState<'live' | 'past'>('live');
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const mobileFiltersRef = useRef<HTMLDivElement | null>(null);
+  const activeFilterCount = [
+    activeCategory !== 'All',
+    activeTier !== 'All',
+    budgetRange !== 50000,
+    activeSort !== 'Newest',
+  ].filter(Boolean).length;
+
+  useEffect(() => {
+    if (!mobileFiltersOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!mobileFiltersRef.current?.contains(event.target as Node)) {
+        setMobileFiltersOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, [mobileFiltersOpen]);
 
   // Map Supabase campaigns to the UI schema
   const liveCampaignsMapped = useMemo(() => {
@@ -136,46 +157,132 @@ export default function CreatorBrowse() {
               >
                 Browse Campaigns
               </motion.h1>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, ease: appleEase, delay: 0.2 }}
-                className="inline-flex shrink-0 rounded-full border border-white/10 bg-white/5 p-1"
-              >
-                <button
-                  onClick={() => setActiveTab('live')}
-                  className={`relative rounded-full px-3 py-1.5 text-[13px] font-medium leading-none transition-colors ${
-                    activeTab === 'live' ? 'text-black' : 'text-muted hover:text-white'
-                  }`}
+              <div className="relative flex shrink-0 items-center gap-2" ref={mobileFiltersRef}>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, ease: appleEase, delay: 0.2 }}
+                  className="inline-flex shrink-0 rounded-full border border-white/10 bg-white/5 p-1"
                 >
-                  {activeTab === 'live' && (
-                    <motion.div
-                      layoutId="browseTabBg"
-                      className="absolute inset-0 rounded-full bg-white"
-                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                    />
-                  )}
-                  <span className="relative z-10 flex items-center gap-1.5 whitespace-nowrap">
-                    <div className={`h-1.5 w-1.5 rounded-full ${activeTab === 'live' ? 'bg-green-500' : 'bg-transparent'}`} />
-                    Live
-                  </span>
-                </button>
+                  <button
+                    onClick={() => setActiveTab('live')}
+                    className={`relative rounded-full px-3 py-1.5 text-[13px] font-medium leading-none transition-colors ${
+                      activeTab === 'live' ? 'text-black' : 'text-muted hover:text-white'
+                    }`}
+                  >
+                    {activeTab === 'live' && (
+                      <motion.div
+                        layoutId="browseTabBg"
+                        className="absolute inset-0 rounded-full bg-white"
+                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                      />
+                    )}
+                    <span className="relative z-10 flex items-center gap-1.5 whitespace-nowrap">
+                      <div className={`h-1.5 w-1.5 rounded-full ${activeTab === 'live' ? 'bg-green-500' : 'bg-transparent'}`} />
+                      Live
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('past')}
+                    className={`relative rounded-full px-3 py-1.5 text-[13px] font-medium leading-none transition-colors ${
+                      activeTab === 'past' ? 'text-black' : 'text-muted hover:text-white'
+                    }`}
+                  >
+                    {activeTab === 'past' && (
+                      <motion.div
+                        layoutId="browseTabBg"
+                        className="absolute inset-0 rounded-full bg-white"
+                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                      />
+                    )}
+                    <span className="relative z-10 whitespace-nowrap">Past</span>
+                  </button>
+                </motion.div>
                 <button
-                  onClick={() => setActiveTab('past')}
-                  className={`relative rounded-full px-3 py-1.5 text-[13px] font-medium leading-none transition-colors ${
-                    activeTab === 'past' ? 'text-black' : 'text-muted hover:text-white'
-                  }`}
+                  type="button"
+                  onClick={() => setMobileFiltersOpen((open) => !open)}
+                  aria-label="Toggle campaign filters"
+                  aria-expanded={mobileFiltersOpen}
+                  className="relative flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-muted transition-colors hover:text-white md:hidden"
                 >
-                  {activeTab === 'past' && (
-                    <motion.div
-                      layoutId="browseTabBg"
-                      className="absolute inset-0 rounded-full bg-white"
-                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                    />
+                  <SlidersHorizontal className="h-4 w-4" />
+                  {activeFilterCount > 0 && (
+                    <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-cyan px-1 text-[10px] font-bold leading-none text-black">
+                      {activeFilterCount}
+                    </span>
                   )}
-                  <span className="relative z-10 whitespace-nowrap">Past</span>
                 </button>
-              </motion.div>
+                {mobileFiltersOpen && (
+                  <div className="absolute right-0 top-full z-50 mt-2 w-[calc(100vw-2rem)] max-w-sm rounded-2xl border border-white/10 bg-[#111126] p-3 shadow-2xl md:hidden">
+                    <div className="space-y-3">
+                      <div>
+                        <div className="mb-2 text-[11px] font-semibold uppercase text-muted">Category</div>
+                        <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                          {CATEGORIES.map(cat => (
+                            <button
+                              key={cat}
+                              onClick={() => setActiveCategory(cat)}
+                              className={`shrink-0 rounded-full px-3 py-1.5 text-[12px] font-medium leading-none transition-colors ${
+                                activeCategory === cat
+                                  ? 'bg-cyan text-black'
+                                  : 'border border-white/10 bg-white/5 text-muted hover:text-white'
+                              }`}
+                            >
+                              {cat}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-[11px] font-semibold uppercase text-muted">Tier</span>
+                        <div className="flex rounded-xl border border-white/10 bg-white/5 p-1">
+                          {TIERS.map(tier => (
+                            <button
+                              key={tier}
+                              onClick={() => setActiveTier(tier)}
+                              className={`rounded-lg px-2.5 py-1 text-[12px] font-medium leading-none transition-colors ${
+                                activeTier === tier ? 'bg-white/10 text-white' : 'text-muted hover:text-white'
+                              }`}
+                            >
+                              {tier}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                          <span className="text-[11px] font-semibold uppercase text-muted">Max Budget</span>
+                          <span className="text-xs font-semibold text-cyan">${budgetRange.toLocaleString()}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="1000"
+                          max="50000"
+                          step="1000"
+                          value={budgetRange}
+                          onChange={(e) => setBudgetRange(Number(e.target.value))}
+                          className="w-full accent-cyan"
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-[11px] font-semibold uppercase text-muted">Sort</span>
+                        <select
+                          value={activeSort}
+                          onChange={(e) => setActiveSort(e.target.value)}
+                          className="min-w-0 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-[12px] font-medium text-white focus:outline-none focus:border-cyan/50"
+                        >
+                          {SORTS.map(sort => (
+                            <option key={sort} value={sort} className="bg-[#0A0A1E]">{sort}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
             <div>
               <motion.p
@@ -196,7 +303,7 @@ export default function CreatorBrowse() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: appleEase, delay: 0.2 }}
-            className="glass-panel rounded-2xl p-4 border border-white/10 flex flex-col xl:flex-row xl:items-center gap-6"
+            className="glass-panel hidden rounded-2xl p-4 border border-white/10 md:flex flex-col xl:flex-row xl:items-center gap-6"
           >
             {/* Categories */}
             <div className="flex-1 flex flex-wrap items-center gap-2">
