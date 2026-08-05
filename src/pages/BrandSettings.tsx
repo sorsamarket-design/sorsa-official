@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { Building2, CheckCircle2, Copy, Image as ImageIcon, Loader2, LogOut, MessageCircle, Save, X } from 'lucide-react';
+import { Building2, CheckCircle2, Copy, Image as ImageIcon, Loader2, LogOut, MessageCircle, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDisconnect } from 'wagmi';
 import BrandSidebar from '../components/BrandSidebar';
 import TopBar from '../components/TopBar';
-import { supabase } from '../lib/supabase';
 import { useBrandProfiles } from '../hooks/useBrandProfiles';
 import { useAuth } from '../context/AuthContext';
 import telegramNotifications, { type BrandTelegramGroup } from '../lib/telegramNotifications';
@@ -62,8 +61,6 @@ function telegramGroupStatusMeta(group: BrandTelegramGroup | null) {
 export default function BrandSettings() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('company');
-  const [isSaving, setIsSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
   const [telegramGroup, setTelegramGroup] = useState<BrandTelegramGroup | null>(null);
   const [telegramGroupLink, setTelegramGroupLink] = useState('');
   const [telegramLoading, setTelegramLoading] = useState(false);
@@ -72,7 +69,7 @@ export default function BrandSettings() {
   const [botUsername, setBotUsername] = useState<string | null>(null);
   const [telegramBotCopied, setTelegramBotCopied] = useState(false);
   const [telegramVerifySuccess, setTelegramVerifySuccess] = useState(false);
-  const { selectedProfile, loading, refreshProfiles } = useBrandProfiles();
+  const { selectedProfile, loading } = useBrandProfiles();
   const { role, signOut, session } = useAuth();
   const { disconnectAsync } = useDisconnect();
   const [formData, setFormData] = useState({
@@ -151,29 +148,6 @@ export default function BrandSettings() {
       setTelegramVerifySuccess(false);
       setTelegramLoading(false);
     }
-  };
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedProfile) return;
-
-    setIsSaving(true);
-    setMessage(null);
-
-    const { error } = await supabase
-      .from('brand_profiles')
-      .update(formData)
-      .eq('id', selectedProfile.id);
-
-    setIsSaving(false);
-
-    if (error) {
-      setMessage(error.message);
-      return;
-    }
-
-    await refreshProfiles();
-    setMessage('Brand profile updated.');
   };
 
   const logo = formData.logo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.company_name || 'Brand')}`;
@@ -256,7 +230,7 @@ export default function BrandSettings() {
                     <p className="text-muted text-sm">Create a brand profile before editing settings.</p>
                   </div>
                 ) : (
-                  <form onSubmit={handleSave} className="relative z-10 space-y-8">
+                  <div className="relative z-10 space-y-8">
                     {activeTab === 'company' && (
                       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
                         <h2 className="text-xl font-semibold text-white mb-6">Company Profile</h2>
@@ -271,20 +245,20 @@ export default function BrandSettings() {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <div>
+                        <div className="flex gap-5">
+                          <div className="min-w-0 flex-[1_1_0]">
                             <label className="block text-sm font-medium text-muted mb-2">Company Name</label>
-                            <input type="text" value={formData.company_name} onChange={(e) => setFormData({ ...formData, company_name: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan/50 transition-colors" />
+                            <input type="text" value={formData.company_name} readOnly aria-readonly="true" className="w-full min-w-0 cursor-default bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none" />
                           </div>
-                          <div>
+                          <div className="min-w-0 flex-[1_1_0]">
                             <label className="block text-sm font-medium text-muted mb-2">Website URL</label>
-                            <input type="url" value={formData.website} onChange={(e) => setFormData({ ...formData, website: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan/50 transition-colors" />
+                            <input type="url" value={formData.website} readOnly aria-readonly="true" className="w-full min-w-0 cursor-default bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none" />
                           </div>
                         </div>
 
                         <div>
                           <label className="block text-sm font-medium text-muted mb-2">Company Description</label>
-                          <textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan/50 transition-colors resize-none h-24" />
+                          <textarea value={formData.description} readOnly aria-readonly="true" className="w-full cursor-default bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none resize-none h-24" />
                         </div>
                       </motion.div>
                     )}
@@ -338,14 +312,7 @@ export default function BrandSettings() {
                       </motion.div>
                     )}
 
-                    {message && <p className="text-sm text-cyan">{message}</p>}
-
-                    <div className="pt-6 border-t border-white/10 flex justify-end">
-                      <button type="submit" disabled={isSaving} className="px-6 py-3 rounded-xl bg-cyan text-black font-semibold hover:bg-cyan/90 transition-colors flex items-center gap-2 disabled:opacity-50">
-                        {isSaving ? 'Saving...' : 'Save Changes'} <Save className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </form>
+                  </div>
                 )}
               </div>
 
