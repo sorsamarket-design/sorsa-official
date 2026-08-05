@@ -317,14 +317,14 @@ export default function Leaderboard() {
                       >
                         <ChevronLeft className="h-4 w-4" />
                       </button>
-                      <div className="flex min-w-0 items-center gap-1 overflow-x-auto">
+                      <div className="flex min-w-0 items-center gap-1 overflow-x-auto whitespace-nowrap [overflow-wrap:normal]">
                         {Array.from({ length: mobileTotalPages }, (_, index) => index + 1).map((page) => (
                           <button
                             key={page}
                             type="button"
                             onClick={() => goToMobilePage(page)}
                             aria-current={mobilePage === page ? 'page' : undefined}
-                            className={`h-8 min-w-8 rounded-lg px-2 text-xs font-semibold tabular-nums transition-colors ${
+                            className={`inline-flex h-8 min-w-8 shrink-0 items-center justify-center rounded-lg px-2 text-xs font-semibold leading-none tabular-nums whitespace-nowrap transition-colors [overflow-wrap:normal] ${
                               mobilePage === page
                                 ? 'bg-cyan text-black'
                                 : 'border border-white/10 bg-white/5 text-muted hover:text-white'
@@ -418,14 +418,14 @@ export default function Leaderboard() {
                           >
                             <ChevronLeft className="h-4 w-4" />
                           </button>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 whitespace-nowrap [overflow-wrap:normal]">
                             {Array.from({ length: desktopTotalPages }, (_, index) => index + 1).map((page) => (
                               <button
                                 key={page}
                                 type="button"
                                 onClick={() => goToDesktopPage(page)}
                                 aria-current={desktopPage === page ? 'page' : undefined}
-                                className={`h-9 min-w-9 rounded-lg px-3 text-sm font-semibold tabular-nums transition-colors ${
+                                className={`inline-flex h-9 min-w-9 shrink-0 items-center justify-center rounded-lg px-3 text-sm font-semibold leading-none tabular-nums whitespace-nowrap transition-colors [overflow-wrap:normal] ${
                                   desktopPage === page
                                     ? 'bg-cyan text-black'
                                     : 'border border-white/10 bg-white/5 text-muted hover:text-white'
