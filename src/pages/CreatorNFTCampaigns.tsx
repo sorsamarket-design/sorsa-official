@@ -58,56 +58,57 @@ export default function CreatorNFTCampaigns() {
       <CreatorSidebar />
       <main className="creator-page-main flex-1 md:ml-64 p-4 md:p-8">
         <div className="max-w-6xl mx-auto space-y-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-semibold tracking-tight text-white mb-3">NFT Campaigns</h1>
-              <p className="text-muted max-w-2xl leading-relaxed">
-                Browse NFT-focused creator campaigns, complete raffle tasks, or submit content for review.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3 self-start md:self-center">
-              <CreatorTopBar embedded />
+          <div className="flex flex-col gap-2">
+            <CreatorTopBar embedded />
+            <div className="flex min-w-0 items-center justify-between gap-3">
+              <h1 className="min-w-0 truncate text-[1.55rem] font-semibold tracking-tight text-white sm:text-3xl">
+                NFT Campaigns
+              </h1>
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] as const, delay: 0.2 }}
-                className="inline-flex bg-white/5 p-1.5 rounded-full border border-white/10"
+                className="inline-flex shrink-0 rounded-full border border-white/10 bg-white/5 p-1"
               >
                 <button
                   onClick={() => setActiveTab('live')}
-                  className={`relative px-6 py-2 rounded-full text-sm font-medium transition-colors ${
+                  className={`relative rounded-full px-3 py-1.5 text-[13px] font-medium leading-none transition-colors ${
                     activeTab === 'live' ? 'text-black' : 'text-muted hover:text-white'
                   }`}
                 >
                   {activeTab === 'live' && (
                     <motion.div
                       layoutId="nftBrowseTabBg"
-                      className="absolute inset-0 bg-white rounded-full"
+                      className="absolute inset-0 rounded-full bg-white"
                       transition={{ type: "spring", stiffness: 400, damping: 30 }}
                     />
                   )}
-                  <span className="relative z-10 flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${activeTab === 'live' ? 'bg-green-500' : 'bg-transparent'}`} />
+                  <span className="relative z-10 flex items-center gap-1.5 whitespace-nowrap">
+                    <div className={`h-1.5 w-1.5 rounded-full ${activeTab === 'live' ? 'bg-green-500' : 'bg-transparent'}`} />
                     Live
                   </span>
                 </button>
                 <button
                   onClick={() => setActiveTab('past')}
-                  className={`relative px-6 py-2 rounded-full text-sm font-medium transition-colors ${
+                  className={`relative rounded-full px-3 py-1.5 text-[13px] font-medium leading-none transition-colors ${
                     activeTab === 'past' ? 'text-black' : 'text-muted hover:text-white'
                   }`}
                 >
                   {activeTab === 'past' && (
                     <motion.div
                       layoutId="nftBrowseTabBg"
-                      className="absolute inset-0 bg-white rounded-full"
+                      className="absolute inset-0 rounded-full bg-white"
                       transition={{ type: "spring", stiffness: 400, damping: 30 }}
                     />
                   )}
-                  <span className="relative z-10">Past</span>
+                  <span className="relative z-10 whitespace-nowrap">Past</span>
                 </button>
               </motion.div>
+            </div>
+            <div>
+              <p className="text-muted max-w-2xl leading-relaxed">
+                Browse NFT-focused creator campaigns, complete raffle tasks, or submit content for review.
+              </p>
             </div>
           </div>
 
