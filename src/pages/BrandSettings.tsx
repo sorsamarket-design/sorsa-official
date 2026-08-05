@@ -248,17 +248,23 @@ export default function BrandSettings() {
                         <div className="flex gap-5">
                           <div className="min-w-0 flex-[1_1_0]">
                             <label className="block text-sm font-medium text-muted mb-2">Company Name</label>
-                            <input type="text" value={formData.company_name} readOnly aria-readonly="true" className="w-full min-w-0 cursor-default bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none" />
+                            <div className="w-full min-w-0 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white truncate" aria-label="Company Name">
+                              {formData.company_name || '-'}
+                            </div>
                           </div>
                           <div className="min-w-0 flex-[1_1_0]">
                             <label className="block text-sm font-medium text-muted mb-2">Website URL</label>
-                            <input type="url" value={formData.website} readOnly aria-readonly="true" className="w-full min-w-0 cursor-default bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none" />
+                            <div className="w-full min-w-0 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white truncate" aria-label="Website URL">
+                              {formData.website || '-'}
+                            </div>
                           </div>
                         </div>
 
                         <div>
                           <label className="block text-sm font-medium text-muted mb-2">Company Description</label>
-                          <textarea value={formData.description} readOnly aria-readonly="true" className="w-full cursor-default bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none resize-none h-24" />
+                          <div className="w-full min-h-24 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white whitespace-pre-wrap" aria-label="Company Description">
+                            {formData.description || '-'}
+                          </div>
                         </div>
                       </motion.div>
                     )}
