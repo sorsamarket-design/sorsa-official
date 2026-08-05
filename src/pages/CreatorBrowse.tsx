@@ -126,70 +126,68 @@ export default function CreatorBrowse() {
         <div className="max-w-7xl mx-auto space-y-8">
 
           {/* Header & Toggle */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
+          <div className="flex flex-col gap-2">
+            <div className="flex min-w-0 items-center justify-between gap-3">
               <motion.h1
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: appleEase }}
-                className="text-3xl font-semibold tracking-tight text-white"
+                className="min-w-0 truncate text-[1.55rem] font-semibold tracking-tight text-white sm:text-3xl"
               >
                 Browse Campaigns
               </motion.h1>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, ease: appleEase, delay: 0.2 }}
+                className="inline-flex shrink-0 rounded-full border border-white/10 bg-white/5 p-1"
+              >
+                <button
+                  onClick={() => setActiveTab('live')}
+                  className={`relative rounded-full px-3 py-1.5 text-[13px] font-medium leading-none transition-colors ${
+                    activeTab === 'live' ? 'text-black' : 'text-muted hover:text-white'
+                  }`}
+                >
+                  {activeTab === 'live' && (
+                    <motion.div
+                      layoutId="browseTabBg"
+                      className="absolute inset-0 rounded-full bg-white"
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    />
+                  )}
+                  <span className="relative z-10 flex items-center gap-1.5 whitespace-nowrap">
+                    <div className={`h-1.5 w-1.5 rounded-full ${activeTab === 'live' ? 'bg-green-500' : 'bg-transparent'}`} />
+                    Live
+                  </span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('past')}
+                  className={`relative rounded-full px-3 py-1.5 text-[13px] font-medium leading-none transition-colors ${
+                    activeTab === 'past' ? 'text-black' : 'text-muted hover:text-white'
+                  }`}
+                >
+                  {activeTab === 'past' && (
+                    <motion.div
+                      layoutId="browseTabBg"
+                      className="absolute inset-0 rounded-full bg-white"
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    />
+                  )}
+                  <span className="relative z-10 whitespace-nowrap">Past</span>
+                </button>
+              </motion.div>
+            </div>
+            <div>
               <motion.p
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: appleEase, delay: 0.1 }}
-                className="text-muted mt-1"
+                className="text-muted"
               >
                 {activeTab === 'live'
                   ? "Discover and apply to high-quality Web3 campaigns."
                   : "Explore past successful campaigns on AtlasReach."}
               </motion.p>
-            </div>
-
-            <div className="flex items-center gap-3 self-start md:self-center">
-              {/* Toggle */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, ease: appleEase, delay: 0.2 }}
-                className="inline-flex bg-white/5 p-1.5 rounded-full border border-white/10"
-              >
-              <button
-                onClick={() => setActiveTab('live')}
-                className={`relative px-6 py-2 rounded-full text-sm font-medium transition-colors ${
-                  activeTab === 'live' ? 'text-black' : 'text-muted hover:text-white'
-                }`}
-              >
-                {activeTab === 'live' && (
-                  <motion.div
-                    layoutId="browseTabBg"
-                    className="absolute inset-0 bg-white rounded-full"
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                  />
-                )}
-                <span className="relative z-10 flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${activeTab === 'live' ? 'bg-green-500' : 'bg-transparent'}`} />
-                  Live
-                </span>
-              </button>
-              <button
-                onClick={() => setActiveTab('past')}
-                className={`relative px-6 py-2 rounded-full text-sm font-medium transition-colors ${
-                  activeTab === 'past' ? 'text-black' : 'text-muted hover:text-white'
-                }`}
-              >
-                {activeTab === 'past' && (
-                  <motion.div
-                    layoutId="browseTabBg"
-                    className="absolute inset-0 bg-white rounded-full"
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                  />
-                )}
-                <span className="relative z-10">Past</span>
-              </button>
-              </motion.div>
             </div>
           </div>
 

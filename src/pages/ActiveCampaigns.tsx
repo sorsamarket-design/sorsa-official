@@ -71,77 +71,70 @@ export default function ActiveCampaigns() {
         <div className="max-w-5xl mx-auto space-y-8">
 
           {/* Header & Toggle */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
+          <div className="flex flex-col gap-2">
+            <div className="flex min-w-0 items-center justify-between gap-3">
               <motion.h1
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: appleEase }}
-                className="text-3xl font-semibold tracking-tight text-white"
+                className="min-w-0 truncate text-[1.55rem] font-semibold tracking-tight text-white sm:text-3xl"
               >
                 My Campaigns {(activeTab === 'live' ? activeCampaigns.length : pastCampaigns.length) > 0 && `(${activeTab === 'live' ? activeCampaigns.length : pastCampaigns.length})`}
               </motion.h1>
+              <div className="flex shrink-0 items-center">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, ease: appleEase, delay: 0.2 }}
+                  className="inline-flex shrink-0 rounded-full border border-white/10 bg-white/5 p-1"
+                >
+                  <button
+                    onClick={() => setActiveTab('live')}
+                    className={`relative rounded-full px-3 py-1.5 text-[13px] font-medium leading-none transition-colors ${
+                      activeTab === 'live' ? 'text-black' : 'text-muted hover:text-white'
+                    }`}
+                  >
+                    {activeTab === 'live' && (
+                      <motion.div
+                        layoutId="activeTabBg"
+                        className="absolute inset-0 rounded-full bg-white"
+                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                      />
+                    )}
+                    <span className="relative z-10 flex items-center gap-1.5 whitespace-nowrap">
+                      <div className={`h-1.5 w-1.5 rounded-full ${activeTab === 'live' ? 'bg-green-500' : 'bg-transparent'}`} />
+                      Live
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('past')}
+                    className={`relative rounded-full px-3 py-1.5 text-[13px] font-medium leading-none transition-colors ${
+                      activeTab === 'past' ? 'text-black' : 'text-muted hover:text-white'
+                    }`}
+                  >
+                    {activeTab === 'past' && (
+                      <motion.div
+                        layoutId="activeTabBg"
+                        className="absolute inset-0 rounded-full bg-white"
+                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                      />
+                    )}
+                    <span className="relative z-10 whitespace-nowrap">Past</span>
+                  </button>
+                </motion.div>
+              </div>
+            </div>
+            <div>
               <motion.p
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: appleEase, delay: 0.1 }}
-                className="text-muted mt-1"
+                className="text-muted"
               >
                 {activeTab === 'live'
                   ? "Track your progress and submit proofs for campaigns you've joined."
                   : "Review your completed campaigns and earnings history."}
               </motion.p>
-            </div>
-
-            {/* Toggle */}
-            <div className="flex items-center gap-4">
-              <button
-                onClick={loadData}
-                className="p-2 rounded-xl bg-white/5 border border-white/10 text-muted hover:text-cyan transition-colors"
-                title="Refresh Campaigns"
-              >
-                <History className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
-              </button>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, ease: appleEase, delay: 0.2 }}
-                className="inline-flex bg-white/5 p-1.5 rounded-full border border-white/10"
-              >
-                <button
-                  onClick={() => setActiveTab('live')}
-                  className={`relative px-6 py-2 rounded-full text-sm font-medium transition-colors ${
-                    activeTab === 'live' ? 'text-black' : 'text-muted hover:text-white'
-                  }`}
-                >
-                  {activeTab === 'live' && (
-                    <motion.div
-                      layoutId="activeTabBg"
-                      className="absolute inset-0 bg-white rounded-full"
-                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                    />
-                  )}
-                  <span className="relative z-10 flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${activeTab === 'live' ? 'bg-green-500' : 'bg-transparent'}`} />
-                    Live
-                  </span>
-                </button>
-                <button
-                  onClick={() => setActiveTab('past')}
-                  className={`relative px-6 py-2 rounded-full text-sm font-medium transition-colors ${
-                    activeTab === 'past' ? 'text-black' : 'text-muted hover:text-white'
-                  }`}
-                >
-                  {activeTab === 'past' && (
-                    <motion.div
-                      layoutId="activeTabBg"
-                      className="absolute inset-0 bg-white rounded-full"
-                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                    />
-                  )}
-                  <span className="relative z-10">Past</span>
-                </button>
-              </motion.div>
             </div>
           </div>
 
