@@ -500,7 +500,7 @@ export default function CreatorBrowse() {
                 </AnimatePresence>
               </div>
             ) : (
-              <div className="glass-panel rounded-2xl p-12 border border-white/10 text-center flex flex-col items-center justify-center min-h-[400px]">
+              <div className="rounded-2xl border border-[#17182d] bg-[#070814]/80 p-12 text-center flex flex-col items-center justify-center min-h-[400px] shadow-[0_8px_24px_rgba(0,0,0,0.08)]">
                 <div className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-4">
                   <Search className="w-8 h-8 text-muted" />
                 </div>
